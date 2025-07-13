@@ -6,7 +6,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'mining_001',
     title: 'First Steps in Space',
-    description: 'Mine your first asteroid to collect basic resources and learn the fundamentals of space exploration.',
+    description: 'Complete your first mining operation by extracting resources from any asteroid. Click on any asteroid in space and wait for the mining to complete.',
     type: 'mining',
     status: 'available',
     rewards: {
@@ -25,11 +25,11 @@ export const PREDEFINED_MISSIONS: Mission[] = [
     progress: 0,
     maxProgress: 1, // Mine 1 asteroid
   },
-  
+
   {
     id: 'mining_002',
     title: 'Crystal Hunter',
-    description: 'Locate and mine crystal formations to gather energy-rich materials for advanced crafting.',
+    description: 'Mine 5 crystal-containing asteroids to collect energy crystals. Look for asteroids that yield crystal resources (blue/purple colored resources) and complete 5 crystal mining operations.',
     type: 'mining',
     status: 'available',
     rewards: {
@@ -52,7 +52,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'mining_003',
     title: 'Asteroid Field Surveyor',
-    description: 'Navigate through dense asteroid fields and extract resources from multiple sources.',
+    description: 'Complete 15 mining operations on any asteroids. Click on asteroids throughout the sector and mine them until you reach 15 total mining completions.',
     type: 'mining',
     status: 'available',
     rewards: {
@@ -76,7 +76,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'exploration_001',
     title: 'Sector Scout',
-    description: 'Explore the current sector and discover all major space objects and landmarks.',
+    description: 'Explore the space sector by moving around and discovering 10 different objects. Use WASD keys to fly around and approach different asteroids, stations, or other space objects.',
     type: 'exploration',
     status: 'available',
     rewards: {
@@ -90,7 +90,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'exploration_002',
     title: 'Deep Space Cartographer',
-    description: 'Venture into uncharted regions and map new territories for future expeditions.',
+    description: 'Explore 25 different locations in space. Fly to various coordinates and discover new areas by moving your ship to different positions in the sector.',
     type: 'exploration',
     status: 'available',
     rewards: {
@@ -107,13 +107,13 @@ export const PREDEFINED_MISSIONS: Mission[] = [
       ],
     },
     progress: 0,
-    maxProgress: 3, // Explore 3 new sectors
+    maxProgress: 25, // Explore 25 different locations
   },
 
   {
     id: 'exploration_003',
     title: 'Station Diplomat',
-    description: 'Establish contact with space stations and build relationships with their inhabitants.',
+    description: 'Visit and interact with 2 different space stations. Look for large structures in space and approach them to establish contact.',
     type: 'exploration',
     status: 'available',
     rewards: {
@@ -128,7 +128,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'crafting_001',
     title: 'Apprentice Forger',
-    description: 'Learn the basics of item crafting by creating your first piece of equipment.',
+    description: 'Create your first crafted item using the crafting system. Open the crafting interface and combine resources to craft 1 item of any type.',
     type: 'crafting',
     status: 'available',
     rewards: {
@@ -151,7 +151,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'crafting_002',
     title: 'Resource Synthesizer',
-    description: 'Master the art of resource combination to create advanced materials.',
+    description: 'Craft 5 items using the crafting system. Combine different resources to create tools, equipment, or other items. Each successful crafting operation counts toward progress.',
     type: 'crafting',
     status: 'available',
     rewards: {
@@ -174,7 +174,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'crafting_003',
     title: 'Master Craftsman',
-    description: 'Achieve mastery in crafting by creating legendary-tier equipment.',
+    description: 'Create 1 legendary-tier item through advanced crafting. Use rare and epic resources to craft a single high-quality legendary item.',
     type: 'crafting',
     status: 'available',
     rewards: {
@@ -198,7 +198,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'advanced_001',
     title: 'Elite Explorer',
-    description: 'Complete a comprehensive exploration of multiple sectors while maintaining high efficiency.',
+    description: 'Complete 50 exploration activities by flying around space and discovering new locations. Use WASD to navigate and explore different areas of the sector.',
     type: 'exploration',
     status: 'available',
     rewards: {
@@ -221,7 +221,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'advanced_002',
     title: 'Resource Magnate',
-    description: 'Accumulate vast wealth through strategic mining and trading operations.',
+    description: 'Complete 100 mining operations to become a master miner. Click on asteroids throughout space and complete mining operations until you reach 100 total completions.',
     type: 'mining',
     status: 'available',
     rewards: {
@@ -235,7 +235,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
   {
     id: 'advanced_003',
     title: 'Guild Founder',
-    description: 'Establish yourself as a leader in the space exploration community.',
+    description: 'Complete 75 exploration activities to establish yourself as a space exploration leader. Fly around and discover new areas to build your reputation.',
     type: 'exploration',
     status: 'available',
     rewards: {
@@ -252,7 +252,7 @@ export const PREDEFINED_MISSIONS: Mission[] = [
       ],
     },
     progress: 0,
-    maxProgress: 10, // Complete 10 leadership actions
+    maxProgress: 75, // Complete 75 exploration actions
   },
 ];
 
@@ -303,12 +303,12 @@ export function getMissionsByCategory(category: keyof typeof MISSION_CATEGORIES)
 export function getAvailableMissions(playerLevel: number, completedMissionIds: string[]): Mission[] {
   return PREDEFINED_MISSIONS.filter(mission => {
     const requirements = MISSION_REQUIREMENTS[mission.id as keyof typeof MISSION_REQUIREMENTS];
-    
+
     if (!requirements) return true; // No requirements
-    
+
     // Check level requirement
     if (requirements.level && playerLevel < requirements.level) return false;
-    
+
     // Check completed missions requirement
     if (requirements.completedMissions) {
       const hasCompletedRequired = requirements.completedMissions.every(
@@ -316,14 +316,14 @@ export function getAvailableMissions(playerLevel: number, completedMissionIds: s
       );
       if (!hasCompletedRequired) return false;
     }
-    
+
     return true;
   });
 }
 
 export function getMissionRewardValue(mission: Mission): number {
   let value = mission.rewards.experience + mission.rewards.credits;
-  
+
   if (mission.rewards.resources) {
     value += mission.rewards.resources.reduce((total, resource) => {
       const rarityMultiplier = {
@@ -332,10 +332,10 @@ export function getMissionRewardValue(mission: Mission): number {
         epic: 8,
         legendary: 20,
       }[resource.rarity];
-      
+
       return total + (resource.quantity * 100 * rarityMultiplier);
     }, 0);
   }
-  
+
   return value;
 }

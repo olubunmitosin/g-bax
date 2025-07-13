@@ -1,11 +1,14 @@
 import { MiningSystem, type MiningResult } from './miningSystem';
 import { CraftingSystem, type CraftingResult } from './craftingSystem';
+import { ExplorationSystem, type ExplorationResult } from './explorationSystem';
 import type { SpaceObject, Resource } from '@/types/game';
 import { useGameStore } from '@/stores/gameStore';
+import * as THREE from 'three';
 
 export interface GameSystemsConfig {
   enableMining: boolean;
   enableCrafting: boolean;
+  enableExploration: boolean;
   enableAutoSave: boolean;
   autoSaveInterval: number;
 }
@@ -15,12 +18,14 @@ export interface GameSystemsCallbacks {
   onExperienceGained?: (experience: number) => void;
   onMiningComplete?: (result: MiningResult) => void;
   onCraftingComplete?: (result: CraftingResult) => void;
+  onExplorationComplete?: (result: ExplorationResult) => void;
   onMissionProgress?: (missionType: string, progress: number) => void;
 }
 
 export class GameSystemsManager {
   private miningSystem: MiningSystem;
   private craftingSystem: CraftingSystem;
+  private explorationSystem: ExplorationSystem;
   private config: GameSystemsConfig;
   private callbacks: GameSystemsCallbacks;
   private updateInterval: number | null = null;
@@ -30,6 +35,7 @@ export class GameSystemsManager {
     this.config = {
       enableMining: true,
       enableCrafting: true,
+      enableExploration: true,
       enableAutoSave: true,
       autoSaveInterval: 30000, // 30 seconds
       ...config,
@@ -38,6 +44,7 @@ export class GameSystemsManager {
     this.callbacks = callbacks;
     this.miningSystem = new MiningSystem();
     this.craftingSystem = new CraftingSystem();
+    this.explorationSystem = new ExplorationSystem();
   }
 
   // Initialize the game systems
@@ -97,7 +104,18 @@ export class GameSystemsManager {
 
         // Track mission progress for mining
         if (this.callbacks.onMissionProgress) {
+          // Track general mining progress
           this.callbacks.onMissionProgress('mining', 1);
+
+          // Track specific resource type mining for targeted missions
+          const resourceTypes = result.resources.map(r => r.type);
+          const uniqueResourceTypes = Array.from(new Set(resourceTypes));
+
+          uniqueResourceTypes.forEach(resourceType => {
+            if (this.callbacks.onMissionProgress) {
+              this.callbacks.onMissionProgress(`mining_${resourceType}`, 1);
+            }
+          });
         }
 
       }
@@ -141,9 +159,12 @@ export class GameSystemsManager {
     });
   }
 
-  // Update space objects for mining system
+  // Update space objects for mining and exploration systems
   updateSpaceObjects(objects: SpaceObject[]): void {
     this.miningSystem.updateSpaceObjects(objects);
+    if (this.config.enableExploration) {
+      this.explorationSystem.updateSpaceObjects(objects);
+    }
   }
 
   // Mining operations
@@ -225,6 +246,59 @@ export class GameSystemsManager {
 
   getCraftingProgress(operationId: string) {
     return this.craftingSystem.getCraftingProgress(operationId);
+  }
+
+  // Exploration operations
+  updatePlayerPosition(playerId: string, position: THREE.Vector3): ExplorationResult[] {
+    if (!this.config.enableExploration) return [];
+
+    const results = this.explorationSystem.updatePlayerPosition(playerId, position);
+
+    // Process exploration results
+    results.forEach(result => {
+      if (result.success) {
+        // Add experience
+        if (this.callbacks.onExperienceGained) {
+          this.callbacks.onExperienceGained(result.experience);
+        }
+
+        // Track mission progress based on discovery type
+        if (this.callbacks.onMissionProgress) {
+          if (result.discoveredObject) {
+            // Track object discoveries for "Sector Scout" type missions
+            this.callbacks.onMissionProgress('exploration', 1);
+            this.callbacks.onMissionProgress('object_discovery', 1);
+          } else if (result.newLocation) {
+            // Track location discoveries for "Deep Space Cartographer" type missions
+            this.callbacks.onMissionProgress('location_discovery', 1);
+          }
+        }
+
+        // Trigger exploration callback
+        if (this.callbacks.onExplorationComplete) {
+          this.callbacks.onExplorationComplete(result);
+        }
+      }
+    });
+
+    return results;
+  }
+
+  initializeExploration(playerId: string) {
+    if (!this.config.enableExploration) return null;
+    return this.explorationSystem.initializeExploration(playerId);
+  }
+
+  getExplorationStats(playerId: string) {
+    return this.explorationSystem.getExplorationStats(playerId);
+  }
+
+  getDiscoveredObjects(playerId: string): string[] {
+    return this.explorationSystem.getDiscoveredObjects(playerId);
+  }
+
+  getVisitedLocations(playerId: string): THREE.Vector3[] {
+    return this.explorationSystem.getVisitedLocations(playerId);
   }
 
   getAvailableRecipes(playerLevel: number) {

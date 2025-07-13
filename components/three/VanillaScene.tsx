@@ -58,12 +58,32 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
   // Honeycomb integration for missions
   const { updateMissionProgress } = useHoneycombIntegration();
 
+  // Mission progress notification throttling
+  const lastMissionNotificationTime = useRef<number>(0);
+  const missionNotificationCooldown = 3000; // 3 seconds between mission progress notifications
+
   // Helper function to track mission progress based on activity
   const trackMissionProgress = async (activityType: string, amount: number = 1) => {
     if (!activeMission || !player) return;
 
-    // Check if the active mission matches the activity type
-    if (activeMission.type.toLowerCase() === activityType.toLowerCase()) {
+    // Special handling for specific mission requirements
+    let shouldTrackProgress = false;
+
+    if (activeMission.id === 'mining_002' && activityType === 'mining_crystal') {
+      // Mission 2 specifically requires crystal mining
+      shouldTrackProgress = true;
+    } else if (activeMission.id === 'exploration_001' && activityType === 'object_discovery') {
+      // Sector Scout mission specifically requires object discoveries
+      shouldTrackProgress = true;
+    } else if (activeMission.id === 'exploration_002' && activityType === 'location_discovery') {
+      // Deep Space Cartographer mission specifically requires location discoveries
+      shouldTrackProgress = true;
+    } else if (activeMission.type.toLowerCase() === activityType.toLowerCase()) {
+      // General type matching for other missions
+      shouldTrackProgress = true;
+    }
+
+    if (shouldTrackProgress) {
       try {
         const newProgress = Math.min(activeMission.progress + amount, activeMission.maxProgress);
         await updateMissionProgress(activeMission.id, newProgress);
@@ -75,13 +95,20 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
             `Completed "${activeMission.title}" and earned ${activeMission.rewards.experience} XP and ${activeMission.rewards.credits} credits!`
           );
         } else {
-          showInfo(
-            'Mission Progress',
-            `${activeMission.title}: ${newProgress}/${activeMission.maxProgress}`
-          );
+          // Only show mission progress notification if enough time has passed
+          const currentTime = Date.now();
+          const timeSinceLastNotification = currentTime - lastMissionNotificationTime.current;
+
+          if (timeSinceLastNotification >= missionNotificationCooldown) {
+            showInfo(
+              'Mission Progress',
+              `${activeMission.title}: ${newProgress}/${activeMission.maxProgress}`
+            );
+            lastMissionNotificationTime.current = currentTime;
+          }
         }
       } catch (error) {
-        // Handle error silently
+        // Handle error silently in production
       }
     }
   };
@@ -150,6 +177,21 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       onExperienceGained: (experience) => {
         updatePlayerExperience(experience);
       },
+      onExplorationComplete: (result) => {
+        if (result.success && result.message) {
+          if (result.discoveredObject) {
+            showInfo(
+              'Discovery!',
+              result.message
+            );
+          } else if (result.newLocation) {
+            showInfo(
+              'New Location!',
+              result.message
+            );
+          }
+        }
+      },
       onMissionProgress: (missionType: string, progress: number) => {
         // Track mission progress based on activity type
         trackMissionProgress(missionType, progress);
@@ -212,6 +254,11 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     });
     gameSystemsRef.current = gameSystems;
     gameSystems.initialize();
+
+    // Initialize exploration for the player
+    if (player) {
+      gameSystems.initializeExploration(player.id);
+    }
 
     // Set up object interaction callbacks
     objectManager.setOnObjectHover(setHoveredObject);
@@ -326,6 +373,14 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       // Update camera controls
       if (controls) {
         controls.update(deltaTime);
+      }
+
+      // Track player position for exploration
+      if (player && gameSystems && camera) {
+        const currentPosition = camera.position.clone();
+        const explorationResults = gameSystems.updatePlayerPosition(player.id, currentPosition);
+
+        // Exploration results are automatically handled by the callback
       }
 
       // Animate space objects
