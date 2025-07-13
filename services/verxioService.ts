@@ -140,6 +140,10 @@ export class VerxioService {
   async initialize(): Promise<boolean> {
     try {
       // In a real implementation, this would validate API key and setup connection
+
+      // Sync guild member counts on initialization to fix any inconsistencies
+      await this.syncAllGuildMemberCounts();
+
       return true;
     } catch (error) {
       return false;
@@ -222,11 +226,19 @@ export class VerxioService {
 
       if (savedGuilds) {
         const guilds = JSON.parse(savedGuilds);
-        // Convert createdAt strings back to Date objects
-        return guilds.map((guild: any) => ({
-          ...guild,
-          createdAt: new Date(guild.createdAt),
+        // Convert createdAt strings back to Date objects and sync member counts
+        const syncedGuilds = await Promise.all(guilds.map(async (guild: any) => {
+          const actualMembers = await this.getGuildMembers(guild.id);
+          return {
+            ...guild,
+            memberCount: actualMembers.length, // Sync with actual member count
+            createdAt: new Date(guild.createdAt),
+          };
         }));
+
+        // Save the synced guild data back to localStorage
+        localStorage.setItem('verxio_guilds', JSON.stringify(syncedGuilds));
+        return syncedGuilds;
       }
 
       // Initialize with realistic starter guilds that have no members yet
@@ -365,8 +377,9 @@ export class VerxioService {
         };
       }
 
-      // Update guild member count
-      guilds[guildIndex].memberCount += 1;
+      // Update guild member count by counting actual members
+      const actualMembers = await this.getGuildMembers(guildId);
+      guilds[guildIndex].memberCount = actualMembers.length + 1; // +1 for the new member
 
       // Add some initial reputation to the guild (realistic small amount)
       guilds[guildIndex].totalReputation += 10;
@@ -421,8 +434,9 @@ export class VerxioService {
         const guildIndex = guilds.findIndex((g: Guild) => g.id === guildId);
 
         if (guildIndex !== -1) {
-          // Decrease member count
-          guilds[guildIndex].memberCount = Math.max(0, guilds[guildIndex].memberCount - 1);
+          // Update member count by counting actual remaining members
+          const actualMembers = await this.getGuildMembers(guildId);
+          guilds[guildIndex].memberCount = Math.max(0, actualMembers.length - 1); // -1 for the leaving member
 
           // Remove some reputation (small amount)
           guilds[guildIndex].totalReputation = Math.max(0, guilds[guildIndex].totalReputation - 5);
@@ -558,6 +572,31 @@ export class VerxioService {
   // Get multiplier for current tier
   getMultiplierForPoints(points: number): number {
     return this.getTierByPoints(points).multiplier;
+  }
+
+  // Utility function to sync all guild member counts with actual membership data
+  async syncAllGuildMemberCounts(): Promise<void> {
+    try {
+      const savedGuilds = localStorage.getItem('verxio_guilds');
+      if (!savedGuilds) return;
+
+      const guilds = JSON.parse(savedGuilds);
+      let hasChanges = false;
+
+      for (let i = 0; i < guilds.length; i++) {
+        const actualMembers = await this.getGuildMembers(guilds[i].id);
+        if (guilds[i].memberCount !== actualMembers.length) {
+          guilds[i].memberCount = actualMembers.length;
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        localStorage.setItem('verxio_guilds', JSON.stringify(guilds));
+      }
+    } catch (error) {
+      console.error('Failed to sync guild member counts:', error);
+    }
   }
 
   // Update guild reputation and member contribution

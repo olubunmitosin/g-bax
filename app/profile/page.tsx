@@ -9,6 +9,7 @@ import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useVerxioStore } from '@/stores/verxioStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useHoneycombStore } from '@/stores/honeycombStore';
+import { useVerxioIntegration } from '@/hooks/useVerxioIntegration';
 import { formatNumber, getLevelFromExperience, getExperienceProgress } from '@/utils/gameHelpers';
 import LoyaltyDashboard from '@/components/ui/LoyaltyDashboard';
 
@@ -18,6 +19,9 @@ export default function ProfilePage() {
   const { playerLoyalty, playerGuild } = useVerxioStore();
   const { solBalance } = useWalletStore();
   const { playerExperience, playerLevel } = useHoneycombStore();
+
+  // Initialize Verxio integration
+  useVerxioIntegration();
 
   if (!player) {
     return (

@@ -29,16 +29,27 @@ export default function SolanaWalletProvider({ children }: SolanaWalletProviderP
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
+      new SolflareWalletAdapter({ timeout: 3000 }), // Add timeout to reduce detection issues
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
     ],
     []
   );
 
+  // Error handler to suppress wallet detection warnings
+  const onError = (error: any) => {
+    // Suppress specific wallet detection warnings
+    if (error?.message?.includes('solflare-detect-metamask') ||
+      error?.message?.includes('Unknown response id')) {
+      return; // Silently ignore these warnings
+    }
+    // Log other errors for debugging
+    console.error('Wallet error:', error);
+  };
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect onError={onError}>
         <WalletModalProvider>
           {children}
         </WalletModalProvider>

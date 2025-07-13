@@ -165,11 +165,11 @@ export const useVerxioStore = create<VerxioState>()(
 
           try {
             set({ isLoadingLoyalty: true });
-            const loyalty = await verxioService.getPlayerLoyalty(playerPublicKey);
-            set({
-              playerLoyalty: loyalty,
-              isLoadingLoyalty: false
-            });
+
+            // Refresh both loyalty and guild data to ensure consistency
+            await get().forceRefreshGuildData(playerPublicKey);
+
+            set({ isLoadingLoyalty: false });
           } catch (error) {
             set({ isLoadingLoyalty: false });
           }

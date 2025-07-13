@@ -4,13 +4,12 @@ import React, { useState } from 'react';
 import { Card, CardBody, CardHeader } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Switch } from '@heroui/switch';
-import { Slider } from '@heroui/slider';
-import { Select, SelectItem } from '@heroui/select';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@heroui/modal';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useGameStore, resetGameStore } from '@/stores/gameStore';
 import { useVerxioStore, resetVerxioStore } from '@/stores/verxioStore';
 import { useHoneycombStore, resetHoneycombStore } from '@/stores/honeycombStore';
+import { ThemeSwitch } from '@/components/theme-switch';
 
 export default function SettingsPage() {
   const { player } = usePlayerSync();
@@ -19,33 +18,27 @@ export default function SettingsPage() {
   const { isOpen: isExportErrorModalOpen, onOpen: onExportErrorModalOpen, onClose: onExportErrorModalClose } = useDisclosure();
   const [exportedFileName, setExportedFileName] = useState('');
 
-  // Game settings state
-  const [gameSettings, setGameSettings] = useState({
-    graphicsQuality: 'medium',
-    showNotifications: true,
-    autoSave: true,
-    showTutorials: true,
-    showAnimations: true,
-  });
-
-  // UI settings state
-  const [uiSettings, setUISettings] = useState({
-    theme: 'dark',
-    fontSize: 'medium',
-    compactMode: false,
-    showTooltips: true,
+  // Game settings state (only functional settings)
+  const [gameSettings, setGameSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('g-bax-game-settings');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
+      }
+    }
+    return {
+      showNotifications: true,
+      autoSave: true,
+    };
   });
 
   const handleGameSettingChange = (key: string, value: any) => {
-    setGameSettings(prev => ({ ...prev, [key]: value }));
+    const newSettings = { ...gameSettings, [key]: value };
+    setGameSettings(newSettings);
     // Save to localStorage
-    localStorage.setItem('g-bax-game-settings', JSON.stringify({ ...gameSettings, [key]: value }));
-  };
-
-  const handleUISettingChange = (key: string, value: any) => {
-    setUISettings(prev => ({ ...prev, [key]: value }));
-    // Save to localStorage
-    localStorage.setItem('g-bax-ui-settings', JSON.stringify({ ...uiSettings, [key]: value }));
+    localStorage.setItem('g-bax-game-settings', JSON.stringify(newSettings));
   };
 
   const handleResetProgress = () => {
@@ -140,7 +133,6 @@ export default function SettingsPage() {
         localStorage: localStorageData,
         settings: {
           gameSettings,
-          uiSettings,
         },
       };
 
@@ -175,146 +167,58 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Game Settings */}
-          <Card>
-            <CardHeader>
-              <h3 className="text-xl font-bold">🎮 Game Settings</h3>
-            </CardHeader>
-            <CardBody className="space-y-6">
-              {/* Graphics Settings */}
-              <div>
-                <h4 className="font-semibold mb-3">Graphics</h4>
-                <div className="space-y-4">
+        {/* Game Settings */}
+        <Card>
+          <CardHeader>
+            <h3 className="text-xl font-bold">Game Settings</h3>
+          </CardHeader>
+          <CardBody className="space-y-6">
+            <div>
+              <h4 className="font-semibold mb-3">Gameplay Preferences</h4>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
                   <div>
-                    <span className="block mb-2">Graphics Quality</span>
-                    <Select
-                      selectedKeys={[gameSettings.graphicsQuality]}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        handleGameSettingChange('graphicsQuality', value);
-                      }}
-                    >
-                      <SelectItem key="low">Low</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="high">High</SelectItem>
-                      <SelectItem key="ultra">Ultra</SelectItem>
-                    </Select>
+                    <span className="font-medium">Show Notifications</span>
+                    <p className="text-sm text-default-600">Display notifications for mining, crafting, and mission progress</p>
                   </div>
+                  <Switch
+                    isSelected={gameSettings.showNotifications}
+                    onValueChange={(value) => handleGameSettingChange('showNotifications', value)}
+                  />
                 </div>
-              </div>
 
-              {/* Gameplay Settings */}
-              <div>
-                <h4 className="font-semibold mb-3">Gameplay</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Show Notifications</span>
-                    <Switch
-                      isSelected={gameSettings.showNotifications}
-                      onValueChange={(value) => handleGameSettingChange('showNotifications', value)}
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span>Auto-Save</span>
-                    <Switch
-                      isSelected={gameSettings.autoSave}
-                      onValueChange={(value) => handleGameSettingChange('autoSave', value)}
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span>Show Tutorials</span>
-                    <Switch
-                      isSelected={gameSettings.showTutorials}
-                      onValueChange={(value) => handleGameSettingChange('showTutorials', value)}
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span>UI Animations</span>
-                    <Switch
-                      isSelected={gameSettings.showAnimations}
-                      onValueChange={(value) => handleGameSettingChange('showAnimations', value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* UI Settings */}
-          <Card>
-            <CardHeader>
-              <h3 className="text-xl font-bold">🎨 Interface Settings</h3>
-            </CardHeader>
-            <CardBody className="space-y-6">
-              {/* Appearance */}
-              <div>
-                <h4 className="font-semibold mb-3">Appearance</h4>
-                <div className="space-y-4">
+                <div className="flex justify-between items-center">
                   <div>
-                    <span className="block mb-2">Theme</span>
-                    <Select
-                      selectedKeys={[uiSettings.theme]}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        handleUISettingChange('theme', value);
-                      }}
-                    >
-                      <SelectItem key="light">Light</SelectItem>
-                      <SelectItem key="dark">Dark</SelectItem>
-                      <SelectItem key="auto">Auto</SelectItem>
-                    </Select>
+                    <span className="font-medium">Auto-Save Progress</span>
+                    <p className="text-sm text-default-600">Automatically save your game progress every 30 seconds</p>
                   </div>
-
-                  <div>
-                    <span className="block mb-2">Font Size</span>
-                    <Select
-                      selectedKeys={[uiSettings.fontSize]}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        handleUISettingChange('fontSize', value);
-                      }}
-                    >
-                      <SelectItem key="small">Small</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="large">Large</SelectItem>
-                    </Select>
-                  </div>
+                  <Switch
+                    isSelected={gameSettings.autoSave}
+                    onValueChange={(value) => handleGameSettingChange('autoSave', value)}
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Interface Options */}
-              <div>
-                <h4 className="font-semibold mb-3">Interface</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Compact Mode</span>
-                    <Switch
-                      isSelected={uiSettings.compactMode}
-                      onValueChange={(value) => handleUISettingChange('compactMode', value)}
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span>Show Tooltips</span>
-                    <Switch
-                      isSelected={uiSettings.showTooltips}
-                      onValueChange={(value) => handleUISettingChange('showTooltips', value)}
-                    />
-                  </div>
+            <div>
+              <h4 className="font-semibold mb-3">Theme</h4>
+              <p className="text-sm text-default-600 mb-4">
+                Choose your preferred color theme. Changes apply immediately across the entire application.
+              </p>
+              <div className="bg-default-100 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Toggle between light and dark theme</span>
+                  <ThemeSwitch />
                 </div>
               </div>
-            </CardBody>
-          </Card>
-        </div>
+            </div>
+          </CardBody>
+        </Card>
 
         {/* Data Management */}
         <Card className="mt-6">
           <CardHeader>
-            <h3 className="text-xl font-bold">💾 Data Management</h3>
+            <h3 className="text-xl font-bold">Data Management</h3>
           </CardHeader>
           <CardBody>
             <div className="grid md:grid-cols-2 gap-6">
@@ -352,7 +256,7 @@ export default function SettingsPage() {
         {/* About */}
         <Card className="mt-6">
           <CardHeader>
-            <h3 className="text-xl font-bold">ℹ️ About G-Bax</h3>
+            <h3 className="text-xl font-bold">About G-Bax</h3>
           </CardHeader>
           <CardBody>
             <div className="grid md:grid-cols-2 gap-6">
@@ -401,7 +305,7 @@ export default function SettingsPage() {
                 <li>All inventory items and resources</li>
                 <li>Mission progress and achievements</li>
                 <li>Loyalty points and guild membership</li>
-                <li>All game settings and preferences</li>
+                <li>Game settings and preferences</li>
               </ul>
               <div className="bg-danger-50 border border-danger-200 rounded-lg p-3">
                 <p className="text-danger-600 text-sm font-medium">
@@ -459,7 +363,7 @@ export default function SettingsPage() {
                   <li>Complete inventory and resources</li>
                   <li>Mission progress and achievements</li>
                   <li>Loyalty points and guild data</li>
-                  <li>Game and UI settings</li>
+                  <li>Game settings and preferences</li>
                 </ul>
               </div>
             </div>

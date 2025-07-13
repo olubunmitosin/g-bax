@@ -65,6 +65,8 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
   const tierRange = currentTier.maxPoints - currentTier.minPoints;
   const tierProgress = tierRange === Infinity ? 100 : (progressInTier / tierRange) * 100;
 
+
+
   return (
     <Card className={`w-80 ${className}`}>
       <CardHeader className="flex justify-between items-center">

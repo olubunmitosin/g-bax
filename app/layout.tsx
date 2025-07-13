@@ -35,7 +35,24 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="en">
-      <head />
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Suppress specific wallet adapter warnings
+              const originalWarn = console.warn;
+              console.warn = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('solflare-detect-metamask') ||
+                    message.includes('Unknown response id')) {
+                  return; // Suppress these specific warnings
+                }
+                originalWarn.apply(console, args);
+              };
+            `,
+          }}
+        />
+      </head>
       <body
         className={clsx(
           "min-h-screen text-foreground bg-background font-sans antialiased",

@@ -194,14 +194,14 @@ export default function GuildsPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Level Progress</span>
-                          <span>Level {playerGuild.level}</span>
+                          <span>Level {currentGuild.level}</span>
                         </div>
                         <Progress
-                          value={Math.min(100, (playerGuild.totalReputation % 1000) / 10)}
+                          value={Math.min(100, (currentGuild.totalReputation % 1000) / 10)}
                           color="primary"
                         />
                         <p className="text-xs text-default-500 mt-1">
-                          {1000 - (playerGuild.totalReputation % 1000)} reputation to next level
+                          {1000 - (currentGuild.totalReputation % 1000)} reputation to next level
                         </p>
                       </div>
 

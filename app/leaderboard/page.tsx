@@ -232,7 +232,6 @@ export default function LeaderboardPage() {
         <Card className="mt-8">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🏛️</span>
               <h3 className="text-xl font-bold">Guild Rankings</h3>
             </div>
           </CardHeader>
@@ -294,7 +293,7 @@ export default function LeaderboardPage() {
           <CardBody>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold mb-2">🏆 How Rankings Work</h4>
+                <h4 className="font-semibold mb-2">How Rankings Work</h4>
                 <ul className="text-sm text-default-600 space-y-1">
                   <li>• Rankings update in real-time as you play</li>
                   <li>• Loyalty points earned through all activities</li>
@@ -304,7 +303,7 @@ export default function LeaderboardPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">🎯 Climbing the Ranks</h4>
+                <h4 className="font-semibold mb-2">Climbing the Ranks</h4>
                 <ul className="text-sm text-default-600 space-y-1">
                   <li>• Complete missions for bonus points</li>
                   <li>• Join guilds for multiplier bonuses</li>
