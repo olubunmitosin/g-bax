@@ -67,19 +67,35 @@ export default function InventoryInterface({
 
   const handleUseItem = () => {
     if (selectedItem && onUseItem) {
-      // Use the first item in the stack with the selected quantity
-      const firstItem = selectedItem.items[0];
       const quantityToUse = Math.min(dropQuantity, selectedItem.totalQuantity);
-      onUseItem(firstItem.id, quantityToUse);
+      let remainingQuantity = quantityToUse;
+
+      // Use items from the stack, starting with the first item
+      for (const item of selectedItem.items) {
+        if (remainingQuantity <= 0) break;
+
+        const useFromThisItem = Math.min(remainingQuantity, item.quantity);
+        onUseItem(item.id, useFromThisItem);
+        remainingQuantity -= useFromThisItem;
+      }
+
       onModalClose();
     }
   };
 
   const handleDropItem = () => {
     if (selectedItem && onDropItem) {
-      // Drop from the first available stack
-      const firstItem = selectedItem.items[0];
-      onDropItem(firstItem.id, dropQuantity);
+      let remainingQuantity = dropQuantity;
+
+      // Drop items from the stack, starting with the first item
+      for (const item of selectedItem.items) {
+        if (remainingQuantity <= 0) break;
+
+        const dropFromThisItem = Math.min(remainingQuantity, item.quantity);
+        onDropItem(item.id, dropFromThisItem);
+        remainingQuantity -= dropFromThisItem;
+      }
+
       onModalClose();
     }
   };

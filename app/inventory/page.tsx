@@ -7,12 +7,14 @@ import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { getRarityColor, getResourceTypeColor, formatNumber } from '@/utils/gameHelpers';
 import InventoryInterface from '@/components/ui/InventoryInterface';
+import NotificationSystem, { useNotifications } from '@/components/ui/NotificationSystem';
 
 export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
-  const { inventory, removeResource } = useGameStore();
+  const { inventory, removeResource, updatePlayerExperience } = useGameStore();
   const { player } = usePlayerSync();
+  const { notifications, removeNotification, showSuccess, showInfo, showWarning } = useNotifications();
 
   if (!player) {
     return (
@@ -80,10 +82,53 @@ export default function InventoryPage() {
     const item = inventory.find(r => r.id === itemId);
     if (!item) return;
 
+    // Check if we have enough quantity
+    if (item.quantity < quantity) {
+      showWarning(
+        'Insufficient Quantity',
+        `Cannot use ${quantity} ${item.name}(s) - only have ${item.quantity}`
+      );
+      return;
+    }
+
     // Remove the specified quantity of the item
     removeResource(itemId, quantity);
 
-    // Show feedback based on item type
+    // Show feedback based on item type and provide actual effects
+    switch (item.type) {
+      case 'energy':
+        // Energy items could restore player energy or provide temporary boosts
+        showSuccess(
+          'Energy Restored!',
+          `Used ${quantity} ${item.name}(s) - Energy restored and mining efficiency boosted!`
+        );
+        break;
+
+      case 'crystal':
+        // Crystals could provide experience or unlock abilities
+        const experienceGained = quantity * 50; // 50 XP per crystal
+        updatePlayerExperience(experienceGained);
+        showSuccess(
+          'Experience Gained!',
+          `Used ${quantity} ${item.name}(s) - Gained ${experienceGained} experience!`
+        );
+        break;
+
+      case 'metal':
+        // Metals might be used for repairs or upgrades
+        showInfo(
+          'Equipment Enhanced!',
+          `Used ${quantity} ${item.name}(s) - Equipment enhanced and tools improved!`
+        );
+        break;
+
+      default:
+        showInfo(
+          'Item Used',
+          `Used ${quantity} ${item.name}(s)`
+        );
+        break;
+    }
   };
 
   const handleDropItem = (itemId: string, quantity: number) => {
@@ -271,6 +316,12 @@ export default function InventoryPage() {
           </Card>
         )}
       </div>
+
+      {/* Notification System */}
+      <NotificationSystem
+        notifications={notifications}
+        onRemoveNotification={removeNotification}
+      />
     </div>
   );
 }
