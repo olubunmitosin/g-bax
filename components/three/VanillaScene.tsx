@@ -8,6 +8,7 @@ import { SpaceGenerator } from '@/utils/spaceGeneration';
 import { SpaceObjectManager } from '@/utils/spaceObjectManager';
 import { GameSystemsManager } from '@/systems/gameSystemsManager';
 import MiningInterface from '@/components/ui/MiningInterface';
+import CraftingInterface from '@/components/ui/CraftingInterface';
 import InventoryInterface from '@/components/ui/InventoryInterface';
 import NotificationSystem, { useNotifications } from '@/components/ui/NotificationSystem';
 import LoyaltyDashboard from '@/components/ui/LoyaltyDashboard';
@@ -18,6 +19,8 @@ import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useVerxioIntegration } from '@/hooks/useVerxioIntegration';
 import { useHoneycombIntegration } from '@/hooks/useHoneycombIntegration';
 import type { SpaceObject } from '@/types/game';
+import type { MiningOperation } from '@/systems/miningSystem';
+import type { CraftingOperation } from '@/systems/craftingSystem';
 
 interface VanillaSceneProps {
   className?: string;
@@ -39,6 +42,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
   const [selectedObject, setSelectedObject] = useState<SpaceObject | null>(null);
   const [sectorInfo, setSectorInfo] = useState<{ name: string; objectCount: number } | null>(null);
   const [showInventory, setShowInventory] = useState(false);
+  const [showCrafting, setShowCrafting] = useState(false);
   const [showLoyalty, setShowLoyalty] = useState(false);
   const [showGuilds, setShowGuilds] = useState(false);
 
@@ -479,9 +483,67 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     gameSystemsRef.current.cancelMining(operationId);
   };
 
+  // Crafting functions
+  const handleStartCrafting = (recipeId: string) => {
+    if (!player || !gameSystemsRef.current) {
+      return;
+    }
+
+    // Check if player has required resources
+    const recipe = gameSystemsRef.current.crafting.getRecipe(recipeId);
+    if (!recipe) return;
+
+    const canCraft = gameSystemsRef.current.crafting.canCraftRecipe(recipe, inventory);
+    if (!canCraft.canCraft) {
+      showError('Insufficient Resources', 'You don\'t have enough resources to craft this item.');
+      return;
+    }
+
+    // Remove required resources from inventory
+    recipe.requiredResources.forEach(req => {
+      removeResource(req.resourceType, req.quantity);
+    });
+
+    // Start crafting
+    const success = gameSystemsRef.current.startCrafting(player.id, recipeId, inventory);
+
+    if (success) {
+      showInfo('Crafting Started', `Started crafting ${recipe.name}. This will take ${Math.ceil(recipe.craftingTime / 1000)} seconds.`);
+    } else {
+      showError('Crafting Failed', 'Unable to start crafting operation.');
+      // Restore resources if crafting failed
+      recipe.requiredResources.forEach(req => {
+        addResource({
+          id: `${req.resourceType}_${Date.now()}`,
+          name: req.resourceType.charAt(0).toUpperCase() + req.resourceType.slice(1),
+          type: req.resourceType as 'crystal' | 'metal' | 'energy',
+          quantity: req.quantity,
+          rarity: 'common',
+        });
+      });
+    }
+  };
+
+  const handleCancelCrafting = (operationId: string) => {
+    if (!gameSystemsRef.current) return;
+
+    gameSystemsRef.current.cancelCrafting(operationId);
+    showInfo('Crafting Cancelled', 'Crafting operation has been cancelled.');
+  };
+
   // Get active mining operations
   const activeMiningOperations = player && gameSystemsRef.current
     ? gameSystemsRef.current.getPlayerMiningOperations(player.id)
+    : [];
+
+  // Get active crafting operations
+  const activeCraftingOperations = player && gameSystemsRef.current
+    ? gameSystemsRef.current.getPlayerCraftingOperations(player.id)
+    : [];
+
+  // Get available crafting recipes
+  const availableRecipes = player && gameSystemsRef.current
+    ? gameSystemsRef.current.getAvailableRecipes(player.level || 1)
     : [];
 
   // Inventory action handlers
@@ -653,6 +715,12 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
           {showInventory ? 'Hide' : 'Show'} Inventory
         </button>
         <button
+          onClick={() => setShowCrafting(!showCrafting)}
+          className="bg-orange-600/30 backdrop-blur-sm border border-orange-400/20 rounded-lg px-4 py-2 text-white hover:bg-orange-600/50 transition-colors"
+        >
+          {showCrafting ? 'Hide' : 'Show'} Crafting
+        </button>
+        <button
           onClick={() => setShowLoyalty(!showLoyalty)}
           className="bg-purple-600/30 backdrop-blur-sm border border-purple-400/20 rounded-lg px-4 py-2 text-white hover:bg-purple-600/50 transition-colors"
         >
@@ -674,6 +742,20 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
             onUseItem={handleUseItem}
             onDropItem={handleDropItem}
             onClose={() => setShowInventory(false)}
+          />
+        </div>
+      )}
+
+      {/* Crafting Interface */}
+      {showCrafting && (
+        <div className="absolute bottom-20 right-[520px] z-10">
+          <CraftingInterface
+            availableRecipes={availableRecipes}
+            inventory={inventory}
+            activeCraftingOperations={activeCraftingOperations}
+            onStartCrafting={handleStartCrafting}
+            onCancelCrafting={handleCancelCrafting}
+            onClose={() => setShowCrafting(false)}
           />
         </div>
       )}
