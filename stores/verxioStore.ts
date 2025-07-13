@@ -25,7 +25,7 @@ export interface VerxioState {
   loyaltyTiers: LoyaltyTier[];
 
   // Actions
-  initializeVerxio: (apiKey: string, environment: 'development' | 'production') => Promise<void>;
+  initializeVerxio: (apiKey?: string, environment?: 'development' | 'production') => Promise<void>;
   loadPlayerLoyalty: (playerPublicKey: PublicKey) => Promise<void>;
   awardLoyaltyPoints: (playerPublicKey: PublicKey, points: number, reason: string) => Promise<void>;
   loadAvailableGuilds: () => Promise<void>;
@@ -57,7 +57,7 @@ export const useVerxioStore = create<VerxioState>()(
         loyaltyTiers: [],
 
         // Initialize Verxio service
-        initializeVerxio: async (apiKey: string, environment: 'development' | 'production') => {
+        initializeVerxio: async (apiKey?: string, environment: 'development' | 'production' = 'development') => {
           set({ isInitializing: true });
 
           try {

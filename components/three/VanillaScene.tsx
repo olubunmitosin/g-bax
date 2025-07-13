@@ -16,6 +16,7 @@ import { SaveStatus } from '@/components/ui/SaveStatus';
 import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useVerxioIntegration } from '@/hooks/useVerxioIntegration';
+import { useHoneycombIntegration } from '@/hooks/useHoneycombIntegration';
 import type { SpaceObject } from '@/types/game';
 
 interface VanillaSceneProps {
@@ -53,6 +54,38 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     playerLoyalty,
     playerGuild
   } = useVerxioIntegration();
+
+  // Honeycomb integration for missions
+  const { updateMissionProgress, getActiveMission } = useHoneycombIntegration();
+
+  // Helper function to track mission progress based on activity
+  const trackMissionProgress = async (activityType: string, amount: number = 1) => {
+    const activeMission = getActiveMission();
+    if (!activeMission || !player) return;
+
+    // Check if the active mission matches the activity type
+    if (activeMission.type.toLowerCase() === activityType.toLowerCase()) {
+      try {
+        const newProgress = Math.min(activeMission.progress + amount, activeMission.maxProgress);
+        await updateMissionProgress(activeMission.id, newProgress);
+
+        // Check if mission is completed
+        if (newProgress >= activeMission.maxProgress) {
+          showSuccess(
+            'Mission Complete!',
+            `Completed "${activeMission.title}" and earned ${activeMission.rewards.experience} XP and ${activeMission.rewards.credits} credits!`
+          );
+        } else {
+          showInfo(
+            'Mission Progress',
+            `${activeMission.title}: ${newProgress}/${activeMission.maxProgress}`
+          );
+        }
+      } catch (error) {
+        // Handle error silently
+      }
+    }
+  };
 
   // Notification system
   const { notifications, removeNotification, showSuccess, showInfo, showWarning, showError } = useNotifications();
@@ -117,6 +150,10 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       },
       onExperienceGained: (experience) => {
         updatePlayerExperience(experience);
+      },
+      onMissionProgress: (missionType: string, progress: number) => {
+        // Track mission progress based on activity type
+        trackMissionProgress(missionType, progress);
       },
       onMiningComplete: async (result) => {
         if (result.success) {

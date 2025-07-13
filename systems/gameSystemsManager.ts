@@ -15,6 +15,7 @@ export interface GameSystemsCallbacks {
   onExperienceGained?: (experience: number) => void;
   onMiningComplete?: (result: MiningResult) => void;
   onCraftingComplete?: (result: CraftingResult) => void;
+  onMissionProgress?: (missionType: string, progress: number) => void;
 }
 
 export class GameSystemsManager {
@@ -94,6 +95,11 @@ export class GameSystemsManager {
           this.callbacks.onMiningComplete(result);
         }
 
+        // Track mission progress for mining
+        if (this.callbacks.onMissionProgress) {
+          this.callbacks.onMissionProgress('mining', 1);
+        }
+
       }
     });
   }
@@ -124,6 +130,11 @@ export class GameSystemsManager {
         // Notify crafting completion
         if (this.callbacks.onCraftingComplete) {
           this.callbacks.onCraftingComplete(result);
+        }
+
+        // Track mission progress for crafting
+        if (this.callbacks.onMissionProgress) {
+          this.callbacks.onMissionProgress('crafting', 1);
         }
 
       }

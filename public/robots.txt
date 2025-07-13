@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Allow crawling of main pages
+Allow: /how-to-play
+Allow: /missions
+Allow: /inventory
+Allow: /guilds
+Allow: /profile
+Allow: /leaderboard
+Allow: /settings
+
+# Disallow admin or sensitive areas (if any)
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+
+# Sitemap location (if you add one)
+Sitemap: https://your-domain.netlify.app/sitemap.xml

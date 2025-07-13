@@ -29,11 +29,10 @@ export function useVerxioIntegration() {
   // Initialize Verxio when app starts
   useEffect(() => {
     if (!verxioService && !isInitializing) {
-      // In production, these would come from environment variables
-      const apiKey = process.env.NEXT_PUBLIC_VERXIO_API_KEY || 'demo-api-key';
+      // Verxio doesn't require an API key
       const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
-      initializeVerxio(apiKey, environment as 'development' | 'production');
+      initializeVerxio(undefined, environment as 'development' | 'production');
     }
   }, [verxioService, isInitializing, initializeVerxio]);
 

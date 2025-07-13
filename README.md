@@ -12,7 +12,7 @@
 [![Three.js](https://img.shields.io/badge/Three.js-3D%20Graphics-orange?style=flat-square&logo=three.js)](https://threejs.org/)
 [![HeroUI](https://img.shields.io/badge/HeroUI-Design%20System-pink?style=flat-square)](https://heroui.com/)
 
-[🎮 Play Now](https://g-bax.vercel.app) • [📚 Documentation](#documentation) • [🤝 Contributing](#contributing) • [💬 Discord](https://discord.gg/g-bax)
+[🎮 Play Now](https://g-bax.vercel.app) • [📚 Documentation](#documentation) • [🤝 Contributing](#contributing)
 
 </div>
 
@@ -43,14 +43,14 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
 ### Blockchain
 - **Network**: Solana (Mainnet/Devnet)
 - **Wallet Integration**: Multiple wallet support (Phantom, Solflare, Backpack)
-- **Game Protocol**: Honeycomb Protocol for on-chain game mechanics
-- **Loyalty System**: Verxio for player rewards and progression
+- **Game Protocol**: Honeycomb Protocol for on-chain game mechanics (no API key required)
+- **Loyalty System**: Verxio for player rewards and progression (no API key required)
 
 ### Development
 - **Build Tool**: Turbopack for fast development
 - **Package Manager**: npm
 - **Code Quality**: ESLint + TypeScript strict mode
-- **Deployment**: Vercel with automatic CI/CD
+- **Deployment**: Netlify with static export and automatic CI/CD
 
 ## 🚀 Quick Start
 
@@ -65,7 +65,7 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/g-bax.git
+   git clone https://github.com/olubunmitosin/g-bax.git
    cd g-bax
    ```
 
@@ -79,12 +79,14 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
    cp .env.example .env.local
    ```
 
-   Configure your environment variables:
+   Configure your environment variables in `.env.local`:
    ```env
    NEXT_PUBLIC_SOLANA_NETWORK=devnet
-   NEXT_PUBLIC_VERXIO_API_KEY=your_verxio_api_key
-   NEXT_PUBLIC_HONEYCOMB_API_KEY=your_honeycomb_api_key
    ```
+
+   **Note**: The `.env.local` file has been created with default values. Both blockchain integrations work out of the box:
+   - **Honeycomb Protocol**: No API key required - works automatically
+   - **Verxio**: No API key required - works out of the box
 
 4. **Start the development server**
    ```bash
@@ -175,8 +177,6 @@ npm run type-check   # Run TypeScript compiler check
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `NEXT_PUBLIC_SOLANA_NETWORK` | Solana network (mainnet/devnet) | Yes |
-| `NEXT_PUBLIC_VERXIO_API_KEY` | Verxio loyalty system API key | Yes |
-| `NEXT_PUBLIC_HONEYCOMB_API_KEY` | Honeycomb protocol API key | Yes |
 
 ## 🏗️ Architecture
 
@@ -197,10 +197,47 @@ npm run type-check   # Run TypeScript compiler check
 - **Camera Controls**: Smooth navigation and interaction
 - **Performance**: Optimized rendering for smooth gameplay
 
+## 🚀 Deployment
+
+### Netlify Deployment
+
+This project is configured for easy deployment on Netlify:
+
+1. **Quick Deploy**:
+   ```bash
+   # Connect your GitHub repo to Netlify
+   # Build settings are auto-configured via netlify.toml
+   ```
+
+2. **Environment Variables**: Set in Netlify dashboard:
+   - `NEXT_PUBLIC_SOLANA_NETWORK=devnet`
+
+3. **Build Configuration**:
+   - Build command: `npm run build`
+   - Publish directory: `out`
+   - Node version: 18
+
+For detailed deployment instructions, see [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
+For a complete deployment checklist, see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+
+### Alternative Deployments
+
+The project can also be deployed on:
+- **Vercel**: Change `output: 'export'` to `output: 'standalone'` in next.config.js
+- **GitHub Pages**: Use the static export as-is
+- **Any Static Host**: Deploy the `out/` directory after running `npm run build`
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Kesty Vickky (Tosin Victor Olubunmi)** - Sole Author & Lead Developer
+- GitHub: [@olubunmitosin](https://github.com/olubunmitosin)
+- Repository: [olubunmitosin/g-bax](https://github.com/olubunmitosin/g-bax)
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed contribution information.
 
 ## 🙏 Acknowledgments
 
@@ -215,8 +252,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ by Kesty Vickky**
+**Built with ❤️ by Kesty Vickky (Tosin Victor Olubunmi)**
 
-[⭐ Star us on GitHub](https://github.com/olubunmitosin/g-bax) • [🐛 Report Bug](https://github.com/olubunmitosin/g-bax/issues) • [💡 Request Feature](https://github.com/olubunmitosin/g-bax/issues)
+[⭐ Star me on GitHub](https://github.com/olubunmitosin/g-bax) • [🐛 Report Bug](https://github.com/olubunmitosin/g-bax/issues) • [💡 Request Feature](https://github.com/olubunmitosin/g-bax/issues)
 
 </div>

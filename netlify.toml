@@ -1,0 +1,62 @@
+[build]
+# Build command for static export
+command = "npm run build"
+
+# Directory to publish (Next.js static export output)
+publish = "out"
+
+# Node.js version
+environment = { NODE_VERSION = "18" }
+
+[build.environment]
+# Next.js specific settings
+NEXT_TELEMETRY_DISABLED = "1"
+NPM_FLAGS = "--production=false"
+
+# Netlify Functions (if needed for API routes)
+[functions]
+directory = "netlify/functions"
+
+# Headers for security and performance
+[[headers]]
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-XSS-Protection = "1; mode=block"
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache static assets
+[[headers]]
+for = "/static/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/_next/static/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirects for SPA routing
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+conditions = { Role = ["admin"] }
+
+# Handle Next.js routing
+[[redirects]]
+from = "/api/*"
+to = "/.netlify/functions/:splat"
+status = 200
+
+# Fallback for client-side routing
+[[redirects]]
+from = "/*"
+to = "/404.html"
+status = 404
+
+# Environment variables (these will be set in Netlify dashboard)
+# NEXT_PUBLIC_SOLANA_NETWORK
+# NEXT_PUBLIC_HONEYCOMB_API_KEY

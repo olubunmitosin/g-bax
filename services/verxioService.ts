@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 
 export interface VerxioConfig {
-  apiKey: string;
+  apiKey?: string; // Optional - Verxio doesn't require API key
   environment: 'development' | 'production';
   baseUrl?: string;
 }

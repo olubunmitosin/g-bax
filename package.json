@@ -1,11 +1,38 @@
 {
   "name": "g-bax",
   "version": "0.0.1",
+  "description": "A blockchain-powered 3D space exploration and mining game built with Next.js, Three.js, Solana, Honeycomb Protocol, and Verxio",
+  "author": "Kesty Vickky (Tosin Victor Olubunmi) <vickkycodegenius@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/olubunmitosin/g-bax.git"
+  },
+  "homepage": "https://github.com/olubunmitosin/g-bax",
+  "bugs": {
+    "url": "https://github.com/olubunmitosin/g-bax/issues"
+  },
+  "keywords": [
+    "blockchain",
+    "solana",
+    "web3",
+    "gaming",
+    "3d",
+    "threejs",
+    "nextjs",
+    "honeycomb",
+    "verxio",
+    "mining",
+    "space",
+    "exploration"
+  ],
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
     "build": "next build",
+    "build:netlify": "npm run build && npm run export",
+    "export": "next export",
     "start": "next start",
     "lint": "eslint --fix"
   },
