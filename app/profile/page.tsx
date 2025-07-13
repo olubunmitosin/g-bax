@@ -8,7 +8,8 @@ import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useVerxioStore } from '@/stores/verxioStore';
 import { useWalletStore } from '@/stores/walletStore';
-import { formatNumber } from '@/utils/gameHelpers';
+import { useHoneycombStore } from '@/stores/honeycombStore';
+import { formatNumber, getLevelFromExperience, getExperienceProgress } from '@/utils/gameHelpers';
 import LoyaltyDashboard from '@/components/ui/LoyaltyDashboard';
 
 export default function ProfilePage() {
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const { player } = usePlayerSync();
   const { playerLoyalty, playerGuild } = useVerxioStore();
   const { solBalance } = useWalletStore();
+  const { playerExperience, playerLevel } = useHoneycombStore();
 
   if (!player) {
     return (
@@ -36,6 +38,24 @@ export default function ProfilePage() {
   const activeMissions = missions.filter(m => m.status === 'active').length;
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0);
   const uniqueItems = inventory.length;
+
+  // Calculate unified experience from all sources
+  const getUnifiedExperience = () => {
+    // Priority order: Honeycomb experience > Game store experience > Verxio loyalty points as experience
+    if (playerExperience > 0) {
+      return playerExperience; // Honeycomb has the authoritative experience
+    } else if (player.experience > 0) {
+      return player.experience; // Game store experience
+    } else if (playerLoyalty && playerLoyalty.points > 0) {
+      // Convert loyalty points to experience (1 loyalty point = 1 XP)
+      return playerLoyalty.points;
+    }
+    return 0;
+  };
+
+  const unifiedExperience = getUnifiedExperience();
+  const currentLevel = getLevelFromExperience(unifiedExperience);
+  const experienceProgress = getExperienceProgress(unifiedExperience);
 
   // Calculate inventory value
   const inventoryValue = inventory.reduce((total, item) => {
@@ -68,7 +88,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between items-center w-full">
                   <h3 className="text-xl font-bold">Basic Information</h3>
                   <Chip color="success" variant="flat">
-                    Level {player.level}
+                    Level {currentLevel}
                   </Chip>
                 </div>
               </CardHeader>
@@ -85,11 +105,30 @@ export default function ProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-default-500">Current Level</span>
-                      <p className="font-medium">Level {player.level}</p>
+                      <p className="font-medium">Level {currentLevel}</p>
                     </div>
                     <div>
                       <span className="text-sm text-default-500">Experience Points</span>
-                      <p className="font-medium">{formatNumber(player.experience)} XP</p>
+                      <p className="font-medium">{formatNumber(unifiedExperience)} XP</p>
+                      {playerLoyalty && playerLoyalty.points > 0 && unifiedExperience === playerLoyalty.points && (
+                        <p className="text-xs text-default-400">From loyalty points</p>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-sm text-default-500">Level Progress</span>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span>{formatNumber(experienceProgress.experienceInLevel)} XP</span>
+                          <span>{formatNumber(experienceProgress.experienceToNextLevel)} XP to next level</span>
+                        </div>
+                        <Progress
+                          value={experienceProgress.progressPercentage}
+                          color="success"
+                          size="sm"
+                          showValueLabel
+                          formatOptions={{ style: 'percent', maximumFractionDigits: 1 }}
+                        />
+                      </div>
                     </div>
                   </div>
 

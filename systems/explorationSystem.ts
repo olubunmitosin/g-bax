@@ -25,8 +25,7 @@ export class ExplorationSystem {
   private lastPlayerPosition: THREE.Vector3 = new THREE.Vector3();
   private discoveryRadius: number = 5.0; // Distance to discover objects
   private locationRadius: number = 15.0; // Distance to count as new location (increased)
-  private lastNotificationTime: number = 0;
-  private notificationCooldown: number = 2000; // 2 seconds between notifications
+  // Notification system removed per user preference
 
   // Initialize exploration for a player
   initializeExploration(playerId: string): ExplorationProgress {
@@ -62,36 +61,15 @@ export class ExplorationSystem {
     progress.totalDistance += distance;
     this.lastPlayerPosition.copy(newPosition);
 
-    // Only check for discoveries if enough time has passed since last notification
-    const currentTime = Date.now();
-    const timeSinceLastNotification = currentTime - this.lastNotificationTime;
-
-    if (timeSinceLastNotification >= this.notificationCooldown) {
-      // Check for object discoveries
-      const discoveryResult = this.checkObjectDiscovery(playerId, newPosition);
-      if (discoveryResult) {
-        results.push(discoveryResult);
-        this.lastNotificationTime = currentTime;
-      } else {
-        // Only check for location discovery if no object was discovered
-        const locationResult = this.checkLocationDiscovery(playerId, newPosition);
-        if (locationResult) {
-          results.push(locationResult);
-          this.lastNotificationTime = currentTime;
-        }
-      }
+    // Check for discoveries (notifications disabled)
+    const discoveryResult = this.checkObjectDiscovery(playerId, newPosition);
+    if (discoveryResult) {
+      results.push(discoveryResult);
     } else {
-      // Still track discoveries for mission progress, but don't show notifications
-      const discoveryResult = this.checkObjectDiscovery(playerId, newPosition, true);
-      if (discoveryResult) {
-        discoveryResult.message = ''; // No notification message
-        results.push(discoveryResult);
-      } else {
-        const locationResult = this.checkLocationDiscovery(playerId, newPosition, true);
-        if (locationResult) {
-          locationResult.message = ''; // No notification message
-          results.push(locationResult);
-        }
+      // Only check for location discovery if no object was discovered
+      const locationResult = this.checkLocationDiscovery(playerId, newPosition);
+      if (locationResult) {
+        results.push(locationResult);
       }
     }
 
@@ -99,7 +77,7 @@ export class ExplorationSystem {
   }
 
   // Check if player discovered any new objects
-  private checkObjectDiscovery(playerId: string, playerPosition: THREE.Vector3, silent: boolean = false): ExplorationResult | null {
+  private checkObjectDiscovery(playerId: string, playerPosition: THREE.Vector3): ExplorationResult | null {
     const progress = this.explorationProgress.get(playerId);
     if (!progress) return null;
 
@@ -126,7 +104,7 @@ export class ExplorationSystem {
           success: true,
           discoveredObject: spaceObject,
           experience,
-          message: silent ? '' : `Discovered ${spaceObject.name}! (+${experience} XP)`,
+          message: '', // Exploration notifications disabled
         };
       }
     }
@@ -135,7 +113,7 @@ export class ExplorationSystem {
   }
 
   // Check if player discovered a new location
-  private checkLocationDiscovery(playerId: string, playerPosition: THREE.Vector3, silent: boolean = false): ExplorationResult | null {
+  private checkLocationDiscovery(playerId: string, playerPosition: THREE.Vector3): ExplorationResult | null {
     const progress = this.explorationProgress.get(playerId);
     if (!progress) return null;
 
@@ -155,7 +133,7 @@ export class ExplorationSystem {
         success: true,
         newLocation: playerPosition.clone(),
         experience,
-        message: silent ? '' : `New location discovered! (+${experience} XP)`,
+        message: '', // Exploration notifications disabled
       };
     }
 
@@ -259,7 +237,7 @@ export class ExplorationSystem {
       success: true,
       discoveredObject: spaceObject,
       experience,
-      message: `Discovered ${spaceObject.name}! (+${experience} XP)`,
+      message: '', // Exploration notifications disabled
     };
   }
 }

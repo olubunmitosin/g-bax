@@ -182,19 +182,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         updatePlayerExperience(experience);
       },
       onExplorationComplete: (result) => {
-        if (result.success && result.message) {
-          if (result.discoveredObject) {
-            showInfo(
-              'Discovery!',
-              result.message
-            );
-          } else if (result.newLocation) {
-            showInfo(
-              'New Location!',
-              result.message
-            );
-          }
-        }
+        // Exploration notifications removed per user preference
+        // Still track discoveries for mission progress and experience
       },
       onMissionProgress: (missionType: string, progress: number) => {
         // Track mission progress based on activity type

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import { getLevelFromExperience } from '@/utils/gameHelpers';
 
 // Game state types
 export interface Player {
@@ -79,7 +80,16 @@ export const useGameStore = create<GameState>()(
         currentScene: 'menu',
 
         // Actions
-        setPlayer: (player) => set({ player }),
+        setPlayer: (player) => {
+          if (player) {
+            // Ensure level is calculated correctly from experience
+            const correctedLevel = getLevelFromExperience(player.experience);
+            const correctedPlayer = { ...player, level: correctedLevel };
+            set({ player: correctedPlayer });
+          } else {
+            set({ player });
+          }
+        },
 
         updatePlayerPosition: (position) =>
           set((state) => ({
@@ -91,13 +101,13 @@ export const useGameStore = create<GameState>()(
             if (!state.player) return state;
 
             const newExperience = state.player.experience + experienceGained;
-            const newLevel = Math.floor(newExperience / 1000) + 1; // Level up every 1000 XP
+            const newLevel = getLevelFromExperience(newExperience);
 
             return {
               player: {
                 ...state.player,
                 experience: newExperience,
-                level: Math.max(state.player.level, newLevel)
+                level: newLevel
               }
             };
           }),

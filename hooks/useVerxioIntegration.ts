@@ -11,7 +11,7 @@ import { PublicKey } from '@solana/web3.js';
  */
 export function useVerxioIntegration() {
   const { publicKey, connected } = useWallet();
-  const { player } = useGameStore();
+  const { player, updatePlayerExperience } = useGameStore();
 
   const {
     verxioService,
@@ -43,6 +43,14 @@ export function useVerxioIntegration() {
     }
   }, [connected, publicKey, verxioConnected, playerLoyalty, loadPlayerLoyalty]);
 
+  // Sync existing loyalty points with game store experience (one-time sync)
+  useEffect(() => {
+    if (playerLoyalty && player && player.experience === 0 && playerLoyalty.points > 0) {
+      // If player has loyalty points but no game experience, sync them
+      updatePlayerExperience(playerLoyalty.points);
+    }
+  }, [playerLoyalty, player, updatePlayerExperience]);
+
   // Award points for game activities
   const awardPointsForActivity = async (activity: string, basePoints: number) => {
     if (!connected || !publicKey || !verxioConnected) return;
@@ -58,6 +66,9 @@ export function useVerxioIntegration() {
       }
 
       await awardLoyaltyPoints(publicKey, finalPoints, activity);
+
+      // Sync loyalty points with game store experience (1 loyalty point = 1 XP)
+      updatePlayerExperience(finalPoints);
 
       // Also update reputation for certain activities
       if (activity.includes('mining') || activity.includes('crafting')) {

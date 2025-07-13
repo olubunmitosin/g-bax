@@ -3,6 +3,7 @@ import { devtools } from 'zustand/middleware';
 import { HoneycombService, type MissionProgress, type PlayerTrait } from '@/services/honeycombService';
 import type { HoneycombMission } from '@/types/game';
 import { PublicKey } from '@solana/web3.js';
+import { getLevelFromExperience } from '@/utils/gameHelpers';
 
 export interface HoneycombState {
   // Service instance
@@ -305,7 +306,7 @@ export const useHoneycombStore = create<HoneycombState>()(
 
           set(state => {
             const newExperience = state.playerExperience + experience;
-            const newLevel = Math.floor(newExperience / 1000) + 1; // Simple leveling formula
+            const newLevel = getLevelFromExperience(newExperience);
 
             return {
               playerExperience: newExperience,

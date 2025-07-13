@@ -6,6 +6,7 @@ import { Chip } from '@heroui/chip';
 import { Tabs, Tab } from '@heroui/tabs';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useVerxioStore } from '@/stores/verxioStore';
+import { useHoneycombStore } from '@/stores/honeycombStore';
 import { formatNumber } from '@/utils/gameHelpers';
 
 interface LeaderboardEntry {
@@ -22,6 +23,7 @@ export default function LeaderboardPage() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const { player } = usePlayerSync();
   const { playerLoyalty, availableGuilds, playerGuild } = useVerxioStore();
+  const { playerExperience } = useHoneycombStore();
 
 
 
@@ -43,7 +45,16 @@ export default function LeaderboardPage() {
           value = playerLoyalty.reputation || 0;
           break;
         case 'experience':
-          value = player.experience || 0;
+          // Use unified experience calculation
+          if (playerExperience > 0) {
+            value = playerExperience;
+          } else if (player.experience > 0) {
+            value = player.experience;
+          } else if (playerLoyalty && playerLoyalty.points > 0) {
+            value = playerLoyalty.points; // Convert loyalty points to experience
+          } else {
+            value = 0;
+          }
           break;
       }
 

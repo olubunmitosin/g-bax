@@ -6,6 +6,7 @@ import { useHoneycombStore } from '@/stores/honeycombStore';
 import { useGameStore } from '@/stores/gameStore';
 import { PREDEFINED_MISSIONS, getAvailableMissions } from '@/data/missions';
 import { PREDEFINED_TRAITS, getAvailableTraits } from '@/data/traits';
+import { getLevelFromExperience } from '@/utils/gameHelpers';
 
 /**
  * Custom hook to integrate Honeycomb Protocol with wallet and game state
@@ -56,18 +57,19 @@ export function useHoneycombIntegration() {
   // Sync Honeycomb player profile with game store
   useEffect(() => {
     if (playerProfile && publicKey) {
+      const experience = playerProfile.experience || 0;
       const gamePlayer = {
         id: publicKey.toString(),
         name: playerProfile.name || 'Space Explorer',
-        level: playerLevel,
-        experience: playerProfile.experience || 0,
+        level: getLevelFromExperience(experience), // Calculate level from experience
+        experience,
         position: [0, 0, 0] as [number, number, number],
         credits: playerProfile.credits || 1000,
       };
 
       setPlayer(gamePlayer);
     }
-  }, [playerProfile, playerLevel, publicKey, setPlayer]);
+  }, [playerProfile, publicKey, setPlayer]);
 
   // Sync available missions with game store
   useEffect(() => {
