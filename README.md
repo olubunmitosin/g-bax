@@ -12,7 +12,7 @@
 [![Three.js](https://img.shields.io/badge/Three.js-3D%20Graphics-orange?style=flat-square&logo=three.js)](https://threejs.org/)
 [![HeroUI](https://img.shields.io/badge/HeroUI-Design%20System-pink?style=flat-square)](https://heroui.com/)
 
-[🎮 Play Now](https://g-bax.vercel.app) • [📚 Documentation](#documentation) • [🤝 Contributing](#contributing)
+[🎮 Play Now](https://g-bax.netlify.app) • [📚 Documentation](#documentation) • [🤝 Contributing](#contributing)
 
 </div>
 
@@ -241,8 +241,9 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed contribution information.
 
 ## 🙏 Acknowledgments
 
-- **[Honeycomb Protocol](https://honeycomb.gg)**: On-chain game infrastructure
-- **[Verxio](https://verxio.com)**: Loyalty and rewards platform
+- **[Superteam](https://superteam.fun)**: A community of the best talent learning, earning and building in crypto
+- **[Honeycomb Protocol](https://docs.honeycombprotocol.com)**: On-chain game infrastructure
+- **[Verxio](https://verxio.xyz)**: Loyalty and rewards platform
 - **[Solana](https://solana.com)**: High-performance blockchain
 - **[Three.js](https://threejs.org)**: 3D graphics library
 - **[HeroUI](https://heroui.com)**: Modern React UI components
