@@ -13,7 +13,7 @@ import { PREDEFINED_TRAITS, getAvailableTraits } from '@/data/traits';
 export function useHoneycombIntegration() {
   const { connection } = useConnection();
   const { publicKey, connected } = useWallet();
-  
+
   const {
     honeycombService,
     isConnected: honeycombConnected,
@@ -32,6 +32,7 @@ export function useHoneycombIntegration() {
     player,
     missions,
     setMissions,
+    setActiveMission,
     setPlayer,
   } = useGameStore();
 
@@ -40,7 +41,7 @@ export function useHoneycombIntegration() {
     if (connection && !honeycombService && !isInitializing) {
       const rpcUrl = connection.rpcEndpoint;
       const environment = rpcUrl.includes('devnet') ? 'devnet' : 'mainnet-beta';
-      
+
       initializeHoneycomb(rpcUrl, environment);
     }
   }, [connection, honeycombService, isInitializing, initializeHoneycomb]);
@@ -63,7 +64,7 @@ export function useHoneycombIntegration() {
         position: [0, 0, 0] as [number, number, number],
         credits: playerProfile.credits || 1000,
       };
-      
+
       setPlayer(gamePlayer);
     }
   }, [playerProfile, playerLevel, publicKey, setPlayer]);
@@ -78,24 +79,39 @@ export function useHoneycombIntegration() {
 
       // Get available missions based on player level and completed missions
       const availableMissions = getAvailableMissions(player.level, completedMissionIds);
-      
+
       // Convert to game store format and merge with predefined missions
       const gameMissions = PREDEFINED_MISSIONS.map(mission => {
         const playerMission = playerMissions.find(pm => pm.missionId === mission.id);
         const isAvailable = availableMissions.some(am => am.id === mission.id);
-        
+
+        // Check if mission is already completed in game store to preserve status
+        const existingMission = missions.find(m => m.id === mission.id);
+        const isAlreadyCompleted = existingMission?.status === 'completed';
+
         return {
           ...mission,
-          status: playerMission?.completed ? 'completed' : 
-                  playerMission ? 'active' : 
-                  isAvailable ? 'available' : 'locked',
-          progress: playerMission?.progress || 0,
+          status: isAlreadyCompleted ? 'completed' :
+            playerMission?.completed ? 'completed' :
+              playerMission ? 'active' :
+                isAvailable ? 'available' : 'locked',
+          progress: existingMission?.progress ?? playerMission?.progress ?? 0,
         } as const;
       });
 
-      setMissions(gameMissions);
+      // Only update if there are actual changes to prevent unnecessary re-renders
+      const hasChanges = gameMissions.some((newMission, index) => {
+        const existingMission = missions[index];
+        return !existingMission ||
+          existingMission.status !== newMission.status ||
+          existingMission.progress !== newMission.progress;
+      });
+
+      if (hasChanges || missions.length === 0) {
+        setMissions(gameMissions);
+      }
     }
-  }, [honeycombConnected, player, playerMissions, setMissions]);
+  }, [honeycombConnected, player, playerMissions, missions, setMissions]);
 
   // Periodic connection check
   useEffect(() => {
@@ -116,15 +132,21 @@ export function useHoneycombIntegration() {
 
     try {
       await useHoneycombStore.getState().startMission(publicKey, missionId);
-      
-      // Update game store
+
+      // Update game store missions array
       const updatedMissions = missions.map(mission =>
-        mission.id === missionId 
+        mission.id === missionId
           ? { ...mission, status: 'active' as const }
           : mission
       );
       setMissions(updatedMissions);
-      
+
+      // Set the active mission explicitly
+      const activeMission = updatedMissions.find(m => m.id === missionId);
+      if (activeMission) {
+        setActiveMission(activeMission);
+      }
+
       return true;
     } catch (error) {
       throw error;
@@ -137,20 +159,30 @@ export function useHoneycombIntegration() {
     }
 
     try {
+      // Update Honeycomb store
       await useHoneycombStore.getState().updateMissionProgress(publicKey, missionId, progress);
-      
-      // Update game store
+
+      // Update game store missions array
       const updatedMissions = missions.map(mission =>
-        mission.id === missionId 
-          ? { 
-              ...mission, 
-              progress,
-              status: progress >= mission.maxProgress ? 'completed' as const : 'active' as const
-            }
+        mission.id === missionId
+          ? {
+            ...mission,
+            progress,
+            status: progress >= mission.maxProgress ? 'completed' as const : 'active' as const
+          }
           : mission
       );
       setMissions(updatedMissions);
-      
+
+      // Update active mission if it's the one being updated
+      const updatedMission = updatedMissions.find(m => m.id === missionId);
+      if (updatedMission && updatedMission.status === 'active') {
+        setActiveMission(updatedMission);
+      } else if (updatedMission && updatedMission.status === 'completed') {
+        // Clear active mission if completed
+        setActiveMission(null);
+      }
+
       return true;
     } catch (error) {
       throw error;
@@ -174,7 +206,7 @@ export function useHoneycombIntegration() {
         effects: traitDefinition.baseEffects,
         level: 1,
       });
-      
+
       return true;
     } catch (error) {
       throw error;
@@ -197,20 +229,20 @@ export function useHoneycombIntegration() {
   // Get available traits for current player
   const getPlayerAvailableTraits = () => {
     if (!player) return [];
-    
+
     const completedMissionIds = playerMissions
       .filter(m => m.completed)
       .map(m => m.missionId);
-    
+
     const playerTraitIds = playerTraits.map(t => t.traitId);
-    
+
     return getAvailableTraits(player.level, completedMissionIds, playerTraitIds);
   };
 
   // Check if player can start a specific mission
   const canStartMission = (missionId: string) => {
     if (!player) return false;
-    
+
     const mission = missions.find(m => m.id === missionId);
     return mission?.status === 'available';
   };
@@ -224,24 +256,24 @@ export function useHoneycombIntegration() {
     // Connection state
     isConnected: honeycombConnected,
     isInitializing,
-    
+
     // Player data
     playerProfile,
     playerLevel,
     playerMissions,
     playerTraits,
-    
+
     // Mission functions
     startMission,
     updateMissionProgress,
     canStartMission,
     getActiveMission,
-    
+
     // Trait functions
     assignTrait,
     upgradeTrait,
     getPlayerAvailableTraits,
-    
+
     // Utility
     honeycombService,
   };

@@ -43,7 +43,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
   const [showGuilds, setShowGuilds] = useState(false);
 
   // Game store and player sync
-  const { inventory, addResource, removeResource, updatePlayerExperience } = useGameStore();
+  const { inventory, activeMission, addResource, removeResource, updatePlayerExperience } = useGameStore();
   const { player, isWalletConnected } = usePlayerSync();
 
   // Verxio loyalty system
@@ -56,11 +56,10 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
   } = useVerxioIntegration();
 
   // Honeycomb integration for missions
-  const { updateMissionProgress, getActiveMission } = useHoneycombIntegration();
+  const { updateMissionProgress } = useHoneycombIntegration();
 
   // Helper function to track mission progress based on activity
   const trackMissionProgress = async (activityType: string, amount: number = 1) => {
-    const activeMission = getActiveMission();
     if (!activeMission || !player) return;
 
     // Check if the active mission matches the activity type

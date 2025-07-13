@@ -24,7 +24,7 @@ export interface Mission {
   title: string;
   description: string;
   type: 'mining' | 'crafting' | 'exploration';
-  status: 'available' | 'active' | 'completed';
+  status: 'available' | 'active' | 'completed' | 'locked';
   rewards: {
     experience: number;
     credits: number;
@@ -141,15 +141,35 @@ export const useGameStore = create<GameState>()(
         setActiveMission: (mission) => set({ activeMission: mission }),
 
         updateMissionProgress: (missionId, progress) =>
-          set((state) => ({
-            missions: state.missions.map((m) =>
-              m.id === missionId ? { ...m, progress } : m
-            ),
-            activeMission:
-              state.activeMission?.id === missionId
-                ? { ...state.activeMission, progress }
-                : state.activeMission,
-          })),
+          set((state) => {
+            const updatedMissions = state.missions.map((m) =>
+              m.id === missionId
+                ? {
+                  ...m,
+                  progress,
+                  status: progress >= m.maxProgress ? 'completed' as const : m.status
+                }
+                : m
+            );
+
+            const updatedMission = updatedMissions.find(m => m.id === missionId);
+            let newActiveMission = state.activeMission;
+
+            if (state.activeMission?.id === missionId) {
+              if (updatedMission && updatedMission.status === 'completed') {
+                // Clear active mission if completed
+                newActiveMission = null;
+              } else if (updatedMission) {
+                // Update active mission progress
+                newActiveMission = { ...updatedMission };
+              }
+            }
+
+            return {
+              missions: updatedMissions,
+              activeMission: newActiveMission,
+            };
+          }),
 
         setCurrentScene: (scene) => set({ currentScene: scene }),
 

@@ -14,11 +14,9 @@ import { formatNumber } from '@/utils/gameHelpers';
 
 export default function MissionsPage() {
   const [selectedCategory, setSelectedCategory] = useState<keyof typeof MISSION_CATEGORIES>('BEGINNER');
-  const { missions } = useGameStore();
+  const { missions, activeMission } = useGameStore();
   const { player } = usePlayerSync();
-  const { startMission, canStartMission, getActiveMission } = useHoneycombIntegration();
-
-  const activeMission = getActiveMission();
+  const { startMission, canStartMission } = useHoneycombIntegration();
   const categoryMissions = getMissionsByCategory(selectedCategory);
 
   const getMissionStatusColor = (status: string) => {
