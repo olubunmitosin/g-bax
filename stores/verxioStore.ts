@@ -30,7 +30,9 @@ export interface VerxioState {
   awardLoyaltyPoints: (playerPublicKey: PublicKey, points: number, reason: string) => Promise<void>;
   refreshLoyaltyData: (playerPublicKey: PublicKey) => Promise<void>;
   loadAvailableGuilds: () => Promise<void>;
-  joinGuild: (playerPublicKey: PublicKey, guildId: string) => Promise<void>;
+  forceRefreshGuildData: (playerPublicKey?: PublicKey) => Promise<void>;
+  joinGuild: (playerPublicKey: PublicKey, guildId: string) => Promise<{ success: boolean; error?: string }>;
+  leaveGuild: (playerPublicKey: PublicKey) => Promise<{ success: boolean; error?: string }>;
   loadGuildMembers: (guildId: string) => Promise<void>;
   updateReputation: (playerPublicKey: PublicKey, change: number, reason: string) => Promise<void>;
 
@@ -104,9 +106,11 @@ export const useVerxioStore = create<VerxioState>()(
               loyalty.lastActivity = new Date(loyalty.lastActivity);
             }
 
-            // If player has a guild, load guild info
+            // If player has a guild, load guild info with fresh data
             let playerGuild = null;
             if (loyalty?.guildId) {
+              // First refresh available guilds to get latest data
+              await get().loadAvailableGuilds();
               const guilds = get().availableGuilds;
               playerGuild = guilds.find(g => g.id === loyalty.guildId) || null;
 
@@ -187,16 +191,70 @@ export const useVerxioStore = create<VerxioState>()(
           }
         },
 
+        // Force refresh all guild data (clears any cached state)
+        forceRefreshGuildData: async (playerPublicKey?: PublicKey) => {
+          const { verxioService } = get();
+          if (!verxioService) return;
+
+          set({ isLoadingGuilds: true, isLoadingLoyalty: true });
+
+          try {
+            // Clear current state first
+            set({
+              availableGuilds: [],
+              playerGuild: null,
+              guildMembers: []
+            });
+
+            // Load fresh guild data
+            const guilds = await verxioService.getAvailableGuilds();
+            set({ availableGuilds: guilds });
+
+            // If player is provided, reload their loyalty data
+            if (playerPublicKey) {
+              const loyalty = await verxioService.getPlayerLoyalty(playerPublicKey);
+
+              // Find player's guild with fresh data
+              let playerGuild = null;
+              if (loyalty?.guildId) {
+                playerGuild = guilds.find(g => g.id === loyalty.guildId) || null;
+                if (playerGuild) {
+                  await get().loadGuildMembers(playerGuild.id);
+                }
+              }
+
+              set({
+                playerLoyalty: loyalty,
+                playerGuild,
+              });
+            }
+          } catch (error) {
+          } finally {
+            set({ isLoadingGuilds: false, isLoadingLoyalty: false });
+          }
+        },
+
         // Join a guild
         joinGuild: async (playerPublicKey: PublicKey, guildId: string) => {
           const { verxioService, availableGuilds, playerLoyalty } = get();
-          if (!verxioService) return;
+          if (!verxioService) return { success: false, error: 'Verxio service not available' };
 
           try {
-            const success = await verxioService.joinGuild(playerPublicKey, guildId);
+            const result = await verxioService.joinGuild(playerPublicKey, guildId);
 
-            if (success) {
-              const guild = availableGuilds.find(g => g.id === guildId);
+            if (result.success) {
+              // Force multiple refreshes to ensure data consistency
+              await get().loadAvailableGuilds();
+
+              // Small delay to ensure localStorage is updated
+              await new Promise(resolve => setTimeout(resolve, 100));
+
+              // Refresh again to be absolutely sure
+              await get().loadAvailableGuilds();
+
+              // Get the updated guild data
+              const updatedGuilds = get().availableGuilds;
+              const guild = updatedGuilds.find(g => g.id === guildId);
 
               // Update player loyalty with guild info
               if (playerLoyalty && guild) {
@@ -206,15 +264,52 @@ export const useVerxioStore = create<VerxioState>()(
                     guildId: guild.id,
                     guildRank: 'member',
                   },
-                  playerGuild: guild,
+                  playerGuild: guild, // Use the updated guild data
                 });
 
                 // Load guild members
                 await get().loadGuildMembers(guildId);
+
+                // Force one more refresh to ensure UI is updated
+                await get().loadAvailableGuilds();
               }
             }
+
+            return result;
           } catch (error) {
-            throw error;
+            return { success: false, error: 'Failed to join guild' };
+          }
+        },
+
+        // Leave a guild
+        leaveGuild: async (playerPublicKey: PublicKey) => {
+          const { verxioService, playerLoyalty } = get();
+          if (!verxioService) return { success: false, error: 'Verxio service not available' };
+
+          try {
+            const result = await verxioService.leaveGuild(playerPublicKey);
+
+            if (result.success) {
+              // First refresh available guilds to get updated member counts
+              await get().loadAvailableGuilds();
+
+              // Update player loyalty to remove guild info
+              if (playerLoyalty) {
+                const updatedLoyalty = { ...playerLoyalty };
+                delete updatedLoyalty.guildId;
+                delete updatedLoyalty.guildRank;
+
+                set({
+                  playerLoyalty: updatedLoyalty,
+                  playerGuild: null,
+                  guildMembers: [],
+                });
+              }
+            }
+
+            return result;
+          } catch (error) {
+            return { success: false, error: 'Failed to leave guild' };
           }
         },
 

@@ -16,22 +16,22 @@
 
 </div>
 
-## 🌟 Overview
+## Overview
 
 G-Bax is a revolutionary blockchain-powered space exploration game that combines immersive 3D gameplay with true digital ownership. Players explore procedurally generated space sectors, mine valuable resources, craft items, and build their legacy in a persistent universe where all progress is recorded on the Solana blockchain.
 
-### ✨ Key Features
+### Key Features
 
-- **🌌 3D Space Exploration**: Navigate through beautifully rendered space environments with Three.js
-- **⛏️ Resource Mining**: Extract energy, crystals, and metals from asteroids and resource nodes
-- **🔗 Blockchain Integration**: True ownership of assets and progress via Solana blockchain
-- **⭐ Loyalty System**: Earn points and climb tiers with Verxio's loyalty platform
-- **🏛️ Guild System**: Join communities for enhanced bonuses and social gameplay
-- **🎯 Mission System**: Complete objectives powered by Honeycomb Protocol
-- **📊 Real-time Progress**: Live tracking of experience, resources, and achievements
-- **🎨 Modern UI**: Clean, responsive interface built with HeroUI and Tailwind CSS
+- **3D Space Exploration**: Navigate through beautifully rendered space environments with Three.js
+- **Resource Mining**: Extract energy, crystals, and metals from asteroids and resource nodes
+- **Blockchain Integration**: True ownership of assets and progress via Solana blockchain
+- **Loyalty System**: Earn points and climb tiers with Verxio's loyalty platform
+- **Guild System**: Join communities for enhanced bonuses and social gameplay
+- **Mission System**: Complete objectives powered by Honeycomb Protocol
+- **Real-time Progress**: Live tracking of experience, resources, and achievements
+- **Modern UI**: Clean, responsive interface built with HeroUI and Tailwind CSS
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend
 - **Framework**: Next.js 15.3.1 with App Router
@@ -52,7 +52,7 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
 - **Code Quality**: ESLint + TypeScript strict mode
 - **Deployment**: Netlify with static export and automatic CI/CD
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -96,7 +96,7 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 🎮 How to Play
+## How to Play
 
 ### Getting Started
 1. **Connect Your Wallet**: Click the wallet button and connect your Solana wallet
@@ -124,7 +124,7 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
 - **Cross-Platform**: Access your account from any device
 - **Persistent Universe**: Your actions contribute to the game world
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 g-bax/
@@ -150,7 +150,7 @@ g-bax/
 ├── types/                # TypeScript definitions
 └── config/               # Configuration files
 ```
-## 🔧 Development
+## Development
 
 ### Available Scripts
 
@@ -178,7 +178,7 @@ npm run type-check   # Run TypeScript compiler check
 |----------|-------------|----------|
 | `NEXT_PUBLIC_SOLANA_NETWORK` | Solana network (mainnet/devnet) | Yes |
 
-## 🏗️ Architecture
+## Architecture
 
 ### State Management
 - **Game Store**: Player data, inventory, experience
@@ -197,7 +197,7 @@ npm run type-check   # Run TypeScript compiler check
 - **Camera Controls**: Smooth navigation and interaction
 - **Performance**: Optimized rendering for smooth gameplay
 
-## 🚀 Deployment
+## Deployment
 
 ### Netlify Deployment
 
@@ -227,11 +227,11 @@ The project can also be deployed on:
 - **GitHub Pages**: Use the static export as-is
 - **Any Static Host**: Deploy the `out/` directory after running `npm run build`
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Author
+## Author
 
 **Kesty Vickky (Tosin Victor Olubunmi)** - Sole Author & Lead Developer
 - GitHub: [@olubunmitosin](https://github.com/olubunmitosin)
@@ -239,7 +239,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed contribution information.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **[Superteam](https://superteam.fun)**: A community of the best talent learning, earning and building in crypto
 - **[Honeycomb Protocol](https://docs.honeycombprotocol.com)**: On-chain game infrastructure

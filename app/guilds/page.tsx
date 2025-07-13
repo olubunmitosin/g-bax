@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
@@ -12,8 +12,26 @@ import GuildBrowser from '@/components/ui/GuildBrowser';
 
 export default function GuildsPage() {
   const [showBrowser, setShowBrowser] = useState(false);
-  const { playerGuild, guildMembers, availableGuilds } = useVerxioStore();
+  const { playerGuild, guildMembers, availableGuilds, loadAvailableGuilds, loadPlayerLoyalty, isLoadingGuilds, forceRefreshGuildData, playerLoyalty } = useVerxioStore();
   const { player } = usePlayerSync();
+
+  // Get current guild data from availableGuilds (like leaderboard does)
+  const getCurrentGuild = () => {
+    if (!playerLoyalty?.guildId) return null;
+    return availableGuilds.find(guild => guild.id === playerLoyalty.guildId) || null;
+  };
+
+  const currentGuild = getCurrentGuild();
+
+  // Refresh guild data when page loads
+  useEffect(() => {
+    if (player?.id) {
+      const playerPublicKey = new (require('@solana/web3.js')).PublicKey(player.id);
+      forceRefreshGuildData(playerPublicKey);
+    } else {
+      loadAvailableGuilds();
+    }
+  }, [forceRefreshGuildData, loadAvailableGuilds, player?.id]);
 
   const getGuildTypeIcon = (type: string) => {
     switch (type) {
@@ -37,6 +55,37 @@ export default function GuildsPage() {
     }
   };
 
+  const handleRefreshData = async () => {
+    if (player?.id) {
+      const playerPublicKey = new (require('@solana/web3.js')).PublicKey(player.id);
+      await forceRefreshGuildData(playerPublicKey);
+    } else {
+      await loadAvailableGuilds();
+    }
+  };
+
+  // Debug function to check localStorage data
+  const debugGuildData = () => {
+    console.log('=== GUILD DEBUG DATA ===');
+    const guildsData = localStorage.getItem('verxio_guilds');
+    if (guildsData) {
+      const guilds = JSON.parse(guildsData);
+      console.log('Guilds in localStorage:', guilds);
+    }
+
+    if (player?.id) {
+      const membershipData = localStorage.getItem(`verxio_guild_member_${player.id}`);
+      console.log('Player membership data:', membershipData);
+
+      const loyaltyData = localStorage.getItem(`verxio_loyalty_${player.id}`);
+      console.log('Player loyalty data:', loyaltyData);
+    }
+
+    console.log('Current playerGuild state:', playerGuild);
+    console.log('Current availableGuilds state:', availableGuilds);
+    console.log('========================');
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="container mx-auto px-4 py-8 pb-20 max-w-6xl">
@@ -51,23 +100,51 @@ export default function GuildsPage() {
 
         {/* Player Guild Status */}
         {player ? (
-          playerGuild ? (
+          currentGuild ? (
             <Card className="mb-8 bg-gradient-to-r from-success-500/10 to-primary-500/10 border-success-500/20">
               <CardHeader>
                 <div className="flex justify-between items-center w-full">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{getGuildTypeIcon(playerGuild.type)}</span>
+                    <span className="text-3xl">{getGuildTypeIcon(currentGuild.type)}</span>
                     <div>
-                      <h3 className="text-xl font-bold">{playerGuild.name}</h3>
+                      <h3 className="text-xl font-bold">{currentGuild.name}</h3>
                       <p className="text-default-600">Your Guild</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={handleRefreshData}
+                      isLoading={isLoadingGuilds}
+                      title="Refresh guild data"
+                    >
+                      🔄
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={debugGuildData}
+                      title="Debug guild data"
+                    >
+                      🐛
+                    </Button>
+                    <Button
+                      size="sm"
+                      color="warning"
+                      variant="flat"
+                      onPress={handleRefreshData}
+                      isLoading={isLoadingGuilds}
+                    >
+                      Force Refresh
+                    </Button>
                     <Chip color="success" variant="flat">
                       Member
                     </Chip>
                     <Chip color="primary" variant="flat">
-                      Level {playerGuild.level}
+                      Level {currentGuild.level}
                     </Chip>
                   </div>
                 </div>
@@ -76,20 +153,20 @@ export default function GuildsPage() {
                 <div className="grid md:grid-cols-3 gap-6">
                   <div>
                     <h4 className="font-semibold mb-3">Guild Info</h4>
-                    <p className="text-sm text-default-600 mb-3">{playerGuild.description}</p>
+                    <p className="text-sm text-default-600 mb-3">{currentGuild.description}</p>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">Members:</span>
-                        <span className="text-sm font-medium">{playerGuild.memberCount}</span>
+                        <span className="text-sm font-medium">{currentGuild.memberCount}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Reputation:</span>
-                        <span className="text-sm font-medium">{formatNumber(playerGuild.totalReputation)}</span>
+                        <span className="text-sm font-medium">{formatNumber(currentGuild.totalReputation)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Type:</span>
-                        <Chip size="sm" color={getGuildTypeColor(playerGuild.type)} variant="flat">
-                          {playerGuild.type}
+                        <Chip size="sm" color={getGuildTypeColor(currentGuild.type)} variant="flat">
+                          {currentGuild.type}
                         </Chip>
                       </div>
                     </div>
@@ -98,7 +175,7 @@ export default function GuildsPage() {
                   <div>
                     <h4 className="font-semibold mb-3">Guild Benefits</h4>
                     <div className="space-y-2">
-                      {playerGuild.benefits.map((benefit, index) => (
+                      {currentGuild.benefits.map((benefit, index) => (
                         <div key={index} className="bg-success-50 rounded p-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm">{benefit.description}</span>

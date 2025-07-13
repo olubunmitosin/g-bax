@@ -289,22 +289,80 @@ export class VerxioService {
     }
   }
 
+  // Check if player meets guild requirements
+  checkGuildRequirements(playerPublicKey: PublicKey, guild: Guild): { canJoin: boolean; failedRequirements: string[] } {
+    const playerId = playerPublicKey.toString();
+    const failedRequirements: string[] = [];
+
+    // Get player loyalty data
+    const savedLoyalty = localStorage.getItem(`verxio_loyalty_${playerId}`);
+    if (!savedLoyalty) {
+      failedRequirements.push('Player loyalty data not found');
+      return { canJoin: false, failedRequirements };
+    }
+
+    const loyalty = JSON.parse(savedLoyalty);
+
+    // Check each requirement
+    for (const requirement of guild.requirements) {
+      switch (requirement.type) {
+        case 'level':
+          // Get player level from experience
+          const playerLevel = Math.floor(loyalty.points / 1000) + 1; // Simple level calculation
+          if (playerLevel < (requirement.value as number)) {
+            failedRequirements.push(`Requires level ${requirement.value}, you are level ${playerLevel}`);
+          }
+          break;
+        case 'reputation':
+          if (loyalty.reputation < (requirement.value as number)) {
+            failedRequirements.push(`Requires ${requirement.value} reputation, you have ${loyalty.reputation}`);
+          }
+          break;
+        case 'achievement':
+          // Check if player has specific achievement
+          if (!loyalty.achievements.includes(requirement.value as string)) {
+            failedRequirements.push(`Requires achievement: ${requirement.description}`);
+          }
+          break;
+      }
+    }
+
+    return { canJoin: failedRequirements.length === 0, failedRequirements };
+  }
+
   // Join a guild
-  async joinGuild(playerPublicKey: PublicKey, guildId: string): Promise<boolean> {
+  async joinGuild(playerPublicKey: PublicKey, guildId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const playerId = playerPublicKey.toString();
+
+      // Check if player is already in a guild
+      const existingMembership = localStorage.getItem(`verxio_guild_member_${playerId}`);
+      if (existingMembership) {
+        return { success: false, error: 'You are already a member of a guild. Leave your current guild first.' };
+      }
 
       // Load current guilds
       const savedGuilds = localStorage.getItem('verxio_guilds');
       if (!savedGuilds) {
-        return false;
+        return { success: false, error: 'No guilds available' };
       }
 
       const guilds = JSON.parse(savedGuilds);
       const guildIndex = guilds.findIndex((g: Guild) => g.id === guildId);
 
       if (guildIndex === -1) {
-        return false;
+        return { success: false, error: 'Guild not found' };
+      }
+
+      const guild = guilds[guildIndex];
+
+      // Check guild requirements
+      const requirementCheck = this.checkGuildRequirements(playerPublicKey, guild);
+      if (!requirementCheck.canJoin) {
+        return {
+          success: false,
+          error: `Requirements not met: ${requirementCheck.failedRequirements.join(', ')}`
+        };
       }
 
       // Update guild member count
@@ -327,9 +385,67 @@ export class VerxioService {
 
       localStorage.setItem(`verxio_guild_member_${playerId}`, JSON.stringify(playerGuildData));
 
-      return true;
+      // Update player loyalty with guild info
+      const savedLoyalty = localStorage.getItem(`verxio_loyalty_${playerId}`);
+      if (savedLoyalty) {
+        const loyalty = JSON.parse(savedLoyalty);
+        loyalty.guildId = guildId;
+        loyalty.guildRank = 'member';
+        localStorage.setItem(`verxio_loyalty_${playerId}`, JSON.stringify(loyalty));
+      }
+
+      return { success: true };
     } catch (error) {
-      return false;
+      return { success: false, error: 'Failed to join guild' };
+    }
+  }
+
+  // Leave a guild
+  async leaveGuild(playerPublicKey: PublicKey): Promise<{ success: boolean; error?: string }> {
+    try {
+      const playerId = playerPublicKey.toString();
+
+      // Check if player is in a guild
+      const existingMembership = localStorage.getItem(`verxio_guild_member_${playerId}`);
+      if (!existingMembership) {
+        return { success: false, error: 'You are not a member of any guild' };
+      }
+
+      const membershipData = JSON.parse(existingMembership);
+      const guildId = membershipData.guildId;
+
+      // Load current guilds and update member count
+      const savedGuilds = localStorage.getItem('verxio_guilds');
+      if (savedGuilds) {
+        const guilds = JSON.parse(savedGuilds);
+        const guildIndex = guilds.findIndex((g: Guild) => g.id === guildId);
+
+        if (guildIndex !== -1) {
+          // Decrease member count
+          guilds[guildIndex].memberCount = Math.max(0, guilds[guildIndex].memberCount - 1);
+
+          // Remove some reputation (small amount)
+          guilds[guildIndex].totalReputation = Math.max(0, guilds[guildIndex].totalReputation - 5);
+
+          localStorage.setItem('verxio_guilds', JSON.stringify(guilds));
+        }
+      }
+
+      // Remove player guild membership
+      localStorage.removeItem(`verxio_guild_member_${playerId}`);
+
+      // Update player loyalty to remove guild info
+      const savedLoyalty = localStorage.getItem(`verxio_loyalty_${playerId}`);
+      if (savedLoyalty) {
+        const loyalty = JSON.parse(savedLoyalty);
+        delete loyalty.guildId;
+        delete loyalty.guildRank;
+        localStorage.setItem(`verxio_loyalty_${playerId}`, JSON.stringify(loyalty));
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Failed to leave guild' };
     }
   }
 
