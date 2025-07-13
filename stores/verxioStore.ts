@@ -28,6 +28,7 @@ export interface VerxioState {
   initializeVerxio: (apiKey?: string, environment?: 'development' | 'production') => Promise<void>;
   loadPlayerLoyalty: (playerPublicKey: PublicKey) => Promise<void>;
   awardLoyaltyPoints: (playerPublicKey: PublicKey, points: number, reason: string) => Promise<void>;
+  refreshLoyaltyData: (playerPublicKey: PublicKey) => Promise<void>;
   loadAvailableGuilds: () => Promise<void>;
   joinGuild: (playerPublicKey: PublicKey, guildId: string) => Promise<void>;
   loadGuildMembers: (guildId: string) => Promise<void>;
@@ -150,6 +151,23 @@ export const useVerxioStore = create<VerxioState>()(
               });
             }
           } catch (error) {
+          }
+        },
+
+        // Force refresh loyalty data to fix any inconsistencies
+        refreshLoyaltyData: async (playerPublicKey: PublicKey) => {
+          const { verxioService } = get();
+          if (!verxioService) return;
+
+          try {
+            set({ isLoadingLoyalty: true });
+            const loyalty = await verxioService.getPlayerLoyalty(playerPublicKey);
+            set({
+              playerLoyalty: loyalty,
+              isLoadingLoyalty: false
+            });
+          } catch (error) {
+            set({ isLoadingLoyalty: false });
           }
         },
 

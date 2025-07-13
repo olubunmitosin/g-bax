@@ -86,11 +86,11 @@ export default function LeaderboardPage() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'loyalty': return '🏆';
-      case 'reputation': return '⭐';
-      case 'experience': return '📈';
-      case 'guilds': return '🏛️';
-      default: return '📊';
+      case 'loyalty': return '';
+      case 'reputation': return '';
+      case 'experience': return '';
+      case 'guilds': return '';
+      default: return '';
     }
   };
 
@@ -263,12 +263,6 @@ export default function LeaderboardPage() {
                           ) : (
                             <span className="font-bold text-default-500">#{index + 1}</span>
                           )}
-                        </div>
-
-                        <div className="text-xl">
-                          {guild.type === 'mining' ? '⛏️' :
-                            guild.type === 'exploration' ? '🚀' :
-                              guild.type === 'crafting' ? '🔨' : '🏛️'}
                         </div>
 
                         <div>

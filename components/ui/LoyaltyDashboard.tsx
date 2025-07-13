@@ -7,6 +7,7 @@ import { Chip } from '@heroui/chip';
 import { Button } from '@heroui/button';
 import { useVerxioStore } from '@/stores/verxioStore';
 import { formatNumber } from '@/utils/gameHelpers';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface LoyaltyDashboardProps {
   onClose?: () => void;
@@ -14,13 +15,21 @@ interface LoyaltyDashboardProps {
 }
 
 export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDashboardProps) {
+  const { publicKey } = useWallet();
   const {
     playerLoyalty,
     playerGuild,
     loyaltyTiers,
     isLoadingLoyalty,
     getPointsToNextTier,
+    refreshLoyaltyData,
   } = useVerxioStore();
+
+  const handleRefreshLoyalty = async () => {
+    if (publicKey) {
+      await refreshLoyaltyData(publicKey);
+    }
+  };
 
   if (isLoadingLoyalty) {
     return (
@@ -71,6 +80,17 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
           >
             {currentTier.icon} {currentTier.name}
           </Chip>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={handleRefreshLoyalty}
+            isLoading={isLoadingLoyalty}
+            className="text-default-400 hover:text-default-600"
+            title="Refresh loyalty data"
+          >
+            🔄
+          </Button>
           {onClose && (
             <Button
               isIconOnly

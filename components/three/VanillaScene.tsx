@@ -179,6 +179,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         addResource(resource);
       },
       onExperienceGained: (experience) => {
+        console.log(`🎮 VanillaScene: onExperienceGained called with ${experience} XP`);
         updatePlayerExperience(experience);
       },
       onExplorationComplete: (result) => {
@@ -362,10 +363,16 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       animationIdRef.current = requestAnimationFrame(animate);
 
       const deltaTime = clockRef.current.getDelta();
+      const deltaTimeMs = deltaTime * 1000; // Convert to milliseconds for game systems
 
       // Update camera controls
       if (controls) {
         controls.update(deltaTime);
+      }
+
+      // Update game systems (mining, crafting, etc.)
+      if (gameSystems) {
+        gameSystems.updateSystems(deltaTimeMs);
       }
 
       // Track player position for exploration

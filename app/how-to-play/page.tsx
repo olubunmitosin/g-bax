@@ -24,8 +24,8 @@ export default function HowToPlayPage() {
         </div>
 
         {/* Navigation Tabs */}
-        <Tabs 
-          selectedKey={selectedTab} 
+        <Tabs
+          selectedKey={selectedTab}
           onSelectionChange={(key) => setSelectedTab(key as string)}
           className="w-full"
           variant="bordered"
@@ -43,7 +43,7 @@ export default function HowToPlayPage() {
                   <p className="text-default-600">
                     G-Bax is a blockchain-powered game that requires a Solana wallet to play and track your progress on-chain.
                   </p>
-                  
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-3">
                       <h3 className="font-semibold">Supported Wallets:</h3>
@@ -62,7 +62,7 @@ export default function HowToPlayPage() {
                         </li>
                       </ul>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <h3 className="font-semibold">What You Need:</h3>
                       <ul className="space-y-1 text-sm text-default-600">
@@ -97,7 +97,7 @@ export default function HowToPlayPage() {
                         Click on asteroids or resource nodes in the 3D space to select them
                       </p>
                     </div>
-                    
+
                     <div className="text-center space-y-2">
                       <div className="text-3xl">⛏️</div>
                       <h3 className="font-semibold">Start Mining</h3>
@@ -105,7 +105,7 @@ export default function HowToPlayPage() {
                         Click "Start Mining" to begin extracting resources from the selected object
                       </p>
                     </div>
-                    
+
                     <div className="text-center space-y-2">
                       <div className="text-3xl">📦</div>
                       <h3 className="font-semibold">Check Inventory</h3>
@@ -142,7 +142,7 @@ export default function HowToPlayPage() {
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <h3 className="font-semibold text-lg">Mineable Objects</h3>
-                      
+
                       <div className="space-y-3">
                         <div className="flex items-start gap-3">
                           <Chip size="sm" color="warning">Asteroids</Chip>
@@ -151,7 +151,7 @@ export default function HowToPlayPage() {
                             <p className="text-default-600">~4 seconds, basic resources</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-start gap-3">
                           <Chip size="sm" color="secondary">Resource Nodes</Chip>
                           <div className="text-sm">
@@ -164,18 +164,18 @@ export default function HowToPlayPage() {
 
                     <div className="space-y-4">
                       <h3 className="font-semibold text-lg">Resource Types</h3>
-                      
+
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
                           <Chip size="sm" color="warning">Energy</Chip>
                           <span className="text-sm">Powers advanced crafting</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                           <Chip size="sm" color="secondary">Crystal</Chip>
                           <span className="text-sm">High-value trading material</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                           <Chip size="sm" color="default">Metal</Chip>
                           <span className="text-sm">Essential for construction</span>
@@ -200,19 +200,19 @@ export default function HowToPlayPage() {
                       <p className="text-sm text-default-600">Most frequent drops</p>
                       <p className="text-xs">1-10 quantity</p>
                     </div>
-                    
+
                     <div className="text-center space-y-2">
                       <Chip color="primary" variant="flat">Rare</Chip>
                       <p className="text-sm text-default-600">Better quality</p>
                       <p className="text-xs">1-5 quantity</p>
                     </div>
-                    
+
                     <div className="text-center space-y-2">
                       <Chip color="secondary" variant="flat">Epic</Chip>
                       <p className="text-sm text-default-600">High value</p>
                       <p className="text-xs">1-3 quantity</p>
                     </div>
-                    
+
                     <div className="text-center space-y-2">
                       <Chip color="warning" variant="flat">Legendary</Chip>
                       <p className="text-sm text-default-600">Extremely rare</p>
@@ -382,7 +382,7 @@ export default function HowToPlayPage() {
 
                   <div className="bg-info-50 border border-info-200 rounded-lg p-4">
                     <p className="text-info-700 text-sm">
-                      <strong>🤝 Community:</strong> Guilds are more than just bonuses - they're communities where you can share strategies, coordinate activities, and build lasting friendships in the cosmos.
+                      <strong>Community:</strong> Guilds are more than just bonuses - they're communities where you can share strategies, coordinate activities, and build lasting friendships in the cosmos.
                     </p>
                   </div>
                 </CardBody>
@@ -486,8 +486,8 @@ export default function HowToPlayPage() {
             <p className="text-default-600">
               Start your journey as a space explorer and build your legacy in the blockchain universe!
             </p>
-            <Button 
-              color="primary" 
+            <Button
+              color="primary"
               size="lg"
               onPress={() => window.location.href = '/'}
             >

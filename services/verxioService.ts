@@ -155,7 +155,7 @@ export class VerxioService {
 
       if (savedLoyalty) {
         const loyalty = JSON.parse(savedLoyalty);
-        // Update current tier based on points
+        // Always recalculate current tier based on points to ensure consistency
         loyalty.currentTier = this.getTierByPoints(loyalty.points);
         // Ensure lastActivity is a Date object
         loyalty.lastActivity = new Date(loyalty.lastActivity);
@@ -407,9 +407,15 @@ export class VerxioService {
 
   // Get loyalty tier by points
   getTierByPoints(points: number): LoyaltyTier {
-    return VerxioService.LOYALTY_TIERS.find(tier =>
-      points >= tier.minPoints && points <= tier.maxPoints
-    ) || VerxioService.LOYALTY_TIERS[0];
+    // Find the appropriate tier for the given points
+    for (let i = VerxioService.LOYALTY_TIERS.length - 1; i >= 0; i--) {
+      const tier = VerxioService.LOYALTY_TIERS[i];
+      if (points >= tier.minPoints) {
+        return tier;
+      }
+    }
+    // Fallback to first tier if no match found
+    return VerxioService.LOYALTY_TIERS[0];
   }
 
   // Get all loyalty tiers
@@ -422,8 +428,9 @@ export class VerxioService {
     const currentTier = this.getTierByPoints(currentPoints);
     const currentIndex = VerxioService.LOYALTY_TIERS.findIndex(tier => tier.id === currentTier.id);
 
-    if (currentIndex === VerxioService.LOYALTY_TIERS.length - 1) {
-      return { needed: 0, nextTier: null }; // Already at max tier
+    // Check if already at max tier
+    if (currentIndex === -1 || currentIndex === VerxioService.LOYALTY_TIERS.length - 1) {
+      return { needed: 0, nextTier: null };
     }
 
     const nextTier = VerxioService.LOYALTY_TIERS[currentIndex + 1];

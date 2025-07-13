@@ -49,8 +49,8 @@ export class GameSystemsManager {
 
   // Initialize the game systems
   initialize(): void {
-    // Start update loop
-    this.startUpdateLoop();
+    // Don't start internal update loop - let the main scene handle updates
+    // this.startUpdateLoop();
 
     // Start auto-save if enabled
     if (this.config.enableAutoSave) {
@@ -58,7 +58,7 @@ export class GameSystemsManager {
     }
   }
 
-  // Start the main update loop
+  // Start the main update loop (deprecated - use updateSystems instead)
   private startUpdateLoop(): void {
     const update = () => {
       const deltaTime = 16; // Assuming 60 FPS
@@ -66,6 +66,11 @@ export class GameSystemsManager {
       this.updateInterval = requestAnimationFrame(update);
     };
     update();
+  }
+
+  // Public method to update all systems - called from main animation loop
+  updateSystems(deltaTime: number): void {
+    this.update(deltaTime);
   }
 
   // Main update function
@@ -85,6 +90,8 @@ export class GameSystemsManager {
   private handleMiningResults(results: MiningResult[]): void {
     results.forEach(result => {
       if (result.success) {
+        console.log(`⛏️ Mining completed! Resources: ${result.resources.length}, Experience: ${result.experience}`);
+
         // Add resources to player inventory via callback
         result.resources.forEach(resource => {
           if (this.callbacks.onResourceAdded) {
@@ -94,6 +101,7 @@ export class GameSystemsManager {
 
         // Update player experience via callback
         if (result.experience > 0 && this.callbacks.onExperienceGained) {
+          console.log(`📈 Calling onExperienceGained with ${result.experience} XP`);
           this.callbacks.onExperienceGained(result.experience);
         }
 

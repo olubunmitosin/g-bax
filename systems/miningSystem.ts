@@ -62,6 +62,7 @@ export class MiningSystem {
       efficiency,
     };
 
+    console.log(`🚀 Started mining operation ${operation.id} on ${targetObject.type} (duration: ${adjustedDuration}ms, efficiency: ${efficiency})`);
     this.activeMiningOperations.set(operation.id, operation);
     return operation;
   }
@@ -78,16 +79,19 @@ export class MiningSystem {
       const elapsed = Date.now() - operation.startTime;
       operation.progress = Math.min(elapsed / operation.duration, 1.0);
 
+
       // Check if mining is complete
       if (operation.progress >= 1.0) {
         operation.isCompleted = true;
         const result = this.completeMining(operation);
+        console.log(`⛏️ Mining operation ${operationId} completed! Experience: ${result.experience}, Resources: ${result.resources.length}`);
         results.push(result);
         completedOperations.push(operationId);
 
         // Call callback if registered
         const callback = this.miningCallbacks.get(operationId);
         if (callback) {
+          console.log(`📞 Calling mining callback for operation ${operationId}`);
           callback(result);
           this.miningCallbacks.delete(operationId);
         }
