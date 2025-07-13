@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader } from '@heroui/card';
 import { Chip } from '@heroui/chip';
 import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
+import { useItemEffectsStore } from '@/stores/itemEffectsStore';
 import { getRarityColor, getResourceTypeColor, formatNumber } from '@/utils/gameHelpers';
 import InventoryInterface from '@/components/ui/InventoryInterface';
 import NotificationSystem, { useNotifications } from '@/components/ui/NotificationSystem';
@@ -14,6 +15,7 @@ export default function InventoryPage() {
   const [selectedTab, setSelectedTab] = useState('all');
   const { inventory, removeResource, updatePlayerExperience } = useGameStore();
   const { player } = usePlayerSync();
+  const { addEffect } = useItemEffectsStore();
   const { notifications, removeNotification, showSuccess, showInfo, showWarning } = useNotifications();
 
   if (!player) {
@@ -94,38 +96,100 @@ export default function InventoryPage() {
     // Remove the specified quantity of the item
     removeResource(itemId, quantity);
 
-    // Show feedback based on item type and provide actual effects
+    // Apply actual effects based on item type and rarity
+    const rarityMultiplier = {
+      common: 1.0,
+      rare: 1.5,
+      epic: 2.0,
+      legendary: 3.0,
+    }[item.rarity] || 1.0;
+
     switch (item.type) {
       case 'energy':
-        // Energy items could restore player energy or provide temporary boosts
+        // Energy items provide mining efficiency boost
+        const miningBoost = 1.2 + (rarityMultiplier - 1.0) * 0.3; // 1.2x to 1.8x based on rarity
+        const miningDuration = 300000 * quantity; // 5 minutes per item
+
+        addEffect({
+          name: `${item.name} Mining Boost`,
+          type: 'mining_efficiency',
+          multiplier: miningBoost,
+          duration: miningDuration,
+          description: `Mining efficiency increased by ${Math.round((miningBoost - 1) * 100)}% for ${miningDuration / 60000} minutes`,
+        });
+
         showSuccess(
-          'Energy Restored!',
-          `Used ${quantity} ${item.name}(s) - Energy restored and mining efficiency boosted!`
+          'Mining Efficiency Boosted!',
+          `Used ${quantity} ${item.name}(s) - Mining efficiency increased by ${Math.round((miningBoost - 1) * 100)}% for ${miningDuration / 60000} minutes!`
         );
         break;
 
       case 'crystal':
-        // Crystals could provide experience or unlock abilities
-        const experienceGained = quantity * 50; // 50 XP per crystal
-        updatePlayerExperience(experienceGained);
+        // Crystals provide experience boost and immediate XP
+        const experienceGained = quantity * 50 * rarityMultiplier; // 50-150 XP per crystal based on rarity
+        const expBoost = 1.15 + (rarityMultiplier - 1.0) * 0.15; // 1.15x to 1.6x based on rarity
+        const expDuration = 600000 * quantity; // 10 minutes per crystal
+
+        updatePlayerExperience(Math.floor(experienceGained));
+
+        addEffect({
+          name: `${item.name} Experience Boost`,
+          type: 'experience_boost',
+          multiplier: expBoost,
+          duration: expDuration,
+          description: `Experience gain increased by ${Math.round((expBoost - 1) * 100)}% for ${expDuration / 60000} minutes`,
+        });
+
         showSuccess(
-          'Experience Gained!',
-          `Used ${quantity} ${item.name}(s) - Gained ${experienceGained} experience!`
+          'Experience Boosted!',
+          `Used ${quantity} ${item.name}(s) - Gained ${Math.floor(experienceGained)} XP and experience boost of ${Math.round((expBoost - 1) * 100)}% for ${expDuration / 60000} minutes!`
         );
         break;
 
       case 'metal':
-        // Metals might be used for repairs or upgrades
-        showInfo(
+        // Metals provide crafting speed and resource yield boost
+        const craftingBoost = 1.25 + (rarityMultiplier - 1.0) * 0.25; // 1.25x to 2.0x based on rarity
+        const resourceBoost = 1.1 + (rarityMultiplier - 1.0) * 0.2; // 1.1x to 1.7x based on rarity
+        const metalDuration = 450000 * quantity; // 7.5 minutes per metal
+
+        addEffect({
+          name: `${item.name} Crafting Boost`,
+          type: 'crafting_speed',
+          multiplier: craftingBoost,
+          duration: metalDuration,
+          description: `Crafting speed increased by ${Math.round((craftingBoost - 1) * 100)}% for ${metalDuration / 60000} minutes`,
+        });
+
+        addEffect({
+          name: `${item.name} Resource Yield`,
+          type: 'resource_yield',
+          multiplier: resourceBoost,
+          duration: metalDuration,
+          description: `Resource yield increased by ${Math.round((resourceBoost - 1) * 100)}% for ${metalDuration / 60000} minutes`,
+        });
+
+        showSuccess(
           'Equipment Enhanced!',
-          `Used ${quantity} ${item.name}(s) - Equipment enhanced and tools improved!`
+          `Used ${quantity} ${item.name}(s) - Crafting speed increased by ${Math.round((craftingBoost - 1) * 100)}% and resource yield by ${Math.round((resourceBoost - 1) * 100)}% for ${metalDuration / 60000} minutes!`
         );
         break;
 
       default:
+        // Generic items provide small temporary boosts
+        const genericBoost = 1.05 + (rarityMultiplier - 1.0) * 0.05;
+        const genericDuration = 180000 * quantity; // 3 minutes per item
+
+        addEffect({
+          name: `${item.name} Boost`,
+          type: 'mining_efficiency',
+          multiplier: genericBoost,
+          duration: genericDuration,
+          description: `Minor efficiency boost for ${genericDuration / 60000} minutes`,
+        });
+
         showInfo(
           'Item Used',
-          `Used ${quantity} ${item.name}(s)`
+          `Used ${quantity} ${item.name}(s) - Minor efficiency boost for ${genericDuration / 60000} minutes!`
         );
         break;
     }

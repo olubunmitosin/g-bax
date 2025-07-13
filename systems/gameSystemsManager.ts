@@ -3,6 +3,7 @@ import { CraftingSystem, type CraftingResult } from './craftingSystem';
 import { ExplorationSystem, type ExplorationResult } from './explorationSystem';
 import type { SpaceObject, Resource } from '@/types/game';
 import { useGameStore } from '@/stores/gameStore';
+import { useItemEffectsStore } from '@/stores/itemEffectsStore';
 import * as THREE from 'three';
 
 export interface GameSystemsConfig {
@@ -182,9 +183,17 @@ export class GameSystemsManager {
       return false;
     }
 
-    // Calculate efficiency based on player traits and loyalty tier
+    // Calculate efficiency based on player traits, loyalty tier, and item effects
     const gameStore = useGameStore.getState();
+    const itemEffectsStore = useItemEffectsStore.getState();
+
+    // Get base efficiency from traits and equipment
     let efficiency = this.miningSystem.calculateMiningEfficiency([], []); // Would use actual player data
+
+    // Apply item effect bonuses
+    const itemMultipliers = itemEffectsStore.getActiveMultipliers();
+    efficiency *= itemMultipliers.miningEfficiency;
+    efficiency *= itemMultipliers.resourceYield; // Resource yield also affects mining efficiency
 
     // Get loyalty multiplier for bonuses
     let loyaltyMultiplier = 1.0;
@@ -232,8 +241,13 @@ export class GameSystemsManager {
       return false;
     }
 
-    // Calculate efficiency based on player traits and loyalty tier
+    // Calculate efficiency based on player traits, loyalty tier, and item effects
+    const itemEffectsStore = useItemEffectsStore.getState();
     let efficiency = this.craftingSystem.calculateCraftingEfficiency([], []); // Would use actual player data
+
+    // Apply item effect bonuses
+    const itemMultipliers = itemEffectsStore.getActiveMultipliers();
+    efficiency *= itemMultipliers.craftingSpeed;
 
     // Apply loyalty tier crafting bonuses
     if (this.callbacks.onGetLoyaltyMultiplier) {

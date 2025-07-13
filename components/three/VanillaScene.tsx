@@ -14,9 +14,11 @@ import NotificationSystem, { useNotifications } from '@/components/ui/Notificati
 import LoyaltyDashboard from '@/components/ui/LoyaltyDashboard';
 import GuildBrowser from '@/components/ui/GuildBrowser';
 import { SaveStatus } from '@/components/ui/SaveStatus';
+import ActiveEffectsPanel from '@/components/ui/ActiveEffectsPanel';
 import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
 import { useVerxioIntegration } from '@/hooks/useVerxioIntegration';
+import { useItemEffectsStore } from '@/stores/itemEffectsStore';
 import { useHoneycombIntegration } from '@/hooks/useHoneycombIntegration';
 import type { SpaceObject } from '@/types/game';
 import type { MiningOperation } from '@/systems/miningSystem';
@@ -58,6 +60,9 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     playerLoyalty,
     playerGuild
   } = useVerxioIntegration();
+
+  // Item effects system
+  const { getActiveMultipliers, addEffect } = useItemEffectsStore();
 
   // Honeycomb integration for missions
   const { updateMissionProgress } = useHoneycombIntegration();
@@ -179,10 +184,11 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         addResource(resource);
       },
       onExperienceGained: (experience) => {
-        // Apply loyalty tier multiplier to experience
-        const multiplier = getCurrentMultiplier();
-        const finalExperience = Math.floor(experience * multiplier);
-
+        // Apply loyalty tier multiplier and item effect multipliers to experience
+        const loyaltyMultiplier = getCurrentMultiplier();
+        const itemMultipliers = getActiveMultipliers();
+        const totalMultiplier = loyaltyMultiplier * itemMultipliers.experienceBoost;
+        const finalExperience = Math.floor(experience * totalMultiplier);
 
         updatePlayerExperience(finalExperience);
       },
@@ -559,28 +565,113 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       return;
     }
 
-    // Different actions based on item type
+    // Check if we have enough quantity
+    if (item.quantity < quantity) {
+      showWarning(
+        'Insufficient Quantity',
+        `Cannot use ${quantity} ${item.name}(s) - only have ${item.quantity}`
+      );
+      return;
+    }
+
+    // Remove the specified quantity of the item
+    removeResource(itemId, quantity);
+
+    // Apply actual effects based on item type and rarity
+    const rarityMultiplier = {
+      common: 1.0,
+      rare: 1.5,
+      epic: 2.0,
+      legendary: 3.0,
+    }[item.rarity] || 1.0;
+
     switch (item.type) {
       case 'energy':
-        // Energy items could restore player energy or provide temporary boosts
-        removeResource(itemId, quantity);
-        showSuccess('Energy Restored!', `Used ${quantity} ${item.name}${quantity > 1 ? 's' : ''} to restore energy and boost mining efficiency.`);
+        // Energy items provide mining efficiency boost
+        const miningBoost = 1.2 + (rarityMultiplier - 1.0) * 0.3; // 1.2x to 1.8x based on rarity
+        const miningDuration = 300000 * quantity; // 5 minutes per item
+
+        addEffect({
+          name: `${item.name} Mining Boost`,
+          type: 'mining_efficiency',
+          multiplier: miningBoost,
+          duration: miningDuration,
+          description: `Mining efficiency increased by ${Math.round((miningBoost - 1) * 100)}% for ${miningDuration / 60000} minutes`,
+        });
+
+        showSuccess(
+          'Mining Efficiency Boosted!',
+          `Used ${quantity} ${item.name}(s) - Mining efficiency increased by ${Math.round((miningBoost - 1) * 100)}% for ${miningDuration / 60000} minutes!`
+        );
         break;
 
       case 'crystal':
-        // Crystals could provide experience or unlock abilities
-        removeResource(itemId, quantity);
-        showSuccess('Experience Boost!', `Used ${quantity} ${item.name}${quantity > 1 ? 's' : ''} to gain experience and unlock new abilities.`);
+        // Crystals provide experience boost and immediate XP
+        const experienceGained = quantity * 50 * rarityMultiplier; // 50-150 XP per crystal based on rarity
+        const expBoost = 1.15 + (rarityMultiplier - 1.0) * 0.15; // 1.15x to 1.6x based on rarity
+        const expDuration = 600000 * quantity; // 10 minutes per crystal
+
+        updatePlayerExperience(Math.floor(experienceGained));
+
+        addEffect({
+          name: `${item.name} Experience Boost`,
+          type: 'experience_boost',
+          multiplier: expBoost,
+          duration: expDuration,
+          description: `Experience gain increased by ${Math.round((expBoost - 1) * 100)}% for ${expDuration / 60000} minutes`,
+        });
+
+        showSuccess(
+          'Experience Boosted!',
+          `Used ${quantity} ${item.name}(s) - Gained ${Math.floor(experienceGained)} XP and experience boost of ${Math.round((expBoost - 1) * 100)}% for ${expDuration / 60000} minutes!`
+        );
         break;
 
       case 'metal':
-        // Metals might be used for repairs or upgrades
-        removeResource(itemId, quantity);
-        showSuccess('Equipment Enhanced!', `Used ${quantity} ${item.name}${quantity > 1 ? 's' : ''} to improve mining tools and efficiency.`);
+        // Metals provide crafting speed and resource yield boost
+        const craftingBoost = 1.25 + (rarityMultiplier - 1.0) * 0.25; // 1.25x to 2.0x based on rarity
+        const resourceBoost = 1.1 + (rarityMultiplier - 1.0) * 0.2; // 1.1x to 1.7x based on rarity
+        const metalDuration = 450000 * quantity; // 7.5 minutes per metal
+
+        addEffect({
+          name: `${item.name} Crafting Boost`,
+          type: 'crafting_speed',
+          multiplier: craftingBoost,
+          duration: metalDuration,
+          description: `Crafting speed increased by ${Math.round((craftingBoost - 1) * 100)}% for ${metalDuration / 60000} minutes`,
+        });
+
+        addEffect({
+          name: `${item.name} Resource Yield`,
+          type: 'resource_yield',
+          multiplier: resourceBoost,
+          duration: metalDuration,
+          description: `Resource yield increased by ${Math.round((resourceBoost - 1) * 100)}% for ${metalDuration / 60000} minutes`,
+        });
+
+        showSuccess(
+          'Equipment Enhanced!',
+          `Used ${quantity} ${item.name}(s) - Crafting speed increased by ${Math.round((craftingBoost - 1) * 100)}% and resource yield by ${Math.round((resourceBoost - 1) * 100)}% for ${metalDuration / 60000} minutes!`
+        );
         break;
 
       default:
-        showWarning('Cannot Use Item', `${item.name} cannot be used directly. Try using it in crafting recipes.`);
+        // Generic items provide small temporary boosts
+        const genericBoost = 1.05 + (rarityMultiplier - 1.0) * 0.05;
+        const genericDuration = 180000 * quantity; // 3 minutes per item
+
+        addEffect({
+          name: `${item.name} Boost`,
+          type: 'mining_efficiency',
+          multiplier: genericBoost,
+          duration: genericDuration,
+          description: `Minor efficiency boost for ${genericDuration / 60000} minutes`,
+        });
+
+        showInfo(
+          'Item Used',
+          `Used ${quantity} ${item.name}(s) - Minor efficiency boost for ${genericDuration / 60000} minutes!`
+        );
         break;
     }
   };
@@ -699,6 +790,11 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         <div className="mt-2">
           <SaveStatus />
         </div>
+
+        {/* Active Effects Panel */}
+        <div className="mt-2">
+          <ActiveEffectsPanel />
+        </div>
       </div>
 
       {/* Mining Interface */}
@@ -771,6 +867,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
           <LoyaltyDashboard onClose={() => setShowLoyalty(false)} />
         </div>
       )}
+
+
 
       {/* Guild Browser */}
       {showGuilds && (
