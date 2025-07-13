@@ -12,6 +12,7 @@ export interface MiningOperation {
   isCompleted: boolean;
   resources: Resource[];
   efficiency: number;
+  loyaltyMultiplier?: number;
 }
 
 export interface MiningResult {
@@ -31,7 +32,8 @@ export class MiningSystem {
   startMining(
     playerId: string,
     targetObject: SpaceObject,
-    efficiency: number = 1.0
+    efficiency: number = 1.0,
+    loyaltyMultiplier: number = 1.0
   ): MiningOperation | null {
     // Check if object can be mined
     if (!this.canMineObject(targetObject)) {
@@ -60,9 +62,9 @@ export class MiningSystem {
       isCompleted: false,
       resources: [],
       efficiency,
+      loyaltyMultiplier,
     };
 
-    console.log(`🚀 Started mining operation ${operation.id} on ${targetObject.type} (duration: ${adjustedDuration}ms, efficiency: ${efficiency})`);
     this.activeMiningOperations.set(operation.id, operation);
     return operation;
   }
@@ -84,14 +86,12 @@ export class MiningSystem {
       if (operation.progress >= 1.0) {
         operation.isCompleted = true;
         const result = this.completeMining(operation);
-        console.log(`⛏️ Mining operation ${operationId} completed! Experience: ${result.experience}, Resources: ${result.resources.length}`);
         results.push(result);
         completedOperations.push(operationId);
 
         // Call callback if registered
         const callback = this.miningCallbacks.get(operationId);
         if (callback) {
-          console.log(`📞 Calling mining callback for operation ${operationId}`);
           callback(result);
           this.miningCallbacks.delete(operationId);
         }
@@ -141,6 +141,11 @@ export class MiningSystem {
         const resource = generateRandomResource();
         resources.push(resource);
       }
+    }
+
+    // Apply loyalty tier bonuses to resources
+    if (operation.loyaltyMultiplier && operation.loyaltyMultiplier > 1.0) {
+      this.applyLoyaltyResourceBonuses(resources, operation.loyaltyMultiplier);
     }
 
     // Calculate experience reward
@@ -330,5 +335,49 @@ export class MiningSystem {
   // Find object by ID for resource lookup
   private findObjectById(objectId: string): SpaceObject | undefined {
     return this.spaceObjects.find(obj => obj.id === objectId);
+  }
+
+  // Apply loyalty tier bonuses to mined resources
+  private applyLoyaltyResourceBonuses(resources: Resource[], loyaltyMultiplier: number): void {
+    // Higher loyalty tiers get better resource bonuses
+    if (loyaltyMultiplier >= 1.1) { // Apprentice Miner tier (1.1x)
+      // 10% chance for bonus resource
+      if (Math.random() < 0.1) {
+        const bonusResource = generateRandomResource();
+        bonusResource.name = `Bonus ${bonusResource.name}`;
+        resources.push(bonusResource);
+      }
+    }
+
+    if (loyaltyMultiplier >= 1.25) { // Journeyman Crafter tier (1.25x)
+      // Upgrade some common resources to rare
+      resources.forEach(resource => {
+        if (resource.rarity === 'common' && Math.random() < 0.15) {
+          resource.rarity = 'rare';
+          resource.name = `Rare ${resource.name}`;
+        }
+      });
+    }
+
+    if (loyaltyMultiplier >= 1.5) { // Expert Navigator tier (1.5x)
+      // Upgrade some rare resources to epic
+      resources.forEach(resource => {
+        if (resource.rarity === 'rare' && Math.random() < 0.1) {
+          resource.rarity = 'epic';
+          resource.name = `Epic ${resource.name}`;
+        }
+      });
+    }
+
+    if (loyaltyMultiplier >= 2.0) { // Master Explorer tier (2.0x)
+      // Small chance for legendary resources
+      if (Math.random() < 0.05) {
+        const legendaryResource = generateRandomResource();
+        legendaryResource.rarity = 'legendary';
+        legendaryResource.name = `Legendary ${legendaryResource.name}`;
+        legendaryResource.quantity = Math.floor(legendaryResource.quantity * 2);
+        resources.push(legendaryResource);
+      }
+    }
   }
 }

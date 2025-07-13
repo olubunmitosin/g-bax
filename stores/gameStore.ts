@@ -98,15 +98,10 @@ export const useGameStore = create<GameState>()(
 
         updatePlayerExperience: (experienceGained) =>
           set((state) => {
-            if (!state.player) {
-              console.log('❌ updatePlayerExperience: No player found');
-              return state;
-            }
+            if (!state.player) return state;
 
             const newExperience = state.player.experience + experienceGained;
             const newLevel = getLevelFromExperience(newExperience);
-
-            console.log(`🎯 Experience Update: +${experienceGained} XP (${state.player.experience} → ${newExperience}), Level: ${state.player.level} → ${newLevel}`);
 
             return {
               player: {

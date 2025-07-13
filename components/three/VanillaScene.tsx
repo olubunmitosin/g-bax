@@ -179,8 +179,15 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         addResource(resource);
       },
       onExperienceGained: (experience) => {
-        console.log(`🎮 VanillaScene: onExperienceGained called with ${experience} XP`);
-        updatePlayerExperience(experience);
+        // Apply loyalty tier multiplier to experience
+        const multiplier = getCurrentMultiplier();
+        const finalExperience = Math.floor(experience * multiplier);
+
+
+        updatePlayerExperience(finalExperience);
+      },
+      onGetLoyaltyMultiplier: () => {
+        return getCurrentMultiplier();
       },
       onExplorationComplete: (result) => {
         // Exploration notifications removed per user preference
@@ -198,6 +205,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
           // Award loyalty points for mining
           const loyaltyPoints = await awardPointsForActivity('mining_complete', basePoints);
 
+          // Calculate final experience for display (multiplier is applied in onExperienceGained)
           const multiplier = getCurrentMultiplier();
           const finalExperience = Math.floor(result.experience * multiplier);
 
@@ -236,6 +244,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
           // Award loyalty points for crafting
           const loyaltyPoints = await awardPointsForActivity('crafting_complete', basePoints);
 
+          // Calculate final experience for display (multiplier is applied in onExperienceGained)
           const multiplier = getCurrentMultiplier();
           const finalExperience = Math.floor(result.experience * multiplier);
 

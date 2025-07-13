@@ -20,6 +20,7 @@ export interface GameSystemsCallbacks {
   onCraftingComplete?: (result: CraftingResult) => void;
   onExplorationComplete?: (result: ExplorationResult) => void;
   onMissionProgress?: (missionType: string, progress: number) => void;
+  onGetLoyaltyMultiplier?: () => number;
 }
 
 export class GameSystemsManager {
@@ -90,8 +91,6 @@ export class GameSystemsManager {
   private handleMiningResults(results: MiningResult[]): void {
     results.forEach(result => {
       if (result.success) {
-        console.log(`⛏️ Mining completed! Resources: ${result.resources.length}, Experience: ${result.experience}`);
-
         // Add resources to player inventory via callback
         result.resources.forEach(resource => {
           if (this.callbacks.onResourceAdded) {
@@ -101,7 +100,6 @@ export class GameSystemsManager {
 
         // Update player experience via callback
         if (result.experience > 0 && this.callbacks.onExperienceGained) {
-          console.log(`📈 Calling onExperienceGained with ${result.experience} XP`);
           this.callbacks.onExperienceGained(result.experience);
         }
 
@@ -184,11 +182,19 @@ export class GameSystemsManager {
       return false;
     }
 
-    // Calculate efficiency based on player traits
+    // Calculate efficiency based on player traits and loyalty tier
     const gameStore = useGameStore.getState();
-    const efficiency = this.miningSystem.calculateMiningEfficiency([], []); // Would use actual player data
+    let efficiency = this.miningSystem.calculateMiningEfficiency([], []); // Would use actual player data
 
-    const operation = this.miningSystem.startMining(playerId, targetObject, efficiency);
+    // Get loyalty multiplier for bonuses
+    let loyaltyMultiplier = 1.0;
+    if (this.callbacks.onGetLoyaltyMultiplier) {
+      loyaltyMultiplier = this.callbacks.onGetLoyaltyMultiplier();
+      // Loyalty tiers provide mining efficiency bonus (not just XP bonus)
+      efficiency *= Math.min(loyaltyMultiplier, 2.0); // Cap at 2x efficiency
+    }
+
+    const operation = this.miningSystem.startMining(playerId, targetObject, efficiency, loyaltyMultiplier);
 
     if (operation) {
       // Set up completion callback
@@ -226,8 +232,15 @@ export class GameSystemsManager {
       return false;
     }
 
-    // Calculate efficiency based on player traits
-    const efficiency = this.craftingSystem.calculateCraftingEfficiency([], []); // Would use actual player data
+    // Calculate efficiency based on player traits and loyalty tier
+    let efficiency = this.craftingSystem.calculateCraftingEfficiency([], []); // Would use actual player data
+
+    // Apply loyalty tier crafting bonuses
+    if (this.callbacks.onGetLoyaltyMultiplier) {
+      const loyaltyMultiplier = this.callbacks.onGetLoyaltyMultiplier();
+      // Loyalty tiers provide crafting efficiency bonus (not just XP bonus)
+      efficiency *= Math.min(loyaltyMultiplier, 2.0); // Cap at 2x efficiency
+    }
 
     const operation = this.craftingSystem.startCrafting(playerId, recipeId, playerResources, efficiency);
 
