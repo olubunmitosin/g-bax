@@ -111,7 +111,7 @@ export function useProgressSync() {
   // Sync with blockchain when connected (future enhancement)
   useEffect(() => {
     if (connected && publicKey && honeycombState.isConnected) {
-      // TODO: Implement blockchain sync
+      // Blockchain sync will be implemented in future updates
     }
   }, [connected, publicKey, honeycombState.isConnected]);
 

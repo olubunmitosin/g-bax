@@ -43,8 +43,7 @@ export default function SolanaWalletProvider({ children }: SolanaWalletProviderP
       error?.message?.includes('Unknown response id')) {
       return; // Silently ignore these warnings
     }
-    // Log other errors for debugging
-    console.error('Wallet error:', error);
+    // Silently handle other wallet errors in production
   };
 
   return (

@@ -71,27 +71,7 @@ export default function GuildsPage() {
     }
   };
 
-  // Debug function to check localStorage data
-  const debugGuildData = () => {
-    console.log('=== GUILD DEBUG DATA ===');
-    const guildsData = localStorage.getItem('verxio_guilds');
-    if (guildsData) {
-      const guilds = JSON.parse(guildsData);
-      console.log('Guilds in localStorage:', guilds);
-    }
 
-    if (player?.id) {
-      const membershipData = localStorage.getItem(`verxio_guild_member_${player.id}`);
-      console.log('Player membership data:', membershipData);
-
-      const loyaltyData = localStorage.getItem(`verxio_loyalty_${player.id}`);
-      console.log('Player loyalty data:', loyaltyData);
-    }
-
-    console.log('Current playerGuild state:', playerGuild);
-    console.log('Current availableGuilds state:', availableGuilds);
-    console.log('========================');
-  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -129,15 +109,7 @@ export default function GuildsPage() {
                     >
                       🔄
                     </Button>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={debugGuildData}
-                      title="Debug guild data"
-                    >
-                      🐛
-                    </Button>
+
                     <Button
                       size="sm"
                       color="warning"
