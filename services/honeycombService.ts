@@ -322,14 +322,19 @@ export class HoneycombService {
   async getPlayerProfile(player: PublicKey): Promise<any> {
     try {
       if (!this.edgeClient) {
-        // Mock profile when Honeycomb is not available
-        return {
-          id: player.toString(),
-          name: `Explorer ${player.toString().slice(0, 8)}`,
-          experience: 0,
-          credits: 1000,
-          level: 1,
-        };
+        // Use localStorage as blockchain simulation when Honeycomb is not available
+        const blockchainKey = `honeycomb-profile-${player.toString()}`;
+        const saved = localStorage.getItem(blockchainKey);
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch (error) {
+            // Continue to create new profile
+          }
+        }
+
+        // Return null to indicate no existing profile (not a default one)
+        return null;
       }
 
       // Fetch player profile from Honeycomb
@@ -340,12 +345,56 @@ export class HoneycombService {
     }
   }
 
+  async getPlayerMissions(player: PublicKey): Promise<any[]> {
+    try {
+      if (!this.edgeClient) {
+        // Return empty missions when Honeycomb is not available
+        return [];
+      }
+
+      // Fetch player missions from Honeycomb
+      const missions = await this.edgeClient.getPlayerMissions(player);
+      return missions || [];
+    } catch (error) {
+      return [];
+    }
+  }
+
   async updatePlayerExperience(
     player: PublicKey,
     experience: number,
     playerKeypair?: Keypair
   ): Promise<void> {
     try {
+      if (!this.hiveControl) {
+        // Use localStorage as blockchain simulation when Honeycomb is not available
+        const blockchainKey = `honeycomb-profile-${player.toString()}`;
+        const existing = localStorage.getItem(blockchainKey);
+        let profile = {
+          id: player.toString(),
+          name: `Explorer ${player.toString().slice(0, 8)}`,
+          experience: 0,
+          credits: 1000,
+          level: 1,
+        };
+
+        if (existing) {
+          try {
+            profile = JSON.parse(existing);
+          } catch (error) {
+            // Use default profile
+          }
+        }
+
+        // Update experience and level
+        profile.experience = experience;
+        profile.level = Math.floor(experience / 1000) + 1; // Simple level calculation
+
+        // Save to localStorage (simulating blockchain)
+        localStorage.setItem(blockchainKey, JSON.stringify(profile));
+        return;
+      }
+
       // Update player experience on-chain
       await this.hiveControl.updateExperience({
         player,
@@ -354,6 +403,25 @@ export class HoneycombService {
       });
     } catch (error) {
       throw new Error('Failed to update player experience');
+    }
+  }
+
+  async updateMissionProgress(
+    player: PublicKey,
+    missionId: string,
+    progress: number,
+    playerKeypair?: Keypair
+  ): Promise<void> {
+    try {
+      // Update mission progress on-chain
+      await this.hiveControl.updateMissionProgress({
+        player,
+        missionId,
+        progress,
+        playerKeypair,
+      });
+    } catch (error) {
+      // Silently handle mission progress update errors
     }
   }
 

@@ -64,7 +64,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
   } = useVerxioIntegration();
 
   // Item effects system
-  const { getActiveMultipliers, addEffect } = useItemEffectsStore();
+  const { getActiveMultipliers, addEffect, useItems } = useItemEffectsStore();
 
   // Honeycomb integration for missions
   const { updateMissionProgress } = useHoneycombIntegration();
@@ -584,100 +584,64 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     // Remove the specified quantity of the item
     removeResource(itemId, quantity);
 
-    // Apply actual effects based on item type and rarity
-    const rarityMultiplier = {
-      common: 1.0,
-      rare: 1.5,
-      epic: 2.0,
-      legendary: 3.0,
-    }[item.rarity] || 1.0;
+    // Use new tiered benefit system
+    const baseDuration = 300000; // 5 minutes base duration
+    const totalDuration = baseDuration * quantity;
 
     switch (item.type) {
       case 'energy':
-        // Energy items provide mining efficiency boost
-        const miningBoost = 1.2 + (rarityMultiplier - 1.0) * 0.3; // 1.2x to 1.8x based on rarity
-        const miningDuration = 300000 * quantity; // 5 minutes per item
-
-        addEffect({
-          name: `${item.name} Mining Boost`,
-          type: 'mining_efficiency',
-          multiplier: miningBoost,
-          duration: miningDuration,
-          description: `Mining efficiency increased by ${Math.round((miningBoost - 1) * 100)}% for ${miningDuration / 60000} minutes`,
-        });
+        // Energy items provide mining efficiency boost using tiered system
+        useItems('mining_efficiency', quantity, totalDuration, `${item.name} Mining Boost`);
 
         showSuccess(
           'Mining Efficiency Boosted!',
-          `Used ${quantity} ${item.name}(s) - Mining efficiency increased by ${Math.round((miningBoost - 1) * 100)}% for ${miningDuration / 60000} minutes!`
+          `Used ${quantity} ${item.name}(s) - Check Active Effects panel for your current tier bonus!`
         );
         break;
 
       case 'crystal':
-        // Crystals provide experience boost and immediate XP
+        // Crystals provide experience boost using tiered system
+        const rarityMultiplier = {
+          common: 1.0,
+          rare: 1.5,
+          epic: 2.0,
+          legendary: 3.0,
+        }[item.rarity] || 1.0;
+
         const experienceGained = quantity * 50 * rarityMultiplier; // 50-150 XP per crystal based on rarity
-        const expBoost = 1.15 + (rarityMultiplier - 1.0) * 0.15; // 1.15x to 1.6x based on rarity
         const expDuration = 600000 * quantity; // 10 minutes per crystal
 
         updatePlayerExperience(Math.floor(experienceGained));
-
-        addEffect({
-          name: `${item.name} Experience Boost`,
-          type: 'experience_boost',
-          multiplier: expBoost,
-          duration: expDuration,
-          description: `Experience gain increased by ${Math.round((expBoost - 1) * 100)}% for ${expDuration / 60000} minutes`,
-        });
+        useItems('experience_boost', quantity, expDuration, `${item.name} Experience Boost`);
 
         showSuccess(
           'Experience Boosted!',
-          `Used ${quantity} ${item.name}(s) - Gained ${Math.floor(experienceGained)} XP and experience boost of ${Math.round((expBoost - 1) * 100)}% for ${expDuration / 60000} minutes!`
+          `Used ${quantity} ${item.name}(s) - Gained ${Math.floor(experienceGained)} XP and tiered experience boost!`
         );
         break;
 
       case 'metal':
-        // Metals provide crafting speed and resource yield boost
-        const craftingBoost = 1.25 + (rarityMultiplier - 1.0) * 0.25; // 1.25x to 2.0x based on rarity
-        const resourceBoost = 1.1 + (rarityMultiplier - 1.0) * 0.2; // 1.1x to 1.7x based on rarity
+        // Metals provide crafting speed and resource yield boost using tiered system
         const metalDuration = 450000 * quantity; // 7.5 minutes per metal
 
-        addEffect({
-          name: `${item.name} Crafting Boost`,
-          type: 'crafting_speed',
-          multiplier: craftingBoost,
-          duration: metalDuration,
-          description: `Crafting speed increased by ${Math.round((craftingBoost - 1) * 100)}% for ${metalDuration / 60000} minutes`,
-        });
-
-        addEffect({
-          name: `${item.name} Resource Yield`,
-          type: 'resource_yield',
-          multiplier: resourceBoost,
-          duration: metalDuration,
-          description: `Resource yield increased by ${Math.round((resourceBoost - 1) * 100)}% for ${metalDuration / 60000} minutes`,
-        });
+        useItems('crafting_speed', quantity, metalDuration, `${item.name} Crafting Boost`);
+        useItems('resource_yield', quantity, metalDuration, `${item.name} Resource Yield`);
 
         showSuccess(
           'Equipment Enhanced!',
-          `Used ${quantity} ${item.name}(s) - Crafting speed increased by ${Math.round((craftingBoost - 1) * 100)}% and resource yield by ${Math.round((resourceBoost - 1) * 100)}% for ${metalDuration / 60000} minutes!`
+          `Used ${quantity} ${item.name}(s) - Check Active Effects panel for your current tier bonuses!`
         );
         break;
 
       default:
-        // Generic items provide small temporary boosts
-        const genericBoost = 1.05 + (rarityMultiplier - 1.0) * 0.05;
+        // Generic items provide small temporary boosts using tiered system
         const genericDuration = 180000 * quantity; // 3 minutes per item
 
-        addEffect({
-          name: `${item.name} Boost`,
-          type: 'mining_efficiency',
-          multiplier: genericBoost,
-          duration: genericDuration,
-          description: `Minor efficiency boost for ${genericDuration / 60000} minutes`,
-        });
+        useItems('mining_efficiency', quantity, genericDuration, `${item.name} Boost`);
 
         showInfo(
           'Item Used',
-          `Used ${quantity} ${item.name}(s) - Minor efficiency boost for ${genericDuration / 60000} minutes!`
+          `Used ${quantity} ${item.name}(s) - Check Active Effects panel for your current tier bonus!`
         );
         break;
     }

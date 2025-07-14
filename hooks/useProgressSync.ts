@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/stores/gameStore';
-import { useVerxioStore } from '@/stores/verxioStore';
+import { useVerxioStore, resetVerxioStore } from '@/stores/verxioStore';
 import { useHoneycombStore } from '@/stores/honeycombStore';
+import { resetItemEffectsStore } from '@/stores/itemEffectsStore';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 /**
@@ -55,9 +56,43 @@ export function useProgressSync() {
   // Load progress on wallet connection (only once)
   useEffect(() => {
     if (connected && publicKey && !gameState.player) {
+      loadPlayerProgress();
+    }
+  }, [connected, publicKey?.toString()]); // Only depend on connection state and wallet address
 
-      // Try to load saved progress first
-      const saved = localStorage.getItem('g-bax-game-progress');
+  // Function to load player progress from blockchain and localStorage
+  const loadPlayerProgress = async () => {
+    if (!connected || !publicKey) return;
+
+    try {
+      // First, try to load from blockchain if Honeycomb is connected
+      if (honeycombState.isConnected && honeycombState.honeycombService) {
+        const blockchainProfile = await honeycombState.honeycombService.getPlayerProfile(publicKey);
+
+        if (blockchainProfile && blockchainProfile.experience > 0) {
+          // Load from blockchain
+          gameState.setPlayer({
+            id: publicKey.toString(),
+            name: blockchainProfile.name || `Explorer ${publicKey.toString().slice(0, 8)}`,
+            level: blockchainProfile.level || 1,
+            experience: blockchainProfile.experience || 0,
+            position: [0, 0, 0],
+            credits: blockchainProfile.credits || 1000,
+          });
+
+          // Load missions from blockchain
+          const playerMissions = await honeycombState.honeycombService.getPlayerMissions(publicKey);
+          if (playerMissions && playerMissions.length > 0) {
+            gameState.setMissions(playerMissions);
+          }
+
+          return; // Successfully loaded from blockchain
+        }
+      }
+
+      // Fallback: Try to load saved progress from wallet-specific localStorage
+      const walletSpecificKey = `g-bax-game-progress-${publicKey.toString()}`;
+      const saved = localStorage.getItem(walletSpecificKey) || localStorage.getItem('g-bax-game-progress');
       if (saved) {
         try {
           const gameData = JSON.parse(saved);
@@ -71,10 +106,21 @@ export function useProgressSync() {
             return;
           }
         } catch (error) {
+          // Continue to create new player
         }
       }
 
-      // If no saved progress, create new player
+      // If no saved progress anywhere, create new player
+      gameState.setPlayer({
+        id: publicKey.toString(),
+        name: `Explorer ${publicKey.toString().slice(0, 8)}`,
+        level: 1,
+        experience: 0,
+        position: [0, 0, 0],
+        credits: 1000,
+      });
+    } catch (error) {
+      // If blockchain loading fails, create new player
       gameState.setPlayer({
         id: publicKey.toString(),
         name: `Explorer ${publicKey.toString().slice(0, 8)}`,
@@ -84,14 +130,40 @@ export function useProgressSync() {
         credits: 1000,
       });
     }
-  }, [connected, publicKey?.toString()]); // Only depend on connection state and wallet address
+  };
 
-  // Save progress when wallet disconnects
+  // Clear all data when wallet disconnects
   useEffect(() => {
-    if (!connected && gameState.player) {
-      gameState.saveProgress();
+    const currentPlayer = gameState.player;
+    if (!connected && currentPlayer) {
+      // Save final progress to blockchain before clearing
+      syncToBlockchain();
+
+      // Save to localStorage as backup (with wallet-specific key)
+      const walletSpecificKey = `g-bax-game-progress-${currentPlayer.id}`;
+      const gameData = {
+        player: currentPlayer,
+        inventory: gameState.inventory,
+        missions: gameState.missions,
+        activeMission: gameState.activeMission,
+        currentScene: gameState.currentScene,
+        lastSaved: new Date().toISOString(),
+      };
+      localStorage.setItem(walletSpecificKey, JSON.stringify(gameData));
+
+      // Clear all game state
+      gameState.reset();
+
+      // Clear general localStorage data
+      localStorage.removeItem('g-bax-game-progress');
+
+      // Clear Verxio state and localStorage
+      resetVerxioStore();
+
+      // Clear item effects and localStorage
+      resetItemEffectsStore();
     }
-  }, [connected, gameState]);
+  }, [connected]);
 
   // Save progress before page unload
   useEffect(() => {
@@ -108,12 +180,37 @@ export function useProgressSync() {
     };
   }, [gameState]);
 
-  // Sync with blockchain when connected (future enhancement)
+  // Sync with blockchain when connected
   useEffect(() => {
-    if (connected && publicKey && honeycombState.isConnected) {
-      // Blockchain sync will be implemented in future updates
+    if (connected && publicKey && honeycombState.isConnected && gameState.player) {
+      // Sync player progress to blockchain
+      syncToBlockchain();
     }
-  }, [connected, publicKey, honeycombState.isConnected]);
+  }, [connected, publicKey, honeycombState.isConnected, gameState.player?.experience, gameState.player?.level]);
+
+  // Function to sync progress to blockchain
+  const syncToBlockchain = async () => {
+    if (!connected || !publicKey || !honeycombState.honeycombService || !gameState.player) return;
+
+    try {
+      // Update player experience on blockchain
+      await honeycombState.honeycombService.updatePlayerExperience(
+        publicKey,
+        gameState.player.experience
+      );
+
+      // Update mission progress on blockchain
+      if (gameState.activeMission) {
+        await honeycombState.updateMissionProgress(
+          publicKey,
+          gameState.activeMission.id,
+          gameState.activeMission.progress
+        );
+      }
+    } catch (error) {
+      // Silently handle blockchain sync errors
+    }
+  };
 
   return {
     isConnected: connected,

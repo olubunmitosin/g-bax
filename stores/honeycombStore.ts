@@ -51,6 +51,7 @@ export interface HoneycombState {
   createPlayerProfile: (playerPublicKey: PublicKey, profileData: any) => Promise<void>;
   loadPlayerProfile: (playerPublicKey: PublicKey) => Promise<void>;
   updatePlayerExperience: (playerPublicKey: PublicKey, experience: number) => Promise<void>;
+  updateMissionProgress: (playerPublicKey: PublicKey, missionId: string, progress: number) => Promise<void>;
 
   // Utility actions
   checkConnection: () => Promise<void>;
@@ -315,6 +316,25 @@ export const useHoneycombStore = create<HoneycombState>()(
           });
         } catch (error) {
           throw error;
+        }
+      },
+
+      updateMissionProgress: async (playerPublicKey: PublicKey, missionId: string, progress: number) => {
+        const { honeycombService } = get();
+        if (!honeycombService) return;
+
+        try {
+          await honeycombService.updateMissionProgress(playerPublicKey, missionId, progress);
+
+          set(state => ({
+            playerMissions: state.playerMissions.map(mission =>
+              mission.missionId === missionId
+                ? { ...mission, progress }
+                : mission
+            ),
+          }));
+        } catch (error) {
+          // Silently handle mission progress update errors
         }
       },
 

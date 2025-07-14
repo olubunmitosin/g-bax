@@ -110,21 +110,26 @@ export function useVerxioIntegration() {
 
     let multiplier = getMultiplierForPoints(playerLoyalty.points);
 
-    // Apply guild bonuses
+    // Apply guild bonuses (additive, not multiplicative to prevent exponential growth)
     if (playerGuild) {
+      let guildBonus = 0;
       playerGuild.benefits.forEach(benefit => {
         switch (benefit.type) {
           case 'experience_boost':
           case 'resource_bonus':
           case 'mining_efficiency':
           case 'crafting_speed':
-            multiplier *= benefit.value;
+            // Convert to additive bonus (benefit.value - 1) and cap at 0.5 (50%)
+            guildBonus += Math.min(benefit.value - 1, 0.5);
             break;
         }
       });
+      // Cap total guild bonus at 100%
+      multiplier += Math.min(guildBonus, 1.0);
     }
 
-    return multiplier;
+    // Cap final multiplier at 3.0 (200% bonus maximum)
+    return Math.min(multiplier, 3.0);
   };
 
   // Get guild benefits for specific activity

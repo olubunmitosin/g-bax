@@ -574,9 +574,10 @@ export class VerxioService {
     return { needed: Math.max(0, needed), nextTier };
   }
 
-  // Get multiplier for current tier
+  // Get multiplier for current tier (capped at 2.0x maximum)
   getMultiplierForPoints(points: number): number {
-    return this.getTierByPoints(points).multiplier;
+    const multiplier = this.getTierByPoints(points).multiplier;
+    return Math.min(multiplier, 2.0); // Cap at 2.0x (100% bonus maximum)
   }
 
   // Utility function to sync all guild member counts with actual membership data

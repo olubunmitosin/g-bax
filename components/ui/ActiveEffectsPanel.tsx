@@ -14,7 +14,7 @@ interface ActiveEffectsPanelProps {
 }
 
 export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEffectsPanelProps) {
-  const { activeEffects, clearExpiredEffects, getActiveMultipliers } = useItemEffectsStore();
+  const { activeEffects, clearExpiredEffects, getActiveMultipliers, totalItemsUsed, getTieredBenefit } = useItemEffectsStore();
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [, forceUpdate] = useState({});
   const { isOpen, onOpen, onClose: onModalClose } = useDisclosure();
@@ -169,6 +169,33 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
           <ModalBody className="pb-6">
             {activeEffectsList.length > 0 ? (
               <>
+                {/* Tiered Benefit System Info */}
+                <div className="bg-primary-50 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-lg mb-3">Tiered Benefit System</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-2xl font-bold text-primary-600">{totalItemsUsed}</div>
+                      <div className="text-sm text-default-600">Total Items Used</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-success-600">
+                        {Math.round((getTieredBenefit(totalItemsUsed) - 1) * 100)}%
+                      </div>
+                      <div className="text-sm text-default-600">Current Tier Bonus</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-xs text-default-500">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>1-4 items: 3% bonus</div>
+                      <div>5-10 items: 10% bonus</div>
+                      <div>11-25 items: 20% bonus</div>
+                      <div>26-40 items: 35% bonus</div>
+                      <div>41-100 items: 50% bonus</div>
+                      <div>101+ items: 70% bonus</div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Current Multipliers Summary */}
                 <div className="bg-default-50 rounded-lg p-4 mb-4">
                   <h4 className="font-semibold text-lg mb-3">Current Bonuses</h4>
@@ -212,41 +239,7 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
                   </div>
                 </div>
 
-                {/* Individual Effects */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-lg">Individual Effects</h4>
-                  {activeEffectsList.map((effect) => (
-                    <div key={effect.id} className="border border-default-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{getEffectIcon(effect.type)}</span>
-                          <div>
-                            <div className="font-semibold text-lg">{effect.name}</div>
-                            <div className="text-sm text-default-600">
-                              +{Math.round((effect.multiplier - 1) * 100)}% boost
-                            </div>
-                          </div>
-                        </div>
-                        <Chip
-                          size="lg"
-                          color={getEffectColor(effect.type)}
-                          variant="flat"
-                        >
-                          {formatTimeRemaining(effect)}
-                        </Chip>
-                      </div>
 
-                      <Progress
-                        size="md"
-                        value={getProgressPercentage(effect)}
-                        color={getEffectColor(effect)}
-                        className="mb-2"
-                      />
-
-                      <p className="text-sm text-default-600">{effect.description}</p>
-                    </div>
-                  ))}
-                </div>
               </>
             ) : (
               <div className="text-center py-8">

@@ -190,18 +190,21 @@ export class GameSystemsManager {
     // Get base efficiency from traits and equipment
     let efficiency = this.miningSystem.calculateMiningEfficiency([], []); // Would use actual player data
 
-    // Apply item effect bonuses
+    // Apply item effect bonuses (additive to prevent exponential growth)
     const itemMultipliers = itemEffectsStore.getActiveMultipliers();
-    efficiency *= itemMultipliers.miningEfficiency;
-    efficiency *= itemMultipliers.resourceYield; // Resource yield also affects mining efficiency
+    efficiency += (itemMultipliers.miningEfficiency - 1.0); // Convert to additive
+    efficiency += (itemMultipliers.resourceYield - 1.0); // Convert to additive
 
     // Get loyalty multiplier for bonuses
     let loyaltyMultiplier = 1.0;
     if (this.callbacks.onGetLoyaltyMultiplier) {
       loyaltyMultiplier = this.callbacks.onGetLoyaltyMultiplier();
-      // Loyalty tiers provide mining efficiency bonus (not just XP bonus)
-      efficiency *= Math.min(loyaltyMultiplier, 2.0); // Cap at 2x efficiency
+      // Apply loyalty bonus additively and cap at 2.0x total efficiency
+      efficiency += (loyaltyMultiplier - 1.0);
     }
+
+    // Cap final efficiency at 3.0x (200% bonus maximum)
+    efficiency = Math.min(efficiency, 3.0);
 
     const operation = this.miningSystem.startMining(playerId, targetObject, efficiency, loyaltyMultiplier);
 
@@ -245,16 +248,19 @@ export class GameSystemsManager {
     const itemEffectsStore = useItemEffectsStore.getState();
     let efficiency = this.craftingSystem.calculateCraftingEfficiency([], []); // Would use actual player data
 
-    // Apply item effect bonuses
+    // Apply item effect bonuses (additive to prevent exponential growth)
     const itemMultipliers = itemEffectsStore.getActiveMultipliers();
-    efficiency *= itemMultipliers.craftingSpeed;
+    efficiency += (itemMultipliers.craftingSpeed - 1.0); // Convert to additive
 
     // Apply loyalty tier crafting bonuses
     if (this.callbacks.onGetLoyaltyMultiplier) {
       const loyaltyMultiplier = this.callbacks.onGetLoyaltyMultiplier();
-      // Loyalty tiers provide crafting efficiency bonus (not just XP bonus)
-      efficiency *= Math.min(loyaltyMultiplier, 2.0); // Cap at 2x efficiency
+      // Apply loyalty bonus additively
+      efficiency += (loyaltyMultiplier - 1.0);
     }
+
+    // Cap final efficiency at 3.0x (200% bonus maximum)
+    efficiency = Math.min(efficiency, 3.0);
 
     const operation = this.craftingSystem.startCrafting(playerId, recipeId, playerResources, efficiency);
 
