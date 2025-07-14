@@ -31,11 +31,11 @@ export default function MissionsPage() {
 
   const getMissionStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return '✅';
-      case 'active': return '🔄';
-      case 'available': return '🎯';
-      case 'locked': return '🔒';
-      default: return '❓';
+      case 'completed': return '';
+      case 'active': return '';
+      case 'available': return '';
+      case 'locked': return '';
+      default: return '';
     }
   };
 
@@ -65,7 +65,6 @@ export default function MissionsPage() {
           <Card className="mb-8 bg-gradient-to-r from-warning-500/10 to-primary-500/10 border-warning-500/20">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🔄</span>
                 <div>
                   <h3 className="text-xl font-bold">Active Mission</h3>
                   <p className="text-default-600">Currently in progress</p>
@@ -239,7 +238,7 @@ export default function MissionsPage() {
             <CardBody className="space-y-4">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold mb-2">🎯 Mission Types</h4>
+                  <h4 className="font-semibold mb-2">Mission Types</h4>
                   <ul className="space-y-1 text-sm text-default-600">
                     <li><strong>Mining:</strong> Extract resources from asteroids and nodes</li>
                     <li><strong>Exploration:</strong> Discover new sectors and objects</li>
@@ -249,7 +248,7 @@ export default function MissionsPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-2">🏆 Progression</h4>
+                  <h4 className="font-semibold mb-2">Progression</h4>
                   <ul className="space-y-1 text-sm text-default-600">
                     <li><strong>Automatic:</strong> Missions progress as you play</li>
                     <li><strong>Unlocking:</strong> Complete missions to unlock new ones</li>

@@ -12,7 +12,7 @@ import GuildBrowser from '@/components/ui/GuildBrowser';
 
 export default function GuildsPage() {
   const [showBrowser, setShowBrowser] = useState(false);
-  const { playerGuild, guildMembers, availableGuilds, loadAvailableGuilds, loadPlayerLoyalty, isLoadingGuilds, forceRefreshGuildData, playerLoyalty } = useVerxioStore();
+  const { playerGuild, guildMembers, availableGuilds, loadAvailableGuilds, loadPlayerLoyalty, isLoadingGuilds, forceRefreshGuildData, playerLoyalty, verxioService } = useVerxioStore();
   const { player } = usePlayerSync();
 
   // Get current guild data from availableGuilds (like leaderboard does)
@@ -61,6 +61,13 @@ export default function GuildsPage() {
       await forceRefreshGuildData(playerPublicKey);
     } else {
       await loadAvailableGuilds();
+    }
+  };
+
+  const handleCheckLeadership = async () => {
+    if (currentGuild && verxioService) {
+      await verxioService.checkAndUpdateGuildLeadership(currentGuild.id);
+      await handleRefreshData(); // Refresh to see changes
     }
   };
 
@@ -140,6 +147,15 @@ export default function GuildsPage() {
                     >
                       Force Refresh
                     </Button>
+                    <Button
+                      size="sm"
+                      color="secondary"
+                      variant="flat"
+                      onPress={handleCheckLeadership}
+                      title="Check guild leadership"
+                    >
+                      Check Leadership
+                    </Button>
                     <Chip color="success" variant="flat">
                       Member
                     </Chip>
@@ -207,14 +223,36 @@ export default function GuildsPage() {
 
                       {guildMembers.length > 0 && (
                         <div>
-                          <h5 className="text-sm font-medium mb-2">Recent Members</h5>
+                          <h5 className="text-sm font-medium mb-2">Guild Members</h5>
                           <div className="space-y-1">
-                            {guildMembers.slice(0, 3).map((member, index) => (
-                              <div key={index} className="flex justify-between text-xs">
-                                <span>{member.playerName}</span>
-                                <span className="text-default-500">{member.rank}</span>
-                              </div>
-                            ))}
+                            {guildMembers.slice(0, 5).map((member, index) => {
+                              const lastActive = new Date(member.lastActive);
+                              const now = new Date();
+                              const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+                              const isActive = daysSinceActive <= 3;
+
+                              return (
+                                <div key={index} className="flex justify-between items-center text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span>{member.playerName}</span>
+                                    {!isActive && (
+                                      <span className="text-warning-500" title={`Inactive for ${daysSinceActive} days`}>
+                                        ⚠️
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Chip
+                                      size="sm"
+                                      color={member.rank === 'leader' ? 'primary' : member.rank === 'officer' ? 'secondary' : 'default'}
+                                      variant="flat"
+                                    >
+                                      {member.rank}
+                                    </Chip>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

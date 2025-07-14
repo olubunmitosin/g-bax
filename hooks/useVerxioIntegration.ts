@@ -23,6 +23,7 @@ export function useVerxioIntegration() {
     loadPlayerLoyalty,
     awardLoyaltyPoints,
     updateReputation,
+    updateMemberActivity,
     getMultiplierForPoints,
   } = useVerxioStore();
 
@@ -89,6 +90,17 @@ export function useVerxioIntegration() {
       return finalPoints;
     } catch (error) {
       return 0;
+    }
+  };
+
+  // Track player activity for guild leadership
+  const trackPlayerActivity = async () => {
+    if (!connected || !publicKey || !verxioConnected) return;
+
+    try {
+      await updateMemberActivity(publicKey);
+    } catch (error) {
+      // Silently fail - activity tracking is not critical
     }
   };
 
@@ -256,6 +268,7 @@ export function useVerxioIntegration() {
 
     // Utility functions
     awardPointsForActivity,
+    trackPlayerActivity,
     getCurrentMultiplier,
     getGuildBenefits,
     canJoinGuild,

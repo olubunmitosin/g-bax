@@ -58,7 +58,9 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     getCurrentMultiplier,
     getGuildBenefits,
     playerLoyalty,
-    playerGuild
+    playerGuild,
+    isConnected: verxioConnected,
+    verxioService
   } = useVerxioIntegration();
 
   // Item effects system
@@ -127,6 +129,11 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
   useEffect(() => {
     if (!mountRef.current) return;
+
+    // Wait for Verxio to be connected before initializing game systems
+    if (!verxioConnected) {
+      return;
+    }
 
     const mount = mountRef.current;
     const width = mount.clientWidth;
@@ -464,7 +471,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
       renderer?.dispose();
     };
-  }, []);
+  }, [verxioConnected]);
 
   // Mining functions
   const handleStartMining = (objectId: string) => {

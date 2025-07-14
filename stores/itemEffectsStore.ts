@@ -14,7 +14,7 @@ export interface ItemEffect {
 
 export interface ItemEffectsState {
   activeEffects: ItemEffect[];
-  
+
   // Actions
   addEffect: (effect: Omit<ItemEffect, 'id' | 'startTime' | 'isActive'>) => void;
   removeEffect: (effectId: string) => void;
@@ -71,7 +71,7 @@ export const useItemEffectsStore = create<ItemEffectsState>()(
         getActiveMultipliers: () => {
           const { activeEffects } = get();
           const now = Date.now();
-          
+
           const multipliers = {
             miningEfficiency: 1.0,
             craftingSpeed: 1.0,
@@ -105,7 +105,7 @@ export const useItemEffectsStore = create<ItemEffectsState>()(
         clearExpiredEffects: () => {
           const now = Date.now();
           set((state) => ({
-            activeEffects: state.activeEffects.filter(effect => 
+            activeEffects: state.activeEffects.filter(effect =>
               (now - effect.startTime) < effect.duration
             ),
           }));

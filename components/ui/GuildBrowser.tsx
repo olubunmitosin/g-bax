@@ -22,6 +22,8 @@ export default function GuildBrowser({ onClose: onClosePanel, className = "" }: 
   const [selectedGuild, setSelectedGuild] = useState<Guild | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [modalKey, setModalKey] = useState(0); // Force modal re-render on state changes
+  const [operationTimeout, setOperationTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const {
     availableGuilds,
@@ -42,6 +44,15 @@ export default function GuildBrowser({ onClose: onClosePanel, className = "" }: 
     loadAvailableGuilds();
   }, [loadAvailableGuilds]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (operationTimeout) {
+        clearTimeout(operationTimeout);
+      }
+    };
+  }, [operationTimeout]);
+
   // Get current guild data from availableGuilds (like leaderboard and guilds page)
   const getCurrentGuild = () => {
     if (!playerLoyalty?.guildId) return null;
@@ -51,28 +62,59 @@ export default function GuildBrowser({ onClose: onClosePanel, className = "" }: 
   const currentGuild = getCurrentGuild();
 
   const handleGuildClick = (guild: Guild) => {
+    // Prevent opening modal if operations are in progress
+    if (isJoining || isLeaving) return;
+
     setSelectedGuild(guild);
     onOpen();
   };
 
+  const handleModalClose = () => {
+    // Reset modal state
+    setSelectedGuild(null);
+    setIsJoining(false);
+    setIsLeaving(false);
+    setModalKey(prev => prev + 1); // Force modal re-render
+    onClose();
+  };
+
   const handleJoinGuild = async () => {
-    if (!selectedGuild || !syncedPlayer) return;
+    if (!selectedGuild || !syncedPlayer || isJoining) return;
 
     setIsJoining(true);
+
+    // Set a timeout to force reset if operation takes too long
+    const timeout = setTimeout(() => {
+      setIsJoining(false);
+      showError('Operation Timeout', 'Guild join operation took too long. Please try again.');
+    }, 10000); // 10 second timeout
+
+    setOperationTimeout(timeout);
+
     try {
       // Convert player ID to PublicKey (assuming it's a valid public key string)
       const playerPublicKey = new (await import('@solana/web3.js')).PublicKey(syncedPlayer.id);
       const result = await joinGuild(playerPublicKey, selectedGuild.id);
 
       if (result.success) {
-        showSuccess('Guild Joined!', `Welcome to ${selectedGuild.name}! You can now enjoy guild benefits.`);
-        onClose();
+        // Close modal first to prevent state conflicts
+        handleModalClose();
+
+        // Small delay to ensure modal is closed before showing notification
+        setTimeout(() => {
+          showSuccess('Guild Joined!', `Welcome to ${selectedGuild.name}! You can now enjoy guild benefits.`);
+        }, 100);
       } else {
         showError('Failed to Join Guild', result.error || 'Unknown error occurred');
       }
     } catch (error) {
       showError('Failed to Join Guild', 'An unexpected error occurred');
     } finally {
+      // Clear timeout and reset state
+      if (operationTimeout) {
+        clearTimeout(operationTimeout);
+        setOperationTimeout(null);
+      }
       setIsJoining(false);
     }
   };
@@ -332,7 +374,7 @@ export default function GuildBrowser({ onClose: onClosePanel, className = "" }: 
       </Card>
 
       {/* Guild Detail Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal key={modalKey} isOpen={isOpen} onClose={handleModalClose} size="lg" closeButton>
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-3">
@@ -435,7 +477,7 @@ export default function GuildBrowser({ onClose: onClosePanel, className = "" }: 
           </ModalBody>
 
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+            <Button variant="light" onPress={handleModalClose}>
               Close
             </Button>
             {selectedGuild && (

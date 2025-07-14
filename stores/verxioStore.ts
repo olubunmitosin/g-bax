@@ -35,6 +35,7 @@ export interface VerxioState {
   leaveGuild: (playerPublicKey: PublicKey) => Promise<{ success: boolean; error?: string }>;
   loadGuildMembers: (guildId: string) => Promise<void>;
   updateReputation: (playerPublicKey: PublicKey, change: number, reason: string) => Promise<void>;
+  updateMemberActivity: (playerPublicKey: PublicKey) => Promise<void>;
 
   // Utility actions
   getTierByPoints: (points: number) => LoyaltyTier | null;
@@ -153,6 +154,9 @@ export const useVerxioStore = create<VerxioState>()(
                   lastActivity: new Date(),
                 },
               });
+
+              // Update member activity for guild leadership tracking
+              await verxioService.updateMemberActivity(playerPublicKey);
             }
           } catch (error) {
           }
@@ -236,20 +240,14 @@ export const useVerxioStore = create<VerxioState>()(
 
         // Join a guild
         joinGuild: async (playerPublicKey: PublicKey, guildId: string) => {
-          const { verxioService, availableGuilds, playerLoyalty } = get();
+          const { verxioService, playerLoyalty } = get();
           if (!verxioService) return { success: false, error: 'Verxio service not available' };
 
           try {
             const result = await verxioService.joinGuild(playerPublicKey, guildId);
 
             if (result.success) {
-              // Force multiple refreshes to ensure data consistency
-              await get().loadAvailableGuilds();
-
-              // Small delay to ensure localStorage is updated
-              await new Promise(resolve => setTimeout(resolve, 100));
-
-              // Refresh again to be absolutely sure
+              // Single refresh to get updated guild data
               await get().loadAvailableGuilds();
 
               // Get the updated guild data
@@ -258,20 +256,21 @@ export const useVerxioStore = create<VerxioState>()(
 
               // Update player loyalty with guild info
               if (playerLoyalty && guild) {
+                // Determine rank (first member becomes leader)
+                const guildMembers = await verxioService.getGuildMembers(guildId);
+                const memberRank = guildMembers.length === 1 ? 'leader' : 'member';
+
                 set({
                   playerLoyalty: {
                     ...playerLoyalty,
                     guildId: guild.id,
-                    guildRank: 'member',
+                    guildRank: memberRank,
                   },
-                  playerGuild: guild, // Use the updated guild data
+                  playerGuild: guild,
                 });
 
-                // Load guild members
+                // Load guild members for display
                 await get().loadGuildMembers(guildId);
-
-                // Force one more refresh to ensure UI is updated
-                await get().loadAvailableGuilds();
               }
             }
 
@@ -341,7 +340,21 @@ export const useVerxioStore = create<VerxioState>()(
                   lastActivity: new Date(),
                 },
               });
+
+              // Update member activity for guild leadership tracking
+              await verxioService.updateMemberActivity(playerPublicKey);
             }
+          } catch (error) {
+          }
+        },
+
+        // Update member activity
+        updateMemberActivity: async (playerPublicKey: PublicKey) => {
+          const { verxioService } = get();
+          if (!verxioService) return;
+
+          try {
+            await verxioService.updateMemberActivity(playerPublicKey);
           } catch (error) {
           }
         },

@@ -35,8 +35,8 @@ export default function HowToPlayPage() {
               {/* Wallet Connection */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    🔗 Step 1: Connect Your Wallet
+                  <h2 className="text-2xl font-bold">
+                    Step 1: Connect Your Wallet
                   </h2>
                 </CardHeader>
                 <CardBody className="space-y-4">
@@ -75,7 +75,7 @@ export default function HowToPlayPage() {
 
                   <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
                     <p className="text-warning-700 text-sm">
-                      <strong>💡 Tip:</strong> If you don't have a wallet yet, download Phantom from phantom.app - it's beginner-friendly and secure.
+                      <strong>Tip:</strong> If you don't have a wallet yet, download Phantom from phantom.app - it's beginner-friendly and secure.
                     </p>
                   </div>
                 </CardBody>
@@ -84,14 +84,13 @@ export default function HowToPlayPage() {
               {/* First Steps */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    🚀 Step 2: Your First Actions
+                  <h2 className="text-2xl font-bold">
+                    Step 2: Your First Actions
                   </h2>
                 </CardHeader>
                 <CardBody className="space-y-4">
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="text-center space-y-2">
-                      <div className="text-3xl">🎯</div>
                       <h3 className="font-semibold">Select an Object</h3>
                       <p className="text-sm text-default-600">
                         Click on asteroids or resource nodes in the 3D space to select them
@@ -99,7 +98,6 @@ export default function HowToPlayPage() {
                     </div>
 
                     <div className="text-center space-y-2">
-                      <div className="text-3xl">⛏️</div>
                       <h3 className="font-semibold">Start Mining</h3>
                       <p className="text-sm text-default-600">
                         Click "Start Mining" to begin extracting resources from the selected object
@@ -107,7 +105,6 @@ export default function HowToPlayPage() {
                     </div>
 
                     <div className="text-center space-y-2">
-                      <div className="text-3xl">📦</div>
                       <h3 className="font-semibold">Check Inventory</h3>
                       <p className="text-sm text-default-600">
                         View your collected resources in the Inventory tab
@@ -117,7 +114,7 @@ export default function HowToPlayPage() {
 
                   <div className="bg-success-50 border border-success-200 rounded-lg p-4">
                     <p className="text-success-700 text-sm">
-                      <strong>🎉 Congratulations!</strong> Once you complete your first mining operation, you'll start earning experience and loyalty points automatically.
+                      <strong>Congratulations!</strong> Once you complete your first mining operation, you'll start earning experience and loyalty points automatically.
                     </p>
                   </div>
                 </CardBody>
@@ -189,8 +186,8 @@ export default function HowToPlayPage() {
               {/* Resource Rarities */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    💎 Resource Rarities
+                  <h2 className="text-2xl font-bold">
+                    Resource Rarities
                   </h2>
                 </CardHeader>
                 <CardBody>
@@ -229,8 +226,8 @@ export default function HowToPlayPage() {
               {/* Experience System */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    📈 Experience & Leveling
+                  <h2 className="text-2xl font-bold">
+                    Experience & Leveling
                   </h2>
                 </CardHeader>
                 <CardBody className="space-y-4">
@@ -337,8 +334,8 @@ export default function HowToPlayPage() {
               {/* Guild System */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    🏛️ Guild System
+                  <h2 className="text-2xl font-bold">
+                    Guild System
                   </h2>
                 </CardHeader>
                 <CardBody className="space-y-4">
@@ -350,22 +347,10 @@ export default function HowToPlayPage() {
                     <div className="space-y-4">
                       <h3 className="font-semibold">Guild Benefits</h3>
                       <ul className="space-y-2 text-sm">
-                        <li className="flex items-center gap-2">
-                          <span className="text-success">⚡</span>
-                          <span>Mining speed bonuses</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-warning">🔧</span>
-                          <span>Crafting efficiency boosts</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-primary">📈</span>
-                          <span>Experience multipliers</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-secondary">💎</span>
-                          <span>Resource yield increases</span>
-                        </li>
+                        <li>• Mining speed bonuses</li>
+                        <li>• Crafting efficiency boosts</li>
+                        <li>• Experience multipliers</li>
+                        <li>• Resource yield increases</li>
                       </ul>
                     </div>
 
@@ -395,8 +380,8 @@ export default function HowToPlayPage() {
               {/* Strategy Tips */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    🧠 Pro Strategies
+                  <h2 className="text-2xl font-bold">
+                    Pro Strategies
                   </h2>
                 </CardHeader>
                 <CardBody>
@@ -440,8 +425,8 @@ export default function HowToPlayPage() {
               {/* Troubleshooting */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    🔧 Troubleshooting
+                  <h2 className="text-2xl font-bold">
+                    Troubleshooting
                   </h2>
                 </CardHeader>
                 <CardBody>

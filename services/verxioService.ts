@@ -377,8 +377,12 @@ export class VerxioService {
         };
       }
 
-      // Update guild member count by counting actual members
+      // Check if this is the first member (should become leader)
       const actualMembers = await this.getGuildMembers(guildId);
+      const isFirstMember = actualMembers.length === 0;
+      const memberRank = isFirstMember ? 'leader' : 'member';
+
+      // Update guild member count
       guilds[guildIndex].memberCount = actualMembers.length + 1; // +1 for the new member
 
       // Add some initial reputation to the guild (realistic small amount)
@@ -387,13 +391,14 @@ export class VerxioService {
       // Save updated guilds
       localStorage.setItem('verxio_guilds', JSON.stringify(guilds));
 
-      // Also save guild membership for the player
+      // Save guild membership for the player
       const playerGuildData = {
         playerId,
         guildId,
-        rank: 'member',
+        rank: memberRank,
         joinedAt: new Date(),
         contribution: 0,
+        lastActive: new Date(), // Track activity
       };
 
       localStorage.setItem(`verxio_guild_member_${playerId}`, JSON.stringify(playerGuildData));
@@ -403,7 +408,7 @@ export class VerxioService {
       if (savedLoyalty) {
         const loyalty = JSON.parse(savedLoyalty);
         loyalty.guildId = guildId;
-        loyalty.guildRank = 'member';
+        loyalty.guildRank = memberRank;
         localStorage.setItem(`verxio_loyalty_${playerId}`, JSON.stringify(loyalty));
       }
 
@@ -589,6 +594,9 @@ export class VerxioService {
           guilds[i].memberCount = actualMembers.length;
           hasChanges = true;
         }
+
+        // Also check and update guild leadership
+        await this.checkAndUpdateGuildLeadership(guilds[i].id);
       }
 
       if (hasChanges) {
@@ -596,6 +604,103 @@ export class VerxioService {
       }
     } catch (error) {
       console.error('Failed to sync guild member counts:', error);
+    }
+  }
+
+  // Check and update guild leadership based on activity
+  async checkAndUpdateGuildLeadership(guildId: string): Promise<void> {
+    try {
+      const members = await this.getGuildMembers(guildId);
+      if (members.length === 0) return;
+
+      const currentLeader = members.find(member => member.rank === 'leader');
+      const now = new Date();
+      const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+
+      // If no leader exists, promote the most active member
+      if (!currentLeader) {
+        await this.promoteNewLeader(guildId, members);
+        return;
+      }
+
+      // Check if current leader is inactive for more than 3 days
+      const leaderLastActive = new Date(currentLeader.lastActive);
+      if (leaderLastActive < threeDaysAgo) {
+        // Find the most active member (excluding current leader)
+        const activeCandidates = members
+          .filter(member => member.playerId !== currentLeader.playerId)
+          .filter(member => new Date(member.lastActive) > threeDaysAgo)
+          .sort((a, b) => {
+            // Sort by activity (most recent first), then by contribution
+            const aActivity = new Date(a.lastActive).getTime();
+            const bActivity = new Date(b.lastActive).getTime();
+            if (aActivity !== bActivity) {
+              return bActivity - aActivity;
+            }
+            return b.contribution - a.contribution;
+          });
+
+        if (activeCandidates.length > 0) {
+          // Demote current leader and promote new one
+          await this.transferLeadership(guildId, currentLeader.playerId, activeCandidates[0].playerId);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check guild leadership:', error);
+    }
+  }
+
+  // Promote a new leader from available members
+  private async promoteNewLeader(guildId: string, members: GuildMember[]): Promise<void> {
+    if (members.length === 0) return;
+
+    // Find the best candidate (most active and highest contribution)
+    const candidate = members
+      .sort((a, b) => {
+        const aActivity = new Date(a.lastActive).getTime();
+        const bActivity = new Date(b.lastActive).getTime();
+        if (aActivity !== bActivity) {
+          return bActivity - aActivity;
+        }
+        return b.contribution - a.contribution;
+      })[0];
+
+    await this.updateMemberRank(candidate.playerId, 'leader');
+  }
+
+  // Transfer leadership from one member to another
+  private async transferLeadership(guildId: string, oldLeaderId: string, newLeaderId: string): Promise<void> {
+    // Demote old leader to member
+    await this.updateMemberRank(oldLeaderId, 'member');
+
+    // Promote new leader
+    await this.updateMemberRank(newLeaderId, 'leader');
+  }
+
+  // Update a member's rank
+  private async updateMemberRank(playerId: string, newRank: 'member' | 'officer' | 'leader'): Promise<void> {
+    try {
+      // Update guild membership data
+      const membershipKey = `verxio_guild_member_${playerId}`;
+      const membershipData = localStorage.getItem(membershipKey);
+
+      if (membershipData) {
+        const membership = JSON.parse(membershipData);
+        membership.rank = newRank;
+        localStorage.setItem(membershipKey, JSON.stringify(membership));
+      }
+
+      // Update player loyalty data
+      const loyaltyKey = `verxio_loyalty_${playerId}`;
+      const loyaltyData = localStorage.getItem(loyaltyKey);
+
+      if (loyaltyData) {
+        const loyalty = JSON.parse(loyaltyData);
+        loyalty.guildRank = newRank;
+        localStorage.setItem(loyaltyKey, JSON.stringify(loyalty));
+      }
+    } catch (error) {
+      console.error('Failed to update member rank:', error);
     }
   }
 
@@ -628,17 +733,43 @@ export class VerxioService {
         }
       }
 
-      // Update player's guild contribution
+      // Update player's guild contribution and activity
       const memberData = localStorage.getItem(`verxio_guild_member_${playerId}`);
       if (memberData) {
         const member = JSON.parse(memberData);
         member.contribution += contribution;
+        member.lastActive = new Date(); // Update activity timestamp
         localStorage.setItem(`verxio_guild_member_${playerId}`, JSON.stringify(member));
       }
+
+      // Check if leadership needs to be updated after this activity
+      await this.checkAndUpdateGuildLeadership(guildId);
 
       return true;
     } catch (error) {
       return false;
+    }
+  }
+
+  // Update member activity (called when player performs any action)
+  async updateMemberActivity(playerPublicKey: PublicKey): Promise<void> {
+    try {
+      const playerId = playerPublicKey.toString();
+
+      // Update guild membership activity
+      const membershipData = localStorage.getItem(`verxio_guild_member_${playerId}`);
+      if (membershipData) {
+        const membership = JSON.parse(membershipData);
+        membership.lastActive = new Date();
+        localStorage.setItem(`verxio_guild_member_${playerId}`, JSON.stringify(membership));
+
+        // Check if leadership needs to be updated
+        if (membership.guildId) {
+          await this.checkAndUpdateGuildLeadership(membership.guildId);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update member activity:', error);
     }
   }
 }

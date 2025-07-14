@@ -150,9 +150,9 @@ export default function LeaderboardPage() {
             onSelectionChange={(key) => setSelectedCategory(key as string)}
             className="w-full"
           >
-            <Tab key="loyalty" title="🏆 Loyalty Points" />
-            <Tab key="reputation" title="⭐ Reputation" />
-            <Tab key="experience" title="📈 Experience" />
+            <Tab key="loyalty" title="Loyalty Points" />
+            <Tab key="reputation" title="Reputation" />
+            <Tab key="experience" title="Experience" />
           </Tabs>
         </div>
 
