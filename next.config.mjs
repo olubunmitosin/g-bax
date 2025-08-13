@@ -3,6 +3,14 @@ const nextConfig = {
   // Basic Next.js configuration
   reactStrictMode: true,
 
+  // Enable static export for Netlify
+  output: 'export',
+
+  // Disable image optimization for static export
+  images: {
+    unoptimized: true,
+  },
+
   // Transpile packages that need processing
   transpilePackages: [
     '@honeycomb-protocol/edge-client',
