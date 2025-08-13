@@ -73,24 +73,31 @@ export interface VerxioState {
 export const useVerxioStore = create<VerxioState>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set, get): VerxioState => ({
         // Initial state
         verxioService: null,
         isConnected: false,
         isInitializing: false,
         playerLoyalty: null,
         isLoadingLoyalty: false,
-        availableGuilds: [],
+        availableGuilds: [] as Guild[],
         playerGuild: null,
-        guildMembers: [],
+        guildMembers: [] as GuildMember[],
         isLoadingGuilds: false,
-        loyaltyTiers: [],
+        loyaltyTiers: [] as LoyaltyTier[],
 
         // Initialize Verxio service
         initializeVerxio: async (
           apiKey?: string,
           environment: "development" | "production" = "development",
         ) => {
+          const currentState = get();
+
+          // Prevent multiple simultaneous initializations
+          if (currentState.isInitializing || currentState.verxioService) {
+            return;
+          }
+
           set({ isInitializing: true });
 
           try {

@@ -1,61 +1,68 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Output configuration for Netlify
-    output: 'export',
-    trailingSlash: true,
-    skipTrailingSlashRedirect: true,
-    distDir: 'out',
+  // Basic Next.js configuration
+  reactStrictMode: true,
 
-    // Disable ESLint during build for deployment
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
+  // Transpile packages that need processing
+  transpilePackages: [
+    '@honeycomb-protocol/edge-client',
+    '@honeycomb-protocol/hive-control',
+    '@solana/web3.js',
+    '@solana/wallet-adapter-base',
+    '@solana/wallet-adapter-react',
+    '@solana/wallet-adapter-wallets',
+    '@solana/wallet-adapter-react-ui',
+  ],
 
-    // Disable TypeScript checking during build
-    typescript: {
-        ignoreBuildErrors: true,
-    },
+  // Webpack configuration for browser compatibility
+  webpack: (config, { isServer }) => {
+    // Configure fallbacks for Node.js modules in browser
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+        util: false,
+        buffer: false,
+        process: false,
+      };
+    }
 
-    // Image optimization disabled for static export
-    images: {
-        unoptimized: true,
-    },
+    // Enable top-level await
+    config.experiments = {
+      ...config.experiments,
+      topLevelAwait: true,
+    };
 
-    // Asset prefix for CDN (optional)
-    assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
+    return config;
+  },
 
-    // Webpack configuration (only for production builds, not for Turbopack dev)
-    ...(process.env.NODE_ENV === 'production' && {
-        webpack: (config, { isServer }) => {
-            if (!isServer) {
-                // Fallbacks for Node.js modules that don't work in the browser
-                config.resolve.fallback = {
-                    ...config.resolve.fallback,
-                    fs: false,
-                    path: false,
-                    os: false,
-                    crypto: false,
-                    stream: false,
-                    buffer: false,
-                    util: false,
-                    assert: false,
-                    constants: false,
-                    vm: false,
-                    zlib: false,
-                    http: false,
-                    https: false,
-                    url: false,
-                    querystring: false,
-                };
-            }
-            return config;
-        },
-    }),
+  // ESLint configuration
+  eslint: {
+    // Disable ESLint during builds to avoid blocking deployment
+    ignoreDuringBuilds: true,
+  },
 
-    // Environment variables
-    env: {
-        NEXT_PUBLIC_SOLANA_NETWORK: process.env.NEXT_PUBLIC_SOLANA_NETWORK,
-    },
+  // TypeScript configuration
+  typescript: {
+    // Disable TypeScript checking during builds to avoid blocking deployment
+    ignoreBuildErrors: true,
+  },
+
+  // Environment variables
+  env: {
+    NEXT_PUBLIC_SOLANA_NETWORK: process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet',
+  },
 };
 
 export default nextConfig;

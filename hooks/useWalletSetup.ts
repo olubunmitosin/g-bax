@@ -44,6 +44,10 @@ export function useWalletSetup() {
 
   // Store the last connected publicKey to a clear flag on disconnect
   const lastPublicKeyRef = useRef<any>(null);
+  // Track if Honeycomb initialization has been attempted to prevent duplicates
+  const honeycombInitAttemptedRef = useRef<boolean>(false);
+  // Track if Verxio initialization has been attempted to prevent duplicates
+  const verxioInitAttemptedRef = useRef<boolean>(false);
 
   const getSetupKey = (publicKey: any) =>
     `wallet_setup_${publicKey.toString()}`;
@@ -72,8 +76,9 @@ export function useWalletSetup() {
   };
 
   const initializeHoneycombService = useCallback(async () => {
-    if (!honeycombService && connection) {
+    if (!honeycombService && connection && !honeycombInitAttemptedRef.current) {
       try {
+        honeycombInitAttemptedRef.current = true;
         setHoneycombInitializing(true);
         const rpcUrl =
           process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
@@ -81,10 +86,14 @@ export function useWalletSetup() {
         const environment = "honeynet";
 
         await initializeHoneycomb(rpcUrl, environment);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        // Silent error handling
+        // Reset the flag on error so it can be retried
+        honeycombInitAttemptedRef.current = false;
       }
+    } else if (honeycombService) {
+      //
+    } else if (honeycombInitAttemptedRef.current) {
+      //
     }
   }, [
     honeycombService,
@@ -94,8 +103,12 @@ export function useWalletSetup() {
   ]);
 
   const initializeVerxioService = useCallback(async () => {
-    if (!verxioService && !verxioInitializing) {
-      try {
+    if (
+      !verxioService &&
+      !verxioInitializing &&
+      !verxioInitAttemptedRef.current
+    ) {
+      try {verxioInitAttemptedRef.current = true;
         setVerxioInitializing(true);
         const environment =
           process.env.NODE_ENV === "production" ? "production" : "development";
@@ -104,9 +117,9 @@ export function useWalletSetup() {
           undefined,
           environment as "development" | "production",
         );
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        // Silent error handling
+        // Reset the flag on error so it can be retried
+        verxioInitAttemptedRef.current = false;
       }
     }
   }, [
@@ -132,7 +145,6 @@ export function useWalletSetup() {
         const balance = await connection.getBalance(publicKey);
 
         setSolBalance(balance / LAMPORTS_PER_SOL);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         setSolBalance(0);
       } finally {
@@ -146,7 +158,6 @@ export function useWalletSetup() {
         try {
           setPlayerDataLoading(true);
           await setupUserAccount(publicKey, contextWallet);
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error: any) {
           // Silent error handling
         }
@@ -165,26 +176,25 @@ export function useWalletSetup() {
           if (currentVerxioService && currentVerxioConnected) {
             await loadPlayerLoyalty(publicKey);
           }
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error: any) {
           // Silent error handling
         }
-      }, 1000); // Wait 1 second for services to initialize
+      }, 1000);
 
-      // Create a game player object
-      const gamePlayer = {
-        id: publicKey.toString(),
-        name: `Explorer ${publicKey.toString().slice(0, 6)}`,
-        level: 1,
-        experience: 0,
-        position: [0, 0, 0] as [number, number, number],
-        credits: 1000,
-      };
+      if (honeycombService) {
+        const playerProfile =
+          await honeycombService.getPlayerProfile(publicKey);
 
-      setPlayer(gamePlayer);
+        // Create a game player object
+        const gamePlayer = {
+          ...playerProfile,
+          position: [0, 0, 0] as [number, number, number],
+        };
+
+        setPlayer(gamePlayer);
+      }
 
       markSetupCompleted(publicKey);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // Silent error handling
     }
@@ -212,6 +222,9 @@ export function useWalletSetup() {
       // If we don't have the publicKey (e.g., after refresh), clear all setup flags
       clearAllSetupFlags();
     }
+    // Reset initialization flags on disconnect
+    honeycombInitAttemptedRef.current = false;
+    verxioInitAttemptedRef.current = false;
     setWalletDisconnected();
     setPlayer(null);
   }, [setWalletDisconnected, setPlayer]);

@@ -19,7 +19,6 @@ export function useVerxioIntegration() {
     isInitializing,
     playerLoyalty,
     playerGuild,
-    initializeVerxio,
     loadPlayerLoyalty,
     awardLoyaltyPoints,
     updateReputation,
@@ -27,16 +26,8 @@ export function useVerxioIntegration() {
     getMultiplierForPoints,
   } = useVerxioStore();
 
-  // Initialize Verxio when app starts
-  useEffect(() => {
-    if (!verxioService && !isInitializing) {
-      // Verxio doesn't require an API key
-      const environment =
-        process.env.NODE_ENV === "production" ? "production" : "development";
-
-      initializeVerxio(undefined, environment as "development" | "production");
-    }
-  }, [verxioService, isInitializing, initializeVerxio]);
+  // Note: Verxio initialization is now handled by useWalletSetup hook
+  // to prevent duplicate initialization calls
 
   // Load player loyalty when wallet connects (fallback mechanism)
   // This provides a fallback in case the main wallet setup doesn't load loyalty data

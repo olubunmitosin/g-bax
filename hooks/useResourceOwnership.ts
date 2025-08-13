@@ -103,11 +103,11 @@ export function useResourceOwnership() {
       .sort((a, b) => {
         const resourceA = getResourceById(a.resourceId);
         const resourceB = getResourceById(b.resourceId);
-        
+
         const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 };
         const rarityA = rarityOrder[resourceA?.rarity as keyof typeof rarityOrder] || 0;
         const rarityB = rarityOrder[resourceB?.rarity as keyof typeof rarityOrder] || 0;
-        
+
         return rarityB - rarityA;
       })
       .slice(0, 10);
@@ -132,7 +132,6 @@ export function useResourceOwnership() {
 
       return success || false;
     } catch (error) {
-      console.error("Failed to award mining rewards:", error);
       return false;
     }
   };
@@ -155,9 +154,7 @@ export function useResourceOwnership() {
       }
 
       return success || false;
-    } catch (error) {
-      console.error("Failed to award crafting result:", error);
-      return false;
+    } catch (error) {return false;
     }
   };
 
@@ -179,14 +176,10 @@ export function useResourceOwnership() {
         amount,
       );
 
-      if (success) {
-        console.log(`Transferred ${amount} ${resourceId} to ${toPlayerAddress}`);
-      }
+      if (success) {}
 
       return success;
-    } catch (error) {
-      console.error("Failed to transfer resource:", error);
-      return false;
+    } catch (error) {return false;
     } finally {
       setIsTransferring(false);
     }
@@ -207,14 +200,10 @@ export function useResourceOwnership() {
         amount,
       );
 
-      if (success) {
-        console.log(`Consumed ${amount} ${resourceId}`);
-      }
+      if (success) {}
 
       return success;
-    } catch (error) {
-      console.error("Failed to consume resource:", error);
-      return false;
+    } catch (error) {return false;
     } finally {
       setIsConsuming(false);
     }
@@ -234,19 +223,19 @@ export function useResourceOwnership() {
   const getResourceStats = () => {
     const totalResources = getTotalResourceCount();
     const uniqueResources = playerResourceHoldings.filter(h => h.amount > 0).length;
-    
+
     const byCategory = gameResources.reduce((acc, resource) => {
       const category = resource.category;
       if (!acc[category]) {
         acc[category] = { total: 0, owned: 0 };
       }
       acc[category].total++;
-      
+
       const playerAmount = getPlayerResourceAmount(resource.id);
       if (playerAmount > 0) {
         acc[category].owned++;
       }
-      
+
       return acc;
     }, {} as Record<string, { total: number; owned: number }>);
 
@@ -256,12 +245,12 @@ export function useResourceOwnership() {
         acc[rarity] = { total: 0, owned: 0 };
       }
       acc[rarity].total++;
-      
+
       const playerAmount = getPlayerResourceAmount(resource.id);
       if (playerAmount > 0) {
         acc[rarity].owned++;
       }
-      
+
       return acc;
     }, {} as Record<string, { total: number; owned: number }>);
 

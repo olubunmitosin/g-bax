@@ -2,38 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
-
-import { useHoneycombStore } from "@/stores/honeycombStore";
+import { useLocalMissionIntegration } from "@/hooks/useLocalMissionIntegration";
 
 /**
- * Hook to manage Honeycomb mission pool initialization and setup
+ * Hook to manage local mission system initialization
+ * Replaces Honeycomb mission pool manager with local functionality
  */
 export function useMissionPoolManager() {
   const { publicKey, connected } = useWallet();
   const [isInitializing, setIsInitializing] = useState(false);
-  const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [initializationError, setInitializationError] = useState<string | null>(
+    null,
+  );
 
   const {
-    honeycombService,
-    isConnected: honeycombConnected,
-    missionPool,
-    isMissionSystemInitialized,
-    createMissionPool,
-    initializePredefinedMissions,
-    getMissionPoolStatus,
-  } = useHoneycombStore();
+    isInitialized,
+    isReady,
+    error,
+  } = useLocalMissionIntegration();
 
-  // Check if mission pool needs to be initialized
-  const needsInitialization = 
-    connected && 
-    honeycombConnected && 
-    honeycombService && 
-    !isMissionSystemInitialized;
+  // Check if mission system needs to be initialized
+  const needsInitialization = connected && !isInitialized;
 
-  // Initialize mission pool and missions
-  const initializeMissionSystem = async (contextWallet?: any) => {
-    if (!publicKey || !honeycombService || isInitializing) {
+  // Initialize local mission system
+  const initializeMissionSystem = async () => {
+    if (!publicKey || isInitializing) {
       return false;
     }
 
@@ -41,37 +34,13 @@ export function useMissionPoolManager() {
     setInitializationError(null);
 
     try {
-      console.log("Starting mission system initialization...");
-
-      // Step 1: Create mission pool if it doesn't exist
-      if (!missionPool) {
-        console.log("Creating mission pool...");
-
-        // Use a proper character model address - the service will handle validation
-        // and use the actual character model address from the initialized system
-        await createMissionPool(
-          publicKey,
-          "placeholder", // Service will use actual character model address
-          contextWallet
-        );
-      }
-
-      // Step 2: Initialize predefined missions
-      console.log("Initializing predefined missions...");
-
-      // Use a proper resource address - the service will handle validation
-      // and use actual resource addresses from the initialized system
-      await initializePredefinedMissions(
-        publicKey,
-        "placeholder", // Service will use actual resource addresses
-        contextWallet
-      );
-
-      console.log("Mission system initialization completed successfully");
+      // Local mission system initializes automatically through useLocalMissionIntegration
+      // This is just for compatibility with existing code
       return true;
     } catch (error) {
-      console.error("Failed to initialize mission system:", error);
-      setInitializationError(error instanceof Error ? error.message : "Unknown error");
+      setInitializationError(
+        error instanceof Error ? error.message : "Unknown error",
+      );
       return false;
     } finally {
       setIsInitializing(false);
@@ -81,10 +50,10 @@ export function useMissionPoolManager() {
   // Auto-initialize when conditions are met
   useEffect(() => {
     if (needsInitialization && !isInitializing) {
-      // Auto-initialize with a delay to ensure wallet is fully connected
+      // Local system initializes automatically, but we can trigger it manually if needed
       const timer = setTimeout(() => {
         initializeMissionSystem();
-      }, 2000);
+      }, 1000);
 
       return () => clearTimeout(timer);
     }
@@ -92,13 +61,14 @@ export function useMissionPoolManager() {
 
   // Get current status
   const getStatus = () => {
-    const poolStatus = getMissionPoolStatus();
     return {
-      ...poolStatus,
+      isInitialized,
+      poolAddress: "local-storage", // Indicate local storage system
+      missionsCount: 0, // This would be populated by the local mission service
       needsInitialization,
       isInitializing,
-      error: initializationError,
-      canInitialize: connected && honeycombConnected && publicKey && !isInitializing,
+      error: initializationError || error,
+      canInitialize: connected && publicKey && !isInitializing,
     };
   };
 
@@ -106,14 +76,14 @@ export function useMissionPoolManager() {
     // Status
     isInitializing,
     needsInitialization,
-    error: initializationError,
+    error: initializationError || error,
     status: getStatus(),
 
     // Actions
     initializeMissionSystem,
-    
+
     // Data
-    missionPool,
-    isMissionSystemInitialized,
+    missionPool: "local-storage", // Compatibility
+    isMissionSystemInitialized: isInitialized,
   };
 }

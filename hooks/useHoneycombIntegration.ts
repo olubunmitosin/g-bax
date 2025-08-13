@@ -9,9 +9,13 @@ import { PREDEFINED_MISSIONS, getAvailableMissions } from "@/data/missions";
 import { PREDEFINED_TRAITS, getAvailableTraits } from "@/data/traits";
 import { getLevelFromExperience } from "@/utils/gameHelpers";
 import { useMissionPoolManager } from "./useMissionPoolManager";
+import { useLocalMissionIntegration } from "./useLocalMissionIntegration";
+import { useLocalCharacterIntegration } from "./useLocalCharacterIntegration";
 
 /**
  * Custom hook to integrate Honeycomb Protocol with wallet and game state
+ * Now delegates mission and character functionality to local services
+ * while preserving profile, experience, and other on-chain functionality
  */
 export function useHoneycombIntegration() {
   const { connection } = useConnection();
@@ -21,7 +25,6 @@ export function useHoneycombIntegration() {
     honeycombService,
     isConnected: honeycombConnected,
     isInitializing,
-    initializeHoneycomb,
     playerProfile,
     playerMissions,
     playerTraits,
@@ -32,18 +35,15 @@ export function useHoneycombIntegration() {
   const { player, missions, setMissions, setActiveMission, setPlayer } =
     useGameStore();
 
-  // Mission pool management
+  // Local services integration
+  const localMissionIntegration = useLocalMissionIntegration();
+  const localCharacterIntegration = useLocalCharacterIntegration();
+
+  // Mission pool management (now uses local services)
   const missionPoolManager = useMissionPoolManager();
 
-  // Initialize Honeycomb when connection is available
-  useEffect(() => {
-    if (connection && !honeycombService && !isInitializing) {
-      const rpcUrl = connection.rpcEndpoint;
-      const environment = rpcUrl.includes("test") ? "devnet" : "mainnet-beta";
-
-      initializeHoneycomb(rpcUrl, environment);
-    }
-  }, [connection, honeycombService, isInitializing, initializeHoneycomb]);
+  // Note: UseWalletSetup hook now handles Honeycomb initialization
+  // to prevent duplicate initialization calls
 
   // Sync Honeycomb player profile with game store
   useEffect(() => {
@@ -52,60 +52,43 @@ export function useHoneycombIntegration() {
       const gamePlayer = {
         id: publicKey.toString(),
         name: playerProfile.name || "Space Explorer",
+        bio: playerProfile.bio || "Space explorer in the G-Bax universe",
+        address: playerProfile.address || publicKey.toString(),
+        createdAt: playerProfile.createdAt || new Date().toISOString(),
+        lastUpdated: playerProfile.lastUpdated || new Date().toISOString(),
+        pfp: playerProfile.pfp || "https://lh3.googleusercontent.com/-Jsm7S8BHy4nOzrw2f5AryUgp9Fym2buUOkkxgNplGCddTkiKBXPLRytTMXBXwGcHuRr06EvJStmkHj-9JeTfmHsnT0prHg5Mhg",
+        profileAddress: playerProfile.profileAddress || "",
+        projectAddress: playerProfile.projectAddress || "",
+        profileTreeAddress: playerProfile.profileTreeAddress || "",
+        source: playerProfile.source || "honeycomb",
         level: getLevelFromExperience(experience), // Calculate level from experience
         experience,
         position: [0, 0, 0] as [number, number, number],
         credits: playerProfile.credits || 1000,
+        stats: playerProfile.stats || {
+          miningOperations: 0,
+          itemsCrafted: 0,
+          sectorsExplored: 0,
+          combatWins: 0,
+          leadershipActions: 0,
+          missionsCompleted: 0,
+          traitCategories: 0,
+          achievements: 0,
+        },
       };
 
       setPlayer(gamePlayer);
     }
-  }, [playerProfile, publicKey]);
+  }, [playerProfile, publicKey, setPlayer]);
 
-  // Sync available missions with game store
+  // Sync missions from local service with game store
   useEffect(() => {
-    if (honeycombConnected && player) {
-      // Get completed mission IDs from player missions
-      const completedMissionIds = playerMissions
-        .filter((m) => m.completed)
-        .map((m) => m.missionId);
-
-      // Get available missions based on player level and completed missions
-      const availableMissions = getAvailableMissions(
-        player.level,
-        completedMissionIds,
-      );
-
-      // Convert to game store format and merge with predefined missions
-      const gameMissions = PREDEFINED_MISSIONS.map((mission) => {
-        const playerMission = playerMissions.find(
-          (pm) => pm.missionId === mission.id,
-        );
-        const isAvailable = availableMissions.some(
-          (am) => am.id === mission.id,
-        );
-
-        // Check if a mission is already completed in game store to preserve status
-        const existingMission = missions.find((m) => m.id === mission.id);
-        const isAlreadyCompleted = existingMission?.status === "completed";
-
-        return {
-          ...mission,
-          status: isAlreadyCompleted
-            ? "completed"
-            : playerMission?.completed
-              ? "completed"
-              : playerMission
-                ? "active"
-                : isAvailable
-                  ? "available"
-                  : "locked",
-          progress: existingMission?.progress ?? playerMission?.progress ?? 0,
-        } as const;
-      });
+    if (localMissionIntegration.isReady && player) {
+      // Use local mission data instead of Honeycomb
+      const localMissions = localMissionIntegration.missions;
 
       // Only update if there are actual changes to prevent unnecessary re-renders
-      const hasChanges = gameMissions.some((newMission, index) => {
+      const hasChanges = localMissions.some((newMission, index) => {
         const existingMission = missions[index];
 
         return (
@@ -116,10 +99,15 @@ export function useHoneycombIntegration() {
       });
 
       if (hasChanges || missions.length === 0) {
-        setMissions(gameMissions);
+        setMissions(localMissions);
+      }
+
+      // Sync active mission
+      if (localMissionIntegration.activeMission) {
+        setActiveMission(localMissionIntegration.activeMission);
       }
     }
-  }, [honeycombConnected, player, playerMissions, missions]);
+  }, [localMissionIntegration.isReady, localMissionIntegration.missions, localMissionIntegration.activeMission, player, missions, setMissions, setActiveMission]);
 
   // Periodic connection check
   useEffect(() => {
@@ -132,85 +120,25 @@ export function useHoneycombIntegration() {
     }
   }, [honeycombService, checkConnection]);
 
-  // Mission management functions
+  // Mission management functions - now delegate to local services
   const startMission = async (missionId: string) => {
-    if (!publicKey || !honeycombService) {
-      throw new Error("Wallet not connected or Honeycomb not initialized");
-    }
-
     try {
-      await useHoneycombStore.getState().startMission(publicKey, missionId);
-
-      // Update game store missions array
-      const updatedMissions = missions.map((mission) =>
-        mission.id === missionId
-          ? { ...mission, status: "active" as const }
-          : mission,
-      );
-
-      setMissions(updatedMissions);
-
-      // Set the active mission explicitly
-      const activeMission = updatedMissions.find((m) => m.id === missionId);
-
-      if (activeMission) {
-        setActiveMission(activeMission);
-      }
-
-      return true;
-    } catch (error) {
-      throw error;
+      // Use local mission service instead of Honeycomb
+      const result = await localMissionIntegration.startMission(missionId);return true;
+    } catch (error) {throw error;
     }
   };
 
   const updateMissionProgress = async (missionId: string, progress: number) => {
-    if (!publicKey || !honeycombService) {
-      throw new Error("Wallet not connected or Honeycomb not initialized");
-    }
-
     try {
-      // Update Honeycomb store
-      await useHoneycombStore
-        .getState()
-        .updateMissionProgress(publicKey, missionId, progress);
-
-      // Update game store missions array
-      const updatedMissions = missions.map((mission) =>
-        mission.id === missionId
-          ? {
-            ...mission,
-            progress,
-            status:
-              progress >= mission.maxProgress
-                ? ("completed" as const)
-                : ("active" as const),
-          }
-          : mission,
-      );
-
-      setMissions(updatedMissions);
-
-      // Update active mission if it's the one being updated
-      const updatedMission = updatedMissions.find((m) => m.id === missionId);
-
-      if (updatedMission && updatedMission.status === "active") {
-        setActiveMission(updatedMission);
-      } else if (updatedMission && updatedMission.status === "completed") {
-        // Clear active mission if completed
-        setActiveMission(null);
-      }
-
-      return true;
-    } catch (error) {
-      throw error;
+      // Use local mission service instead of Honeycomb
+      const result = await localMissionIntegration.updateMissionProgress(missionId, progress);return true;
+    } catch (error) {throw error;
     }
   };
 
+  // Trait management functions - now delegate to local services
   const assignTrait = async (traitId: string) => {
-    if (!publicKey || !honeycombService) {
-      throw new Error("Wallet not connected or Honeycomb not initialized");
-    }
-
     const traitDefinition = PREDEFINED_TRAITS.find((t) => t.id === traitId);
 
     if (!traitDefinition) {
@@ -218,64 +146,38 @@ export function useHoneycombIntegration() {
     }
 
     try {
-      await useHoneycombStore.getState().assignTrait(publicKey, {
-        name: traitDefinition.name,
-        category: traitDefinition.category,
-        effects: traitDefinition.baseEffects,
-        level: 1,
-      });
-
-      return true;
-    } catch (error) {
-      throw error;
+      // Use local character service instead of Honeycomb
+      const result = await localCharacterIntegration.assignTrait(
+        traitDefinition.category,
+        traitDefinition.name
+      );return true;
+    } catch (error) {throw error;
     }
   };
 
   const upgradeTrait = async (traitId: string, newLevel: number) => {
-    if (!publicKey || !honeycombService) {
-      throw new Error("Wallet not connected or Honeycomb not initialized");
-    }
-
     try {
-      await useHoneycombStore
-        .getState()
-        .upgradeTrait(publicKey, traitId, newLevel);
-
-      return true;
-    } catch (error) {
-      throw error;
+      // Use local character service for trait evolution
+      const result = await localCharacterIntegration.evolveTrait(traitId);return true;
+    } catch (error) {throw error;
     }
   };
 
-  // Get available traits for current player
+  // Get available traits for current player - use local character service
   const getPlayerAvailableTraits = () => {
-    if (!player) return [];
+    if (!localCharacterIntegration.activeCharacter) return [];
 
-    const completedMissionIds = playerMissions
-      .filter((m) => m.completed)
-      .map((m) => m.missionId);
-
-    const playerTraitIds = playerTraits.map((t) => t.traitId);
-
-    return getAvailableTraits(
-      player.level,
-      completedMissionIds,
-      playerTraitIds,
-    );
+    return localCharacterIntegration.getAvailableTraitsForCharacter();
   };
 
-  // Check if player can start a specific mission
+  // Check if player can start a specific mission - use local mission service
   const canStartMission = (missionId: string) => {
-    if (!player) return false;
-
-    const mission = missions.find((m) => m.id === missionId);
-
-    return mission?.status === "available";
+    return localMissionIntegration.canStartMission(missionId);
   };
 
-  // Get player's active mission
+  // Get player's active mission - use local mission service
   const getActiveMission = () => {
-    return missions.find((m) => m.status === "active") || null;
+    return localMissionIntegration.activeMission;
   };
 
   return {
@@ -283,27 +185,31 @@ export function useHoneycombIntegration() {
     isConnected: honeycombConnected,
     isInitializing,
 
-    // Player data
+    // Player data (from Honeycomb - preserved for profile/experience)
     playerProfile,
     playerLevel,
-    playerMissions,
-    playerTraits,
+    playerMissions: localMissionIntegration.missionProgress, // Use local mission progress
+    playerTraits: localCharacterIntegration.activeCharacter?.traits || [], // Use local character traits
 
-    // Mission functions
+    // Mission functions (delegated to local services)
     startMission,
     updateMissionProgress,
     canStartMission,
     getActiveMission,
 
-    // Trait functions
+    // Trait functions (delegated to local services)
     assignTrait,
     upgradeTrait,
     getPlayerAvailableTraits,
 
-    // Mission pool management
+    // Mission pool management (now uses local services)
     missionPoolManager,
 
-    // Utility
+    // Local service integrations
+    localMissionIntegration,
+    localCharacterIntegration,
+
+    // Utility (preserved for profile/experience functionality)
     honeycombService,
   };
 }

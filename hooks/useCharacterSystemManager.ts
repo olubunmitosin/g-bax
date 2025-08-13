@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 
-import { useHoneycombStore } from "@/stores/honeycombStore";
+import { useLocalCharacterIntegration } from "@/hooks/useLocalCharacterIntegration";
 
 /**
- * Hook to manage Honeycomb character system initialization and management
+ * Hook to manage local character system initialization and management
+ * Replaces Honeycomb character system with local functionality
  */
 export function useCharacterSystemManager() {
   const { publicKey, connected } = useWallet();
@@ -15,99 +16,48 @@ export function useCharacterSystemManager() {
   const [initializationError, setInitializationError] = useState<string | null>(null);
 
   const {
-    honeycombService,
-    isConnected: honeycombConnected,
-    assemblerConfig,
-    characterModel,
-    playerCharacter,
-    isCharacterSystemInitialized,
-    isLoadingCharacter,
-    initializeCharacterSystem,
-    createPlayerCharacter,
-    loadPlayerCharacter,
-    assignTraitToCharacter,
-    getCharacterSystemStatus,
-  } = useHoneycombStore();
+    activeCharacter: playerCharacter,
+    isReady: isCharacterSystemInitialized,
+    isLoading: isLoadingCharacter,
+    needsCharacter,
+    createCharacter,
+    assignTrait,
+    getAvailableTraitsForCharacter,
+    getTraitBenefits,
+    getCharacterStats,
+    resetAllCharacters,
+  } = useLocalCharacterIntegration();
 
-  // Disable character system initialization to avoid blockchain issues
+  // Local character system doesn't need initialization
   const needsInitialization = false;
 
-  // Simplified character check to prevent blinking
-  const needsCharacter = connected && !playerCharacter && !isLoadingCharacter;
+  // needsCharacter is provided by the local character integration
 
-  // Initialize character system
-  const initializeSystem = async (contextWallet?: any) => {
-    if (!publicKey || !honeycombService || isInitializing) {
-      return false;
-    }
-
-    setIsInitializing(true);
-    setInitializationError(null);
-
-    try {
-      console.log("Starting character system initialization...");
-
-      await initializeCharacterSystem(publicKey, contextWallet);
-
-      console.log("Character system initialization completed successfully");
-      return true;
-    } catch (error) {
-      console.error("Failed to initialize character system:", error);
-      setInitializationError(error instanceof Error ? error.message : "Unknown error");
-      return false;
-    } finally {
-      setIsInitializing(false);
-    }
+  // Initialize character system (local system initializes automatically)
+  const initializeSystem = async () => {return true;
   };
 
-  // Create character for player
-  const createCharacter = async (
+  // Create character for player (using local system)
+  const createCharacterForPlayer = async (
     initialTraits: string[][] = [],
-    contextWallet?: any,
+    characterName: string = "Space Explorer"
   ) => {
-    if (!publicKey || !honeycombService) {
-      return false;
-    }
-
-    try {
-      console.log("Creating player character...");
-
-      await createPlayerCharacter(publicKey, initialTraits, contextWallet);
-
-      console.log("Player character created successfully");
-      return true;
-    } catch (error) {
-      console.error("Failed to create player character:", error);
-      return false;
+    try {await createCharacter(characterName, initialTraits);return true;
+    } catch (error) {return false;
     }
   };
 
-  // Assign trait to player character
-  const assignTrait = async (
+  // Assign trait to player character (using local system)
+  const assignTraitToPlayer = async (
     traitCategory: string,
-    traitName: string,
-    contextWallet?: any,
+    traitName: string
   ) => {
-    if (!publicKey || !playerCharacter) {
+    if (!playerCharacter) {
       return false;
     }
 
-    try {
-      console.log(`Assigning trait: ${traitCategory} - ${traitName}`);
-
-      await assignTraitToCharacter(
-        playerCharacter.address,
-        publicKey,
-        traitCategory,
-        traitName,
-        contextWallet,
-      );
-
-      console.log("Trait assigned successfully");
-      return true;
-    } catch (error) {
-      console.error("Failed to assign trait:", error);
-      return false;
+    try {await assignTrait(traitCategory, traitName);return true;
+    } catch (error) {return false;
     }
   };
 
@@ -133,61 +83,34 @@ export function useCharacterSystemManager() {
 
   // Get current status
   const getStatus = () => {
-    const systemStatus = getCharacterSystemStatus();
     return {
-      ...systemStatus,
+      isInitialized: isCharacterSystemInitialized,
       needsInitialization,
       needsCharacter,
       isInitializing,
       error: initializationError,
-      canInitialize: connected && honeycombConnected && publicKey && !isInitializing,
+      canInitialize: connected && publicKey && !isInitializing,
       hasCharacter: !!playerCharacter,
     };
   };
 
-  // Get available trait categories and names
-  const getAvailableTraits = () => {
-    return {
-      Mining: ["Novice Miner", "Expert Miner", "Master Miner"],
-      Crafting: ["Apprentice Crafter", "Skilled Artisan", "Master Crafter"],
-      Exploration: ["Space Navigator", "Deep Explorer", "Void Walker"],
-      Combat: ["Defender", "Warrior", "Champion"],
-      Leadership: ["Team Player", "Squad Leader", "Guild Master"],
-    };
+  // Get available trait categories and names (using local system)
+  const getAvailableTraitsForPlayer = () => {
+    if (!playerCharacter) return {};
+
+    const availableTraits = getAvailableTraitsForCharacter();
+    const grouped: Record<string, string[]> = {};
+
+    availableTraits.forEach(trait => {
+      const category = trait.category.charAt(0).toUpperCase() + trait.category.slice(1);
+      if (!grouped[category]) grouped[category] = [];
+      grouped[category].push(trait.name);
+    });
+
+    return grouped;
   };
 
-  // Get trait benefits
-  const getTraitBenefits = useCallback((category: string, name: string) => {
-    const benefits: Record<string, Record<string, any>> = {
-      Mining: {
-        "Novice Miner": { miningBonus: 5, description: "+5% mining efficiency" },
-        "Expert Miner": { miningBonus: 15, description: "+15% mining efficiency" },
-        "Master Miner": { miningBonus: 30, description: "+30% mining efficiency" },
-      },
-      Crafting: {
-        "Apprentice Crafter": { craftingBonus: 5, description: "+5% crafting speed" },
-        "Skilled Artisan": { craftingBonus: 15, description: "+15% crafting speed" },
-        "Master Crafter": { craftingBonus: 30, description: "+30% crafting speed" },
-      },
-      Exploration: {
-        "Space Navigator": { explorationBonus: 5, description: "+5% exploration rewards" },
-        "Deep Explorer": { explorationBonus: 15, description: "+15% exploration rewards" },
-        "Void Walker": { explorationBonus: 30, description: "+30% exploration rewards" },
-      },
-      Combat: {
-        "Defender": { combatBonus: 5, description: "+5% combat effectiveness" },
-        "Warrior": { combatBonus: 15, description: "+15% combat effectiveness" },
-        "Champion": { combatBonus: 30, description: "+30% combat effectiveness" },
-      },
-      Leadership: {
-        "Team Player": { leadershipBonus: 5, description: "+5% team bonuses" },
-        "Squad Leader": { leadershipBonus: 15, description: "+15% team bonuses" },
-        "Guild Master": { leadershipBonus: 30, description: "+30% team bonuses" },
-      },
-    };
-
-    return benefits[category]?.[name] || { description: "Unknown trait" };
-  }, []);
+  // getTraitBenefits is provided by useLocalCharacterIntegration
 
   return {
     // Status
@@ -199,18 +122,16 @@ export function useCharacterSystemManager() {
 
     // Actions
     initializeSystem,
-    createCharacter,
-    assignTrait,
+    createCharacter: createCharacterForPlayer,
+    assignTrait: assignTraitToPlayer,
 
     // Data
-    assemblerConfig,
-    characterModel,
     playerCharacter,
     isCharacterSystemInitialized,
     isLoadingCharacter,
 
     // Helpers
-    getAvailableTraits,
+    getAvailableTraits: getAvailableTraitsForPlayer,
     getTraitBenefits,
   };
 }

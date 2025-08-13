@@ -7,6 +7,15 @@ import { getLevelFromExperience } from "@/utils/gameHelpers";
 export interface Player {
   id: string;
   name: string;
+  bio: string;
+  address: string;
+  createdAt: string;
+  lastUpdated: string;
+  pfp: string;
+  profileAddress: string;
+  projectAddress: string;
+  profileTreeAddress: string;
+  source: string;
   level: number;
   experience: number;
   position: [number, number, number];
@@ -167,13 +176,13 @@ export const useGameStore = create<GameState>()(
             const updatedMissions = state.missions.map((m) =>
               m.id === missionId
                 ? {
-                  ...m,
-                  progress,
-                  status:
-                    progress >= m.maxProgress
-                      ? ("completed" as const)
-                      : m.status,
-                }
+                    ...m,
+                    progress,
+                    status:
+                      progress >= m.maxProgress
+                        ? ("completed" as const)
+                        : m.status,
+                  }
                 : m,
             );
 

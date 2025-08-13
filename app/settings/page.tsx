@@ -23,7 +23,7 @@ import {
   useHoneycombStore,
   resetHoneycombStore,
 } from "@/stores/honeycombStore";
-import { ThemeSwitch } from "@/components/theme-switch";
+
 
 export default function SettingsPage() {
   const { player } = usePlayerSync();
@@ -78,6 +78,7 @@ export default function SettingsPage() {
     name: "",
     bio: "",
     pfp: "",
+    username: "",
   });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
@@ -113,7 +114,7 @@ export default function SettingsPage() {
       if (saved) {
         try {
           return JSON.parse(saved);
-        } catch {}
+        } catch { }
       }
     }
 
@@ -130,12 +131,14 @@ export default function SettingsPage() {
         name: playerProfile.name || "",
         bio: playerProfile.bio || "",
         pfp: playerProfile.pfp || avatarOptions[0].url,
+        username: playerProfile.username || "",
       });
     } else if (player) {
       setProfileForm({
         name: player.name || "",
         bio: "Space explorer in the G-Bax universe",
         pfp: avatarOptions[0].url,
+        username: playerProfile.username || "",
       });
     }
   }, [playerProfile, player]);
@@ -172,9 +175,13 @@ export default function SettingsPage() {
           name: profileForm.name.trim(),
           bio: profileForm.bio.trim() || "Space explorer in the G-Bax universe",
           pfp: profileForm.pfp || avatarOptions[0].url,
+          username: profileForm.name.trim().toLowerCase() || "username",
         },
         contextWallet,
       );
+
+      // Force a small delay to ensure UI updates
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       onProfileModalClose();
       onProfileSuccessOpen();
@@ -432,15 +439,14 @@ export default function SettingsPage() {
             <div>
               <h4 className="font-semibold mb-3">Theme</h4>
               <p className="text-sm text-default-600 mb-4">
-                Choose your preferred color theme. Changes apply immediately
-                across the entire application.
+                G-Bax uses a permanent dark theme optimized for space exploration.
               </p>
               <div className="bg-default-100 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">
-                    Toggle between light and dark theme
+                    Dark theme is permanently enabled for the best gaming experience
                   </span>
-                  <ThemeSwitch />
+                  <div className="text-primary font-medium">🌙 Dark Mode</div>
                 </div>
               </div>
             </div>
@@ -702,11 +708,10 @@ export default function SettingsPage() {
                   {avatarOptions.map((avatar) => (
                     <div
                       key={avatar.id}
-                      className={`relative cursor-pointer rounded-lg border-2 p-2 transition-all ${
-                        profileForm.pfp === avatar.url
-                          ? "border-primary bg-primary/10"
-                          : "border-default-200 hover:border-default-300"
-                      }`}
+                      className={`relative cursor-pointer rounded-lg border-2 p-2 transition-all ${profileForm.pfp === avatar.url
+                        ? "border-primary bg-primary/10"
+                        : "border-default-200 hover:border-default-300"
+                        }`}
                       onClick={() =>
                         setProfileForm((prev) => ({ ...prev, pfp: avatar.url }))
                       }

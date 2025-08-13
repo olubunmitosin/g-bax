@@ -114,7 +114,6 @@ export function useAchievementTracker() {
 
       return newAchievementIds;
     } catch (error) {
-      console.error("Failed to check achievements:", error);
       return [];
     } finally {
       setIsChecking(false);
@@ -135,22 +134,14 @@ export function useAchievementTracker() {
       const activityKey = `activity-${publicKey.toString()}-${activity}`;
       const currentCount = parseInt(localStorage.getItem(activityKey) || "0");
       const newCount = currentCount + amount;
-      localStorage.setItem(activityKey, newCount.toString());
-
-      console.log(`Tracked ${activity}: ${amount} (total: ${newCount})`);
-
-      // Small delay to ensure game state is updated, then check achievements
+      localStorage.setItem(activityKey, newCount.toString());// Small delay to ensure game state is updated, then check achievements
       setTimeout(async () => {
         const newAchievements = await checkAchievements();
-        if (newAchievements.length > 0) {
-          console.log(`New achievements unlocked from ${activity}:`, newAchievements);
-        }
+        if (newAchievements.length > 0) {}
       }, 500);
 
       return [];
-    } catch (error) {
-      console.error("Failed to track activity:", error);
-      return [];
+    } catch (error) {return [];
     }
   };
 

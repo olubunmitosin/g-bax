@@ -3,7 +3,6 @@ import type { HoneycombMission } from "@/types/game";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { PublicKey } from "@solana/web3.js";
-import { sendClientTransactions } from "@honeycomb-protocol/edge-client/client/walletHelpers";
 import { sendTransactionForTests as sendTransactionT } from "@honeycomb-protocol/edge-client/client/helpers.js";
 import base58 from "bs58";
 import * as web3 from "@solana/web3.js";
@@ -100,82 +99,10 @@ export interface HoneycombState {
   ) => Promise<void>;
   updateUserAccount: (
     playerPublicKey: PublicKey,
-    profileInfo: { name: string; bio: string; pfp: string },
+    profileInfo: { name: string; bio: string; pfp: string, username: string },
     contextWallet?: any,
   ) => Promise<void>;
 
-  // Mission actions
-  loadAvailableMissions: () => Promise<void>;
-  loadPlayerMissions: (playerPublicKey: PublicKey) => Promise<void>;
-  startMission: (
-    playerPublicKey: PublicKey,
-    missionId: string,
-  ) => Promise<void>;
-  updateMissionProgress: (
-    playerPublicKey: PublicKey,
-    missionId: string,
-    progress: number,
-  ) => Promise<void>;
-
-  // Mission pool and on-chain mission actions
-  createMissionPool: (
-    authority: PublicKey,
-    characterModelAddress: string,
-    contextWallet: any,
-  ) => Promise<void>;
-  initializePredefinedMissions: (
-    authority: PublicKey,
-    resourceAddress: string,
-    contextWallet: any,
-  ) => Promise<void>;
-  getMissionPoolStatus: () => {
-    isInitialized: boolean;
-    poolAddress: string | null;
-    missionsCount: number;
-  };
-
-  // Character and trait actions
-  initializeCharacterSystem: (
-    authority: PublicKey,
-    contextWallet: any,
-  ) => Promise<void>;
-  createPlayerCharacter: (
-    playerWallet: PublicKey,
-    initialTraits?: string[][],
-    contextWallet?: any,
-  ) => Promise<void>;
-  assignTraitToCharacter: (
-    characterAddress: string,
-    playerWallet: PublicKey,
-    traitCategory: string,
-    traitName: string,
-    contextWallet?: any,
-  ) => Promise<void>;
-  loadPlayerCharacter: (playerWallet: PublicKey) => Promise<void>;
-  getCharacterSystemStatus: () => {
-    isInitialized: boolean;
-    assemblerConfig: string | null;
-    characterModel: string | null;
-    charactersTree: string | null;
-  };
-
-  // Trait evolution actions
-  evolveCharacterTrait: (
-    characterAddress: string,
-    playerWallet: PublicKey,
-    currentTraitCategory: string,
-    currentTraitName: string,
-    newTraitName: string,
-    contextWallet?: any,
-  ) => Promise<void>;
-  getTraitEvolutionStatus: (
-    characterAddress: string,
-    playerStats: any,
-  ) => Promise<any[]>;
-  checkTraitEvolution: (
-    currentTraitName: string,
-    playerStats: any,
-  ) => { canEvolve: boolean; nextTrait?: string; requirements?: string };
   getPlayerTraitBonuses: (playerPublicKey: PublicKey) => Promise<{
     miningBonus: number;
     craftingBonus: number;
@@ -255,7 +182,12 @@ export interface HoneycombState {
   ) => Promise<boolean>;
   recordGuildContribution: (
     playerWallet: PublicKey,
-    contributionType: "mining" | "crafting" | "exploration" | "mission" | "leadership",
+    contributionType:
+      | "mining"
+      | "crafting"
+      | "exploration"
+      | "mission"
+      | "leadership",
     amount: number,
     contextWallet?: any,
   ) => Promise<boolean>;
@@ -374,6 +306,13 @@ export const useHoneycombStore = create<HoneycombState>()(
         rpcUrl: string,
         environment: "devnet" | "mainnet-beta" | "honeynet",
       ) => {
+        const currentState = get();
+
+        // Prevent multiple simultaneous initializations
+        if (currentState.isInitializing || currentState.honeycombService) {
+          return;
+        }
+
         set({ isInitializing: true });
 
         try {
@@ -384,6 +323,8 @@ export const useHoneycombStore = create<HoneycombState>()(
             process.env.NEXT_PUBLIC_HONEYCOMB_PROJECT_ADDRESS;
 
           if (!projectAddress) {
+            set({ isInitializing: false });
+
             return;
           }
 
@@ -406,12 +347,6 @@ export const useHoneycombStore = create<HoneycombState>()(
             networkInfo,
             isInitializing: false,
           });
-
-          if (isConnected) {
-            // Load available missions
-            await get().loadAvailableMissions();
-          }
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           set({
             isConnected: false,
@@ -427,8 +362,6 @@ export const useHoneycombStore = create<HoneycombState>()(
         const { honeycombService } = get();
 
         if (!honeycombService) {
-          console.log("Honeycomb service not available");
-
           return;
         }
 
@@ -448,19 +381,12 @@ export const useHoneycombStore = create<HoneycombState>()(
             const profilesTreeAddress =
               process.env.NEXT_PUBLIC_PROFILE_TREE_ADDRESS;
 
-            // Ensure active profiles tree is known/active
-            let activeTree = profilesTreeAddress;
-            if (!activeTree) {
-              activeTree = await honeycombService.ensureActiveProfilesTree(contextWallet);
-            }
-
             const createUserParams: any = {
               project: honeycombService.getProjectAddress(),
               wallet: playerPublicKey.toString(),
               payer: playerPublicKey.toString(),
               userInfo: defaultUserInfo,
-              // Use an explicit profilesTreeAddress whenever possible to bypass 'active' requirement
-              profilesTreeAddress: activeTree || profilesTreeAddress,
+              profilesTreeAddress: profilesTreeAddress,
             };
 
             const txBundle = await honeycombService
@@ -473,21 +399,13 @@ export const useHoneycombStore = create<HoneycombState>()(
               contextWallet,
             );
 
-            user = await honeycombService.findUser(playerPublicKey);
+            await honeycombService.findUser(playerPublicKey);
           }
-
-          console.log("User and profile setup result:", user);
 
           // Load player profile
           await get().loadPlayerProfile(playerPublicKey);
-
-          // Load player missions
-          await get().loadPlayerMissions(playerPublicKey);
-
-          // Load player traits
-          await get().loadPlayerTraits(playerPublicKey);
         } catch (error: any) {
-          console.error("Failed to connect player:", error);
+          // Silent error handling
         }
       },
 
@@ -499,10 +417,9 @@ export const useHoneycombStore = create<HoneycombState>()(
         const { honeycombService } = get();
 
         if (!honeycombService) {
-          console.warn("Honeycomb service not available");
-
           return;
         }
+
 
         try {
           // First, find the user and their profile
@@ -533,8 +450,6 @@ export const useHoneycombStore = create<HoneycombState>()(
           );
 
           if (!accessToken) {
-            console.log("Failed to get access token");
-
             return;
           }
 
@@ -560,14 +475,65 @@ export const useHoneycombStore = create<HoneycombState>()(
                 },
               });
 
-          // Sign and send the transaction using service helper (normalization/retries)
-          await honeycombService.signAndSendTransaction(
+          const signResult = await honeycombService.signAndSendTransaction(
             txResponse,
             contextWallet,
           );
 
-          // Reload the player profile to reflect changes
-          await get().loadPlayerProfile(playerPublicKey);
+          console.log("📋 Transaction result:", signResult);
+
+          if (!signResult.success) {
+            throw new Error(`Transaction failed: ${signResult.error}`);
+          }
+
+        
+          let retries = 0;
+          const maxRetries = 3;
+          let profileLoaded = false;
+
+          while (retries < maxRetries && !profileLoaded) {
+            try {
+              // Clear cache again before each retry
+              // honeycombService.clearProfileCache(playerPublicKey);
+
+              // Wait longer on each retry
+              if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+              }
+
+              // Reload the player profile to reflect changes
+              await get().loadPlayerProfile(playerPublicKey);
+
+              // Check if the profile was updated with the new name
+              const currentProfile = get().playerProfile;
+              if (currentProfile && currentProfile.name === profileInfo.name) {
+                profileLoaded = true;
+              } else {
+                retries++;
+              }
+            } catch (error) {
+              retries++;
+              if (retries >= maxRetries) {
+                throw error;
+              }
+            }
+          }
+
+          // If retries failed, update the profile locally as a fallback
+          if (!profileLoaded) {
+            const currentProfile = get().playerProfile;
+            if (currentProfile) {
+              set({
+                playerProfile: {
+                  ...currentProfile,
+                  name: profileInfo.name,
+                  bio: profileInfo.bio,
+                  pfp: profileInfo.pfp,
+                  lastUpdated: new Date().toISOString(),
+                }
+              });
+            }
+          }
         } catch (error: any) {
           throw error;
         }
@@ -618,8 +584,6 @@ export const useHoneycombStore = create<HoneycombState>()(
 
           return confirmResp.authConfirm.accessToken;
         } catch (e: any) {
-          console.log("Auth Token Failed: ", e);
-
           return null;
         }
       },
@@ -641,8 +605,6 @@ export const useHoneycombStore = create<HoneycombState>()(
 
             // Only update if there's a positive difference
             if (xpDifference <= 0) {
-              console.log("No XP update needed via direct method");
-
               return;
             }
 
@@ -691,13 +653,10 @@ export const useHoneycombStore = create<HoneycombState>()(
             );
 
             return txResponse;
-          } catch (error) {
-            console.log("Direct honeycomb service failed:", error);
-          }
+          } catch (error) { }
         }
 
         // Fallback 2: localStorage simulation (when no service available)
-        console.log("Using localStorage fallback for experience update");
         const blockchainKey = `honeycomb-profile-${player.toString()}`;
         const existing = localStorage.getItem(blockchainKey);
         let profile = {
@@ -711,7 +670,6 @@ export const useHoneycombStore = create<HoneycombState>()(
         if (existing) {
           try {
             profile = JSON.parse(existing);
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
           } catch (error) { }
         }
 
@@ -721,196 +679,6 @@ export const useHoneycombStore = create<HoneycombState>()(
 
         // Save to localStorage (simulating blockchain)
         localStorage.setItem(blockchainKey, JSON.stringify(profile));
-        console.log("Experience updated in localStorage:", profile);
-      },
-
-      // Mission actions
-      loadAvailableMissions: async () => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        set({ isLoadingMissions: true });
-
-        try {
-          const missions = await honeycombService.getAvailableMissions();
-
-          set({ availableMissions: missions });
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-          // Handle error silently
-        } finally {
-          set({ isLoadingMissions: false });
-        }
-      },
-
-      loadPlayerMissions: async (playerPublicKey: PublicKey) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const missions =
-            await honeycombService.getPlayerMissions(playerPublicKey);
-          const activeMission = missions.find((m) => !m.completed) || null;
-
-          set({
-            playerMissions: missions,
-            activeMission,
-          });
-        } catch (error) {
-          // Handle error silently
-        }
-      },
-
-      startMission: async (playerPublicKey: PublicKey, missionId: string) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          // For now, use empty character addresses array - this would be populated with actual character data
-          const characterAddresses: string[] = [];
-
-          const missionProgress = await honeycombService.startMission(
-            playerPublicKey,
-            missionId,
-            characterAddresses,
-          );
-
-          set((state) => ({
-            playerMissions: [...state.playerMissions, missionProgress],
-            activeMission: missionProgress,
-          }));
-        } catch (error) {
-          throw error;
-        }
-      },
-
-      updateMissionProgress: async (
-        playerPublicKey: PublicKey,
-        missionId: string,
-        progress: number,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          // Get player's character addresses
-          let characterAddresses: string[] = [];
-          try {
-            const characters = await honeycombService.findPlayerCharacters(playerPublicKey);
-            characterAddresses = characters.map(char => char.address);
-          } catch (error) {
-            console.warn("Failed to get character addresses for mission progress:", error);
-          }
-
-          const updatedProgress = await honeycombService.updateMissionProgress(
-            playerPublicKey,
-            missionId,
-            progress,
-            characterAddresses,
-          );
-
-          set((state) => ({
-            playerMissions: state.playerMissions.map((m) =>
-              m.missionId === missionId ? updatedProgress : m,
-            ),
-            activeMission:
-              state.activeMission?.missionId === missionId
-                ? updatedProgress
-                : state.activeMission,
-          }));
-
-          // If mission completed, update player experience
-          if (updatedProgress.completed) {
-            // Award experience based on mission rewards
-            const experienceReward = updatedProgress.rewards.reduce(
-              (total, reward) => {
-                return total + (reward.experience || 0);
-              },
-              0,
-            );
-
-            if (experienceReward > 0) {
-              await get().updatePlayerExperience(
-                playerPublicKey,
-                experienceReward,
-              );
-            }
-          }
-        } catch (error) {
-          throw error;
-        }
-      },
-
-      // Trait actions
-      loadPlayerTraits: async (playerPublicKey: PublicKey) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        set({ isLoadingTraits: true });
-
-        try {
-          const traits =
-            await honeycombService.getPlayerTraits(playerPublicKey);
-
-          set({ playerTraits: traits });
-        } catch (error) {
-          // Handle error silently
-        } finally {
-          set({ isLoadingTraits: false });
-        }
-      },
-
-      assignTrait: async (playerPublicKey: PublicKey, traitData: any, contextWallet?: any) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const trait = await honeycombService.assignTrait(
-            playerPublicKey,
-            traitData,
-            contextWallet,
-          );
-
-          set((state) => ({
-            playerTraits: [...state.playerTraits, trait],
-          }));
-        } catch (error) {
-          throw error;
-        }
-      },
-
-      upgradeTrait: async (
-        playerPublicKey: PublicKey,
-        traitId: string,
-        newLevel: number,
-        contextWallet?: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const updatedTrait = await honeycombService.upgradeTrait(
-            playerPublicKey,
-            traitId,
-            newLevel,
-            contextWallet,
-          );
-
-          set((state) => ({
-            playerTraits: state.playerTraits.map((t) =>
-              t.traitId === traitId ? updatedTrait : t,
-            ),
-          }));
-        } catch (error) {
-          throw error;
-        }
       },
 
       // Profile actions
@@ -953,7 +721,6 @@ export const useHoneycombStore = create<HoneycombState>()(
             playerExperience: profile?.experience || 0,
             playerLevel: profile?.level || 1,
           });
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           // Handle error silently
         } finally {
@@ -986,10 +753,7 @@ export const useHoneycombStore = create<HoneycombState>()(
               playerLevel: newLevel,
             };
           });
-
-          console.log(`Added ${experienceToAdd} XP (queued for blockchain sync)`);
         } catch (error) {
-          console.error("Failed to update player experience:", error);
           throw error;
         }
       },
@@ -1002,12 +766,12 @@ export const useHoneycombStore = create<HoneycombState>()(
 
         try {
           const success = await honeycombService.forceXPSync(playerPublicKey);
+
           if (success) {
-            console.log("XP force sync completed successfully");
           }
+
           return success;
         } catch (error) {
-          console.error("Failed to force XP sync:", error);
           return false;
         }
       },
@@ -1045,18 +809,18 @@ export const useHoneycombStore = create<HoneycombState>()(
 
           if (success) {
             // Load available achievements
-            const predefinedAchievements = honeycombService.getPredefinedAchievements();
-            const achievementsArray = Array.from(predefinedAchievements.values());
+            const predefinedAchievements =
+              honeycombService.getPredefinedAchievements();
+            const achievementsArray = Array.from(
+              predefinedAchievements.values(),
+            );
 
             set({
               availableAchievements: achievementsArray,
               isAchievementSystemInitialized: true,
             });
-
-            console.log("Achievement system initialized successfully");
           }
         } catch (error) {
-          console.error("Failed to initialize achievement system:", error);
         } finally {
           set({ isLoadingAchievements: false });
         }
@@ -1072,21 +836,20 @@ export const useHoneycombStore = create<HoneycombState>()(
         if (!honeycombService) return [];
 
         try {
-          const newAchievements = await honeycombService.checkAndAwardAchievements(
-            playerWallet,
-            playerStats,
-            contextWallet,
-          );
+          const newAchievements =
+            await honeycombService.checkAndAwardAchievements(
+              playerWallet,
+              playerStats,
+              contextWallet,
+            );
 
           if (newAchievements.length > 0) {
             // Reload player achievements
             await get().loadPlayerAchievements(playerWallet);
-            console.log("New achievements awarded:", newAchievements);
           }
 
           return newAchievements;
         } catch (error) {
-          console.error("Failed to check and award achievements:", error);
           return [];
         }
       },
@@ -1099,15 +862,13 @@ export const useHoneycombStore = create<HoneycombState>()(
         try {
           set({ isLoadingAchievements: true });
 
-          const playerAchievements = await honeycombService.getPlayerAchievements(playerWallet);
+          const playerAchievements =
+            await honeycombService.getPlayerAchievements(playerWallet);
 
           set({
             playerAchievements,
           });
-
-          console.log("Player achievements loaded:", playerAchievements.length);
         } catch (error) {
-          console.error("Failed to load player achievements:", error);
         } finally {
           set({ isLoadingAchievements: false });
         }
@@ -1127,6 +888,7 @@ export const useHoneycombStore = create<HoneycombState>()(
         }
 
         const systemStatus = honeycombService.getAchievementSystemStatus();
+
         return {
           ...systemStatus,
           playerAchievementsCount: state.playerAchievements.length,
@@ -1140,16 +902,15 @@ export const useHoneycombStore = create<HoneycombState>()(
         if (!honeycombService) return null;
 
         try {
-          const progressData = await honeycombService.loadCompletePlayerProgress(playerWallet);
+          const progressData =
+            await honeycombService.loadCompletePlayerProgress(playerWallet);
 
           if (progressData.success) {
-            console.log("Complete player progress loaded from blockchain");
             return progressData;
           }
 
           return null;
         } catch (error) {
-          console.error("Failed to load complete player progress:", error);
           return null;
         }
       },
@@ -1173,13 +934,12 @@ export const useHoneycombStore = create<HoneycombState>()(
           if (success) {
             // Update sync timestamp
             const syncKey = `g-bax-sync-${playerWallet.toString()}`;
+
             localStorage.setItem(syncKey, Date.now().toString());
-            console.log("Complete player progress saved to blockchain");
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to save complete player progress:", error);
           return false;
         }
       },
@@ -1203,16 +963,12 @@ export const useHoneycombStore = create<HoneycombState>()(
           if (syncResult.success) {
             // Update sync timestamp
             const syncKey = `g-bax-sync-${playerWallet.toString()}`;
-            localStorage.setItem(syncKey, Date.now().toString());
 
-            console.log("Progress synced with blockchain", {
-              conflicts: syncResult.conflicts.length,
-            });
+            localStorage.setItem(syncKey, Date.now().toString());
           }
 
           return syncResult;
         } catch (error) {
-          console.error("Failed to sync progress with blockchain:", error);
           return {
             syncedProgress: localProgress,
             conflicts: [],
@@ -1262,11 +1018,8 @@ export const useHoneycombStore = create<HoneycombState>()(
               gameResources: gameResourcesArray,
               isResourceSystemInitialized: true,
             });
-
-            console.log("Game resources initialized successfully");
           }
         } catch (error) {
-          console.error("Failed to initialize game resources:", error);
         } finally {
           set({ isLoadingResources: false });
         }
@@ -1293,12 +1046,10 @@ export const useHoneycombStore = create<HoneycombState>()(
           if (success) {
             // Reload player resource holdings
             await get().loadPlayerResourceHoldings(playerWallet);
-            console.log(`Awarded ${amount} ${resourceId} to player`);
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to award resource to player:", error);
           return false;
         }
       },
@@ -1327,12 +1078,10 @@ export const useHoneycombStore = create<HoneycombState>()(
             // Reload resource holdings for both players
             await get().loadPlayerResourceHoldings(fromWallet);
             await get().loadPlayerResourceHoldings(toWallet);
-            console.log(`Transferred ${amount} ${resourceId} between players`);
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to transfer resource:", error);
           return false;
         }
       },
@@ -1358,12 +1107,10 @@ export const useHoneycombStore = create<HoneycombState>()(
           if (success) {
             // Reload player resource holdings
             await get().loadPlayerResourceHoldings(playerWallet);
-            console.log(`Consumed ${amount} ${resourceId} from player`);
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to consume player resource:", error);
           return false;
         }
       },
@@ -1376,10 +1123,12 @@ export const useHoneycombStore = create<HoneycombState>()(
         try {
           set({ isLoadingResources: true });
 
-          const holdingsMap = await honeycombService.getPlayerResourceHoldings(playerWallet);
+          const holdingsMap =
+            await honeycombService.getPlayerResourceHoldings(playerWallet);
 
           // Convert Map to array format for state
           const holdingsArray: PlayerResourceHolding[] = [];
+
           holdingsMap.forEach((amount, resourceId) => {
             holdingsArray.push({
               resourceId,
@@ -1392,10 +1141,7 @@ export const useHoneycombStore = create<HoneycombState>()(
           set({
             playerResourceHoldings: holdingsArray,
           });
-
-          console.log("Player resource holdings loaded:", holdingsArray.length);
         } catch (error) {
-          console.error("Failed to load player resource holdings:", error);
         } finally {
           set({ isLoadingResources: false });
         }
@@ -1415,6 +1161,7 @@ export const useHoneycombStore = create<HoneycombState>()(
         }
 
         const systemStatus = honeycombService.getResourceSystemStatus();
+
         return {
           ...systemStatus,
           totalHoldings: state.playerResourceHoldings.length,
@@ -1446,11 +1193,8 @@ export const useHoneycombStore = create<HoneycombState>()(
               availableGuilds: guilds,
               isGuildSystemInitialized: true,
             });
-
-            console.log("Guild system initialized successfully");
           }
         } catch (error) {
-          console.error("Failed to initialize guild system:", error);
         } finally {
           set({ isLoadingGuild: false });
         }
@@ -1478,22 +1222,17 @@ export const useHoneycombStore = create<HoneycombState>()(
 
             // Update available guilds to reflect new member count
             const guilds = honeycombService.getAllGuilds();
-            set({ availableGuilds: guilds });
 
-            console.log(`Successfully joined guild: ${guildId}`);
+            set({ availableGuilds: guilds });
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to join guild:", error);
           return false;
         }
       },
 
-      leaveGuild: async (
-        playerWallet: PublicKey,
-        contextWallet?: any,
-      ) => {
+      leaveGuild: async (playerWallet: PublicKey, contextWallet?: any) => {
         const { honeycombService } = get();
 
         if (!honeycombService) return false;
@@ -1509,21 +1248,24 @@ export const useHoneycombStore = create<HoneycombState>()(
             set({ playerGuildInfo: null });
 
             const guilds = honeycombService.getAllGuilds();
-            set({ availableGuilds: guilds });
 
-            console.log("Successfully left guild");
+            set({ availableGuilds: guilds });
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to leave guild:", error);
           return false;
         }
       },
 
       recordGuildContribution: async (
         playerWallet: PublicKey,
-        contributionType: "mining" | "crafting" | "exploration" | "mission" | "leadership",
+        contributionType:
+          | "mining"
+          | "crafting"
+          | "exploration"
+          | "mission"
+          | "leadership",
         amount: number,
         contextWallet?: any,
       ) => {
@@ -1542,12 +1284,10 @@ export const useHoneycombStore = create<HoneycombState>()(
           if (success) {
             // Reload player guild info to reflect new contributions
             await get().loadPlayerGuild(playerWallet);
-            console.log(`Recorded ${contributionType} contribution: ${amount}`);
           }
 
           return success;
         } catch (error) {
-          console.error("Failed to record guild contribution:", error);
           return false;
         }
       },
@@ -1567,12 +1307,9 @@ export const useHoneycombStore = create<HoneycombState>()(
           });
 
           if (guildInfo) {
-            console.log("Player guild info loaded:", guildInfo.guild.name);
           } else {
-            console.log("Player is not in any guild");
           }
         } catch (error) {
-          console.error("Failed to load player guild:", error);
         } finally {
           set({ isLoadingGuild: false });
         }
@@ -1593,289 +1330,6 @@ export const useHoneycombStore = create<HoneycombState>()(
         return honeycombService.getGuildSystemStatus();
       },
 
-      // Mission pool and on-chain mission actions
-      createMissionPool: async (
-        authority: PublicKey,
-        characterModelAddress: string,
-        contextWallet: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const missionPool = await honeycombService.createMissionPool(
-            authority,
-            characterModelAddress,
-            contextWallet,
-          );
-
-          if (missionPool) {
-            set({
-              missionPool,
-              isMissionSystemInitialized: true,
-            });
-            console.log("Mission pool created successfully:", missionPool);
-          }
-        } catch (error) {
-          console.error("Failed to create mission pool:", error);
-        }
-      },
-
-      initializePredefinedMissions: async (
-        authority: PublicKey,
-        resourceAddress: string,
-        contextWallet: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const success = await honeycombService.initializePredefinedMissions(
-            authority,
-            resourceAddress,
-            contextWallet,
-          );
-
-          if (success) {
-            const createdMissions = honeycombService.getCreatedMissions();
-            set({
-              createdMissions,
-              isMissionSystemInitialized: true,
-            });
-            console.log("Predefined missions initialized successfully");
-          }
-        } catch (error) {
-          console.error("Failed to initialize predefined missions:", error);
-        }
-      },
-
-      getMissionPoolStatus: () => {
-        const { honeycombService, missionPool, createdMissions } = get();
-        return {
-          isInitialized: honeycombService?.areMissionsInitialized() || false,
-          poolAddress: honeycombService?.getMissionPoolAddress() || null,
-          missionsCount: createdMissions.size,
-        };
-      },
-
-      // Character and trait system actions
-      initializeCharacterSystem: async (
-        authority: PublicKey,
-        contextWallet: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          set({ isLoadingCharacter: true });
-
-          const success = await honeycombService.initializeCharacterSystem(
-            authority,
-            contextWallet,
-          );
-
-          if (success) {
-            set({
-              assemblerConfig: {
-                address: honeycombService.getAssemblerConfigAddress() || "",
-                project: "",
-                authority: authority.toString(),
-                ticker: "G-BAX-TRAITS",
-                order: ["Mining", "Crafting", "Exploration", "Combat", "Leadership"],
-                treeAddress: "",
-              },
-              characterModel: {
-                address: honeycombService.getCharacterModelAddress() || "",
-                project: "",
-                authority: authority.toString(),
-                assemblerConfig: honeycombService.getAssemblerConfigAddress() || "",
-                collectionName: "G-Bax Space Explorers",
-                name: "G-Bax Character",
-                symbol: "GBAX",
-                description: "A space explorer character in the G-Bax universe",
-              },
-              isCharacterSystemInitialized: true,
-            });
-            console.log("Character system initialized successfully");
-          }
-        } catch (error) {
-          console.error("Failed to initialize character system:", error);
-        } finally {
-          set({ isLoadingCharacter: false });
-        }
-      },
-
-      createPlayerCharacter: async (
-        playerWallet: PublicKey,
-        initialTraits: string[][] = [],
-        contextWallet?: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          set({ isLoadingCharacter: true });
-
-          const characterAddress = await honeycombService.createPlayerCharacter(
-            playerWallet,
-            initialTraits,
-            contextWallet,
-          );
-
-          if (characterAddress) {
-            // Load the created character
-            await get().loadPlayerCharacter(playerWallet);
-            console.log("Player character created successfully:", characterAddress);
-          }
-        } catch (error) {
-          console.error("Failed to create player character:", error);
-        } finally {
-          set({ isLoadingCharacter: false });
-        }
-      },
-
-      assignTraitToCharacter: async (
-        characterAddress: string,
-        playerWallet: PublicKey,
-        traitCategory: string,
-        traitName: string,
-        contextWallet?: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const success = await honeycombService.assignTraitToCharacter(
-            characterAddress,
-            playerWallet,
-            traitCategory,
-            traitName,
-            contextWallet,
-          );
-
-          if (success) {
-            // Reload character to get updated traits
-            await get().loadPlayerCharacter(playerWallet);
-            console.log(`Trait assigned: ${traitCategory} - ${traitName}`);
-          }
-        } catch (error) {
-          console.error("Failed to assign trait to character:", error);
-        }
-      },
-
-      loadPlayerCharacter: async (playerWallet: PublicKey) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          set({ isLoadingCharacter: true });
-
-          const characters = await honeycombService.findPlayerCharacters(playerWallet);
-
-          if (characters.length > 0) {
-            const character = characters[0]; // Use the first character
-            const traits = await honeycombService.getCharacterTraits(character.address);
-
-            set({
-              playerCharacter: {
-                address: character.address,
-                owner: character.owner,
-                traits,
-                level: 1, // Default level
-                experience: 0, // Default experience
-                createdAt: new Date(),
-                lastUpdated: new Date(),
-              },
-            });
-          }
-        } catch (error) {
-          console.error("Failed to load player character:", error);
-        } finally {
-          set({ isLoadingCharacter: false });
-        }
-      },
-
-      getCharacterSystemStatus: () => {
-        const { honeycombService } = get();
-        return {
-          isInitialized: honeycombService?.isCharacterSystemInitialized() || false,
-          assemblerConfig: honeycombService?.getAssemblerConfigAddress() || null,
-          characterModel: honeycombService?.getCharacterModelAddress() || null,
-          charactersTree: honeycombService?.getCharactersTreeAddress() || null,
-        };
-      },
-
-      // Trait evolution actions
-      evolveCharacterTrait: async (
-        characterAddress: string,
-        playerWallet: PublicKey,
-        currentTraitCategory: string,
-        currentTraitName: string,
-        newTraitName: string,
-        contextWallet?: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return;
-
-        try {
-          const success = await honeycombService.evolveCharacterTrait(
-            characterAddress,
-            playerWallet,
-            currentTraitCategory,
-            currentTraitName,
-            newTraitName,
-            contextWallet,
-          );
-
-          if (success) {
-            // Reload character to get updated traits
-            await get().loadPlayerCharacter(playerWallet);
-            console.log(`Trait evolved: ${currentTraitName} → ${newTraitName}`);
-          }
-        } catch (error) {
-          console.error("Failed to evolve character trait:", error);
-        }
-      },
-
-      getTraitEvolutionStatus: async (
-        characterAddress: string,
-        playerStats: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) return [];
-
-        try {
-          return await honeycombService.getTraitEvolutionStatus(
-            characterAddress,
-            playerStats,
-          );
-        } catch (error) {
-          console.error("Failed to get trait evolution status:", error);
-          return [];
-        }
-      },
-
-      checkTraitEvolution: (
-        currentTraitName: string,
-        playerStats: any,
-      ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) {
-          return { canEvolve: false };
-        }
-
-        return honeycombService.canEvolveTrait(currentTraitName, playerStats);
-      },
-
       // Utility actions
       checkConnection: async () => {
         const { honeycombService } = get();
@@ -1887,16 +1341,21 @@ export const useHoneycombStore = create<HoneycombState>()(
           const networkInfo = await honeycombService.getNetworkInfo();
 
           set({ isConnected, networkInfo });
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           set({ isConnected: false });
         }
       },
 
       getPlayerTraitBonuses: async (playerPublicKey: PublicKey) => {
-        const { honeycombService } = get();
+        try {
+          // Get trait bonuses from local character service
+          const { localCharacterService } = await import("../services/localCharacterService");
+          const playerCharacter = localCharacterService.getPlayerCharacter(playerPublicKey.toString());
 
-        if (!honeycombService) {
+          if (playerCharacter) {
+            return playerCharacter.bonuses;
+          }
+
           return {
             miningBonus: 0,
             craftingBonus: 0,
@@ -1905,12 +1364,7 @@ export const useHoneycombStore = create<HoneycombState>()(
             leadershipBonus: 0,
             experienceBonus: 0,
           };
-        }
-
-        try {
-          return await honeycombService.getPlayerTraitBonuses(playerPublicKey);
         } catch (error) {
-          console.error("Failed to get player trait bonuses:", error);
           return {
             miningBonus: 0,
             craftingBonus: 0,

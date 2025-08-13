@@ -70,7 +70,7 @@ export function useCrossSessionProgress() {
         return JSON.parse(savedData);
       }
     } catch (error) {
-      console.warn("Failed to load local progress:", error);
+      // Failed to load local progress
     }
 
     return null;
@@ -84,15 +84,11 @@ export function useCrossSessionProgress() {
     try {
       const blockchainProgress = await loadCompletePlayerProgress(publicKey);
 
-      if (blockchainProgress && blockchainProgress.success) {
-        console.log("Progress loaded from blockchain:", blockchainProgress);
-        return blockchainProgress;
+      if (blockchainProgress && blockchainProgress.success) {return blockchainProgress;
       }
 
       return null;
-    } catch (error) {
-      console.error("Failed to load progress from blockchain:", error);
-      return null;
+    } catch (error) {return null;
     } finally {
       setIsLoading(false);
     }
@@ -109,14 +105,10 @@ export function useCrossSessionProgress() {
       const success = await saveCompletePlayerProgress(publicKey, dataToSave);
 
       if (success) {
-        setLastSyncTime(Date.now());
-        console.log("Progress saved to blockchain successfully");
-      }
+        setLastSyncTime(Date.now());}
 
       return success;
-    } catch (error) {
-      console.error("Failed to save progress to blockchain:", error);
-      return false;
+    } catch (error) {return false;
     }
   }, [publicKey, honeycombConnected, saveCompletePlayerProgress, getLocalProgress]);
 
@@ -141,18 +133,12 @@ export function useCrossSessionProgress() {
 
         // Track conflicts
         if (syncResult.conflicts.length > 0) {
-          setSyncConflicts(syncResult.conflicts);
-          console.warn("Sync conflicts detected:", syncResult.conflicts);
-        }
+          setSyncConflicts(syncResult.conflicts);}
 
-        setLastSyncTime(Date.now());
-        console.log("Progress synced successfully");
-      }
+        setLastSyncTime(Date.now());}
 
       return syncResult;
-    } catch (error) {
-      console.error("Failed to sync progress:", error);
-      return null;
+    } catch (error) {return null;
     } finally {
       setIsSyncing(false);
     }
@@ -179,19 +165,14 @@ export function useCrossSessionProgress() {
           stats: blockchainProgress.stats || {},
         };
 
-        setPlayer(playerData);
-        console.log("Player initialized from blockchain data");
-        return;
+        setPlayer(playerData);return;
       }
 
       // 2. Fallback to local progress
       const localProgress = loadLocalProgress();
 
       if (localProgress) {
-        setPlayer(localProgress);
-        console.log("Player initialized from local data");
-
-        // Sync local progress to blockchain
+        setPlayer(localProgress);// Sync local progress to blockchain
         setTimeout(() => {
           saveToBlockchain(localProgress);
         }, 2000);
@@ -209,17 +190,12 @@ export function useCrossSessionProgress() {
         stats: {},
       };
 
-      setPlayer(newPlayer);
-      console.log("New player created");
-
-      // Save new player to blockchain
+      setPlayer(newPlayer);// Save new player to blockchain
       setTimeout(() => {
         saveToBlockchain(newPlayer);
       }, 3000);
 
-    } catch (error) {
-      console.error("Failed to initialize progress:", error);
-    } finally {
+    } catch (error) {} finally {
       setIsLoading(false);
     }
   }, [publicKey, connected, honeycombConnected, loadFromBlockchain, loadLocalProgress, saveToBlockchain]);
@@ -283,10 +259,7 @@ export function useCrossSessionProgress() {
 
     // Reset state
     setSyncConflicts([]);
-    setLastSyncTime(0);
-
-    console.log("All progress data cleared");
-  }, [publicKey]);
+    setLastSyncTime(0);}, [publicKey]);
 
   return {
     // State

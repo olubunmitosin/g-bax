@@ -35,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning lang="en">
+    <html suppressHydrationWarning lang="en" className="dark">
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -92,7 +92,7 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+        <Providers themeProps={{ attribute: "class", defaultTheme: "dark", forcedTheme: "dark", enableSystem: false }}>
           <ProgressSyncProvider>
             <InitializationProvider>
               <div className="relative flex flex-col h-screen">

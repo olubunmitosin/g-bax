@@ -3,13 +3,13 @@
 import { useEffect, useCallback, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
-import { useHoneycombStore } from "@/stores/honeycombStore";
+import { useLocalMissionIntegration } from "@/hooks/useLocalMissionIntegration";
 import { useGameStore } from "@/stores/gameStore";
 import { PREDEFINED_MISSIONS } from "@/data/missions";
 import { useMissionRewards } from "./useMissionRewards";
 
 /**
- * Hook to track mission progress and sync to Honeycomb Protocol
+ * Hook to track mission progress using local storage system
  */
 export function useMissionProgressTracker() {
   const { publicKey, connected } = useWallet();
@@ -25,15 +25,14 @@ export function useMissionProgressTracker() {
     rewardSummary: null,
   });
   const {
-    updateMissionProgress: updateHoneycombMissionProgress,
-    honeycombService,
-    isConnected: honeycombConnected,
-  } = useHoneycombStore();
+    updateMissionProgress: updateLocalMissionProgress,
+    activeMission,
+    isReady: localMissionReady,
+  } = useLocalMissionIntegration();
 
   const {
     player,
     missions,
-    activeMission,
     setMissions,
     setActiveMission,
     inventory,
@@ -43,7 +42,7 @@ export function useMissionProgressTracker() {
 
   // Track mining activities for mission progress
   const trackMiningActivity = useCallback(async (resourceType: string, quantity: number) => {
-    if (!publicKey || !activeMission || !honeycombConnected) return;
+    if (!publicKey || !activeMission || !localMissionReady) return;
 
     // Check if active mission is mining-related
     if (activeMission.type === "mining") {
@@ -72,11 +71,11 @@ export function useMissionProgressTracker() {
         await updateMissionProgress(activeMission.id, newProgress);
       }
     }
-  }, [publicKey, activeMission, honeycombConnected]);
+  }, [publicKey, activeMission, localMissionReady]);
 
   // Track crafting activities for mission progress
   const trackCraftingActivity = useCallback(async (itemType: string, quantity: number) => {
-    if (!publicKey || !activeMission || !honeycombConnected) return;
+    if (!publicKey || !activeMission || !localMissionReady) return;
 
     // Check if active mission is crafting-related
     if (activeMission.type === "crafting") {
@@ -105,11 +104,11 @@ export function useMissionProgressTracker() {
         await updateMissionProgress(activeMission.id, newProgress);
       }
     }
-  }, [publicKey, activeMission, honeycombConnected]);
+  }, [publicKey, activeMission, localMissionReady]);
 
   // Track exploration activities for mission progress
   const trackExplorationActivity = useCallback(async (activityType: string) => {
-    if (!publicKey || !activeMission || !honeycombConnected) return;
+    if (!publicKey || !activeMission || !localMissionReady) return;
 
     // Check if active mission is exploration-related
     if (activeMission.type === "exploration") {
@@ -144,7 +143,23 @@ export function useMissionProgressTracker() {
         await updateMissionProgress(activeMission.id, newProgress);
       }
     }
-  }, [publicKey, activeMission, honeycombConnected]);
+  }, [publicKey, activeMission, localMissionReady]);
+
+  // Award mission rewards when completed
+  const handleMissionRewards = useCallback(async (completedMission: any) => {
+    try {
+      const rewardSummary = await awardMissionRewards(completedMission);
+
+      if (rewardSummary) {
+        const rewardText = formatRewardSummary(rewardSummary);// Show mission completion modal
+        setCompletionModal({
+          isOpen: true,
+          mission: completedMission,
+          rewardSummary,
+        });
+      }
+    } catch (error) {}
+  }, [awardMissionRewards, formatRewardSummary]);
 
   // Update mission progress (both local and blockchain)
   const updateMissionProgress = useCallback(async (missionId: string, newProgress: number) => {
@@ -176,36 +191,13 @@ export function useMissionProgressTracker() {
         await handleMissionRewards(updatedMission);
       }
 
-      // Sync to Honeycomb Protocol
-      if (honeycombConnected && honeycombService) {
-        await updateHoneycombMissionProgress(publicKey, missionId, newProgress);
+      // Update local mission progress
+      if (localMissionReady) {
+        await updateLocalMissionProgress(missionId, newProgress);
       }
 
-    } catch (error) {
-      console.error("Failed to update mission progress:", error);
-    }
-  }, [publicKey, missions, honeycombConnected, honeycombService, updateHoneycombMissionProgress]);
-
-  // Award mission rewards when completed
-  const handleMissionRewards = useCallback(async (completedMission: any) => {
-    try {
-      const rewardSummary = await awardMissionRewards(completedMission);
-
-      if (rewardSummary) {
-        const rewardText = formatRewardSummary(rewardSummary);
-        console.log(`Mission "${completedMission.title}" completed! Rewards: ${rewardText}`);
-
-        // Show mission completion modal
-        setCompletionModal({
-          isOpen: true,
-          mission: completedMission,
-          rewardSummary,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to award mission rewards:", error);
-    }
-  }, [awardMissionRewards, formatRewardSummary]);
+    } catch (error) {}
+  }, [publicKey, missions, localMissionReady, updateLocalMissionProgress, setMissions, setActiveMission, handleMissionRewards]);
 
   // Close mission completion modal
   const closeCompletionModal = useCallback(() => {
@@ -234,7 +226,7 @@ export function useMissionProgressTracker() {
     closeCompletionModal,
 
     // Status
-    isTrackingEnabled: connected && honeycombConnected && !!activeMission,
+    isTrackingEnabled: connected && localMissionReady && !!activeMission,
     activeMission,
   };
 }

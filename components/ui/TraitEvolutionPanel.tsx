@@ -10,9 +10,8 @@ import { Divider } from "@heroui/divider";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 
-import { useHoneycombStore } from "@/stores/honeycombStore";
 import { useGameStore } from "@/stores/gameStore";
-import { useCharacterSystemManager } from "@/hooks/useCharacterSystemManager";
+import { useLocalCharacterIntegration } from "@/hooks/useLocalCharacterIntegration";
 import { formatNumber } from "@/utils/gameHelpers";
 
 interface TraitEvolutionPanelProps {
@@ -25,14 +24,12 @@ export default function TraitEvolutionPanel({
   const { publicKey } = useWallet();
   const { player } = useGameStore();
   const {
-    playerCharacter,
-    isCharacterSystemInitialized,
-    evolveCharacterTrait,
-    getTraitEvolutionStatus,
-    checkTraitEvolution,
-  } = useHoneycombStore();
-
-  const { getTraitBenefits } = useCharacterSystemManager();
+    activeCharacter: playerCharacter,
+    isReady: isCharacterSystemInitialized,
+    evolveTrait,
+    canEvolveTrait,
+    getTraitBenefits,
+  } = useLocalCharacterIntegration();
 
   const [evolutionStatus, setEvolutionStatus] = useState<any[]>([]);
   const [isEvolving, setIsEvolving] = useState<string | null>(null);
@@ -92,22 +89,14 @@ export default function TraitEvolutionPanel({
 
   // Handle trait evolution
   const handleEvolveTrait = async (
-    category: string,
-    currentTrait: string,
+    traitId: string,
     nextTrait: string,
   ) => {
     if (!playerCharacter) return;
 
-    setIsEvolving(`${category}_${currentTrait}`);
+    setIsEvolving(traitId);
     try {
-      await evolveCharacterTrait(
-        playerCharacter.address,
-        new PublicKey(playerCharacter.owner),
-        category,
-        currentTrait,
-        nextTrait,
-      );
-
+      await evolveTrait(traitId, nextTrait);
       // Reload evolution status
       await loadEvolutionStatus();
     } catch (error) {

@@ -1,75 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useHoneycombStore } from "@/stores/honeycombStore";
-import { useCharacterSystemManager } from "./useCharacterSystemManager";
+// No longer need useEffect and useState since bonuses come directly from local character system
+import { useLocalCharacterIntegration } from "@/hooks/useLocalCharacterIntegration";
 
 /**
- * Hook to calculate and apply trait-based gameplay bonuses
+ * Hook to calculate and apply trait-based gameplay bonuses using local character system
  */
 export function useTraitBonuses() {
-  const { playerCharacter, isCharacterSystemInitialized } = useHoneycombStore();
-  const { getTraitBenefits } = useCharacterSystemManager();
+  const { activeCharacter: playerCharacter, isReady: isCharacterSystemInitialized, getTraitBonuses } = useLocalCharacterIntegration();
 
-  const [bonuses, setBonuses] = useState({
-    miningBonus: 0,
-    craftingBonus: 0,
-    explorationBonus: 0,
-    combatBonus: 0,
-    leadershipBonus: 0,
-    experienceBonus: 0,
-  });
-
-  // Calculate bonuses from character traits
-  useEffect(() => {
-    if (!playerCharacter || !isCharacterSystemInitialized) {
-      setBonuses({
-        miningBonus: 0,
-        craftingBonus: 0,
-        explorationBonus: 0,
-        combatBonus: 0,
-        leadershipBonus: 0,
-        experienceBonus: 0,
-      });
-      return;
-    }
-
-    let totalBonuses = {
-      miningBonus: 0,
-      craftingBonus: 0,
-      explorationBonus: 0,
-      combatBonus: 0,
-      leadershipBonus: 0,
-      experienceBonus: 0,
-    };
-
-    // Calculate bonuses from each trait
-    playerCharacter.traits.forEach(([category, traitName]) => {
-      const benefits = getTraitBenefits(category, traitName);
-
-      if (benefits.miningBonus) {
-        totalBonuses.miningBonus += benefits.miningBonus;
-      }
-      if (benefits.craftingBonus) {
-        totalBonuses.craftingBonus += benefits.craftingBonus;
-      }
-      if (benefits.explorationBonus) {
-        totalBonuses.explorationBonus += benefits.explorationBonus;
-      }
-      if (benefits.combatBonus) {
-        totalBonuses.combatBonus += benefits.combatBonus;
-      }
-      if (benefits.leadershipBonus) {
-        totalBonuses.leadershipBonus += benefits.leadershipBonus;
-      }
-    });
-
-    // Add experience bonus based on total trait bonuses (synergy effect)
-    const totalTraitBonuses = Object.values(totalBonuses).reduce((sum, bonus) => sum + bonus, 0);
-    totalBonuses.experienceBonus = Math.floor(totalTraitBonuses * 0.1); // 10% of total bonuses as XP bonus
-
-    setBonuses(totalBonuses);
-  }, [playerCharacter, isCharacterSystemInitialized, getTraitBenefits]);
+  // Get bonuses directly from the local character system
+  const bonuses = getTraitBonuses();
 
   // Apply mining bonus to mining results
   const applyMiningBonus = (baseAmount: number): number => {

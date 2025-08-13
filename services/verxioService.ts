@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { PublicKey } from "@solana/web3.js";
 import {
   initializeVerxio,
@@ -61,10 +60,10 @@ export interface Guild {
 
 export interface GuildBenefit {
   type:
-    | "experience_boost"
-    | "resource_bonus"
-    | "crafting_speed"
-    | "mining_efficiency";
+  | "experience_boost"
+  | "resource_bonus"
+  | "crafting_speed"
+  | "mining_efficiency";
   value: number;
   description: string;
 }
@@ -90,6 +89,7 @@ export class VerxioService {
   private verxioContext: VerxioContext | null = null;
   private programAuthorityKeypair: any = null; // Store separately since it's not in VerxioContext
   private loyaltyProgramId: string | null = null;
+  private isInitialized: boolean = false;
 
   // Predefined loyalty tiers
   private static readonly LOYALTY_TIERS: LoyaltyTier[] = [
@@ -182,7 +182,13 @@ export class VerxioService {
 
   // Initialize Verxio connection
   async initialize(): Promise<boolean> {
+    // Prevent multiple initializations
+    if (this.isInitialized) {
+      return true;
+    }
+
     try {
+      this.isInitialized = true;
       // Initialize UMI with Solana connection
       const rpcEndpoint =
         this.config.environment === "production"
@@ -196,7 +202,7 @@ export class VerxioService {
 
       // Try to use environment variable for a funded keypair first
       const envAuthorityKey =
-        process.env.NEXT_PUBLIC_AUTORITY_PUBLIC_KEY ||
+        process.env.NEXT_PUBLIC_AUTHORITY_PUBLIC_KEY ||
         process.env.AUTORITY_PUBLIC_KEY;
       const envPayerKey =
         process.env.NEXT_PUBLIC_PAYER_PUBLIC_KEY ||
@@ -204,7 +210,6 @@ export class VerxioService {
 
       if (envAuthorityKey) {
         try {
-          console.log("Using environment authority key:", envAuthorityKey);
           programAuthority = publicKey(envAuthorityKey);
 
           // For the keypair, we'll generate one but note that it needs funding
@@ -212,11 +217,6 @@ export class VerxioService {
 
           // Set the generated keypair as identity (it will need to be funded)
           umi.use(keypairIdentity(programAuthorityKeypair));
-
-          console.log(
-            "Using env authority with generated keypair (needs funding):",
-            programAuthorityKeypair.publicKey.toString(),
-          );
         } catch (error) {
           console.warn(
             "Failed to use environment authority, generating new one:",
@@ -227,29 +227,12 @@ export class VerxioService {
           programAuthorityKeypair = generateSigner(umi);
           programAuthority = programAuthorityKeypair.publicKey;
           umi.use(keypairIdentity(programAuthorityKeypair));
-
-          console.log(
-            "Generated new program authority (needs funding):",
-            programAuthority.toString(),
-          );
         }
       } else {
         // Generate a new keypair (will need funding)
         programAuthorityKeypair = generateSigner(umi);
         programAuthority = programAuthorityKeypair.publicKey;
         umi.use(keypairIdentity(programAuthorityKeypair));
-
-        console.log(
-          "Generated new program authority (needs funding):",
-          programAuthority.toString(),
-        );
-        console.log(
-          "💡 To fund this account, send SOL to:",
-          programAuthority.toString(),
-        );
-        console.log(
-          "💡 Or set NEXT_PUBLIC_AUTORITY_PUBLIC_KEY in .env with a funded account",
-        );
       }
 
       // Initialize Verxio context with proper authority
@@ -265,15 +248,7 @@ export class VerxioService {
         );
       }
 
-      console.log(
-        "Verxio initialized successfully with authority:",
-        this.verxioContext.programAuthority.toString(),
-      );
-
       // Note: Loyalty program creation is deferred until we have a connected wallet to pay for transactions
-      console.log(
-        "Verxio context ready. Loyalty program will be created when wallet connects.",
-      );
 
       // Sync guild member counts on initialization to fix any inconsistencies
       await this.syncAllGuildMemberCounts();
@@ -281,6 +256,8 @@ export class VerxioService {
       return true;
     } catch (error) {
       console.error("Failed to initialize Verxio:", error);
+      // Reset an initialization flag on error so it can be retried
+      this.isInitialized = false;
 
       // Fall back to localStorage mode for development
       return true; // Return true to allow fallback mode
@@ -290,25 +267,13 @@ export class VerxioService {
   // Public method to ensure loyalty program exists with a connected wallet as payer
   async ensureLoyaltyProgramWithWallet(payerWallet: any): Promise<void> {
     if (!this.verxioContext) {
-      console.log(
-        "Verxio context not initialized, skipping loyalty program creation",
-      );
-
       return;
     }
 
     if (!payerWallet?.publicKey) {
-      console.log(
-        "No connected wallet provided, skipping loyalty program creation",
-      );
-
       return;
     }
 
-    console.log(
-      "Ensuring loyalty program with connected wallet:",
-      payerWallet.publicKey.toString(),
-    );
     await this.ensureLoyaltyProgram(payerWallet);
   }
 
@@ -321,7 +286,7 @@ export class VerxioService {
     try {
       const connection = new (await import("@solana/web3.js")).Connection(
         process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-          "https://api.devnet.solana.com",
+        "https://api.devnet.solana.com",
       );
 
       const balance = await connection.getBalance(
@@ -331,8 +296,6 @@ export class VerxioService {
       );
 
       const solBalance = balance / 1e9; // Convert lamports to SOL
-
-      console.log(`Program authority balance: ${solBalance} SOL`);
 
       // Need at least 0.01 SOL for transactions
       const hasEnoughBalance = solBalance >= 0.01;
@@ -589,10 +552,6 @@ export class VerxioService {
               },
             };
 
-            console.log(
-              "Trying minimal loyalty program config:",
-              minimalConfig,
-            );
             result = await createLoyaltyProgram(
               this.verxioContext,
               minimalConfig,
@@ -711,10 +670,7 @@ export class VerxioService {
             }
           }
         } catch (error) {
-          console.log(
-            "Verxio lookup failed, falling back to localStorage:",
-            error,
-          );
+          // Verxio lookup failed, falling back to localStorage
         }
       }
 
@@ -828,10 +784,7 @@ export class VerxioService {
             return await this.awardPoints(playerPublicKey, points, reason);
           }
         } catch (error) {
-          console.log(
-            "Verxio points award failed, falling back to localStorage:",
-            error,
-          );
+          // Verxio points award failed, falling back to localStorage
         }
       }
 

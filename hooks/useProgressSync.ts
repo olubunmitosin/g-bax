@@ -6,7 +6,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useGameStore } from "@/stores/gameStore";
 import { useVerxioStore, resetVerxioStore } from "@/stores/verxioStore";
 import { useHoneycombStore } from "@/stores/honeycombStore";
-import { useCrossSessionProgress } from "./useCrossSessionProgress";
+// import { useCrossSessionProgress } from "./useCrossSessionProgress";
 import { resetItemEffectsStore } from "@/stores/itemEffectsStore";
 
 /**
@@ -18,7 +18,8 @@ export function useProgressSync() {
   const gameState = useGameStore();
   const verxioState = useVerxioStore();
   const honeycombState = useHoneycombStore();
-  const { initializeProgress, syncProgress } = useCrossSessionProgress();
+  // Cross-session progress hook available if needed
+  // const { initializeProgress, syncProgress } = useCrossSessionProgress();
 
   const lastSaveRef = useRef<number>(0);
   const saveIntervalRef = useRef<NodeJS.Timeout>();
@@ -59,88 +60,7 @@ export function useProgressSync() {
     gameState.activeMission?.id,
   ]);
 
-  // Function to load player progress from blockchain and localStorage
-  const loadPlayerProgress = async () => {
-    if (!connected || !publicKey) return;
-
-    try {
-      // First, try to load from blockchain if Honeycomb is connected
-      if (honeycombState.isConnected && honeycombState.honeycombService) {
-        const blockchainProfile =
-          await honeycombState.honeycombService.getPlayerProfile(publicKey);
-
-        if (blockchainProfile && blockchainProfile.experience > 0) {
-          // Load from blockchain
-          gameState.setPlayer({
-            id: publicKey.toString(),
-            name:
-              blockchainProfile.name ||
-              `Explorer ${publicKey.toString().slice(0, 8)}`,
-            level: blockchainProfile.level || 1,
-            experience: blockchainProfile.experience || 0,
-            position: [0, 0, 0],
-            credits: blockchainProfile.credits || 1000,
-          });
-
-          // Load missions from blockchain
-          const playerMissions =
-            await honeycombState.honeycombService.getPlayerMissions(publicKey);
-
-          if (playerMissions && playerMissions.length > 0) {
-            // gameState.setMissions([playerMissions]);
-          }
-
-          return; // Successfully loaded from blockchain
-        }
-      }
-
-      // Fallback: Try to load saved progress from wallet-specific localStorage
-      const walletSpecificKey = `g-bax-game-progress-${publicKey.toString()}`;
-      const saved =
-        localStorage.getItem(walletSpecificKey) ||
-        localStorage.getItem("g-bax-game-progress");
-
-      if (saved) {
-        try {
-          const gameData = JSON.parse(saved);
-
-          if (gameData.player && gameData.player.id === publicKey.toString()) {
-            gameState.setPlayer(gameData.player);
-            gameState.setInventory(gameData.inventory || []);
-            gameState.setMissions(gameData.missions || []);
-            if (gameData.activeMission) {
-              gameState.setActiveMission(gameData.activeMission);
-            }
-
-            return;
-          }
-        } catch (error) {
-          // Continue to create new player
-        }
-      }
-
-      // If no saved progress anywhere, create new player
-      gameState.setPlayer({
-        id: publicKey.toString(),
-        name: `Explorer ${publicKey.toString().slice(0, 8)}`,
-        level: 1,
-        experience: 0,
-        position: [0, 0, 0],
-        credits: 1000,
-      });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      // If blockchain loading fails, create new player
-      gameState.setPlayer({
-        id: publicKey.toString(),
-        name: `Explorer ${publicKey.toString().slice(0, 8)}`,
-        level: 1,
-        experience: 0,
-        position: [0, 0, 0],
-        credits: 1000,
-      });
-    }
-  };
+  // Note: Player progress loading is now handled automatically by other hooks
 
   // Clear all data when wallet disconnects
   useEffect(() => {
@@ -229,13 +149,18 @@ export function useProgressSync() {
         contextWallet,
       );
 
-      // Update mission progress on blockchain
+      // Update mission progress using local mission service
       if (gameState.activeMission) {
-        await honeycombState.updateMissionProgress(
-          publicKey,
-          gameState.activeMission.id,
-          gameState.activeMission.progress,
-        );
+        const { localMissionService } = await import("@/services/localMissionService");
+        try {
+          localMissionService.updateMissionProgress(
+            publicKey.toString(),
+            gameState.activeMission.id,
+            gameState.activeMission.progress,
+          );
+        } catch (error) {
+          console.warn("Failed to update local mission progress:", error);
+        }
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {

@@ -4,7 +4,6 @@ import { useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 import { useGameStore } from "@/stores/gameStore";
-import { useHoneycombStore } from "@/stores/honeycombStore";
 import { useVerxioIntegration } from "./useVerxioIntegration";
 import { useAchievementTracker } from "./useAchievementTracker";
 import { useGuildProgression } from "./useGuildProgression";
@@ -22,11 +21,8 @@ export function useMissionRewards() {
     setPlayer,
   } = useGameStore();
 
-  const {
-    updatePlayerExperience: updateHoneycombExperience,
-    honeycombService,
-    isConnected: honeycombConnected,
-  } = useHoneycombStore();
+  // Local mission system doesn't need blockchain sync for core rewards
+  // Experience and credits are handled locally
 
   const { awardPointsForActivity } = useVerxioIntegration();
   const { trackActivity } = useAchievementTracker();
@@ -65,18 +61,10 @@ export function useMissionRewards() {
             experience: newExperience,
             level: newLevel,
           });
-          console.log(`Level up! Player reached level ${newLevel}`);
         }
 
-        // Sync experience to blockchain using enhanced real-time sync
-        if (honeycombConnected && honeycombService) {
-          try {
-            await updateHoneycombExperience(publicKey, rewards.experience);
-            console.log("Experience synced to blockchain via enhanced sync");
-          } catch (error) {
-            console.warn("Failed to sync experience to blockchain:", error);
-          }
-        }
+        // Experience is now handled locally - no blockchain sync needed
+        console.log(`Awarded ${rewards.experience} experience points locally`);
       }
 
       // 2. Award Credits
@@ -145,9 +133,7 @@ export function useMissionRewards() {
     addResource,
     updatePlayerExperience,
     setPlayer,
-    updateHoneycombExperience,
-    honeycombService,
-    honeycombConnected,
+    // Removed Honeycomb dependencies - now using local system
     awardPointsForActivity,
     trackActivity,
     recordContribution,
@@ -217,6 +203,6 @@ export function useMissionRewards() {
 
     // Status
     canAwardRewards: canAwardRewards(),
-    isBlockchainSyncEnabled: honeycombConnected,
+    isBlockchainSyncEnabled: false, // Local system doesn't use blockchain
   };
 }

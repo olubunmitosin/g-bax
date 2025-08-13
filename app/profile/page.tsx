@@ -120,7 +120,7 @@ export default function ProfilePage() {
                         Wallet Address
                       </span>
                       <p className="font-mono text-sm">
-                        {player.id.slice(0, 8)}...{player.id.slice(-8)}
+                        {player.address.slice(0, 8)}...{player.address.slice(-8)}
                       </p>
                     </div>
                     <div>

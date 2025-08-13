@@ -96,7 +96,7 @@ export function useGuildProgression() {
 
   // Get eligible guilds for player
   const getEligibleGuilds = (): Guild[] => {
-    return availableGuilds.filter(guild => 
+    return availableGuilds.filter(guild =>
       meetsGuildRequirements(guild) && guild.memberCount < guild.maxMembers
     );
   };
@@ -108,15 +108,11 @@ export function useGuildProgression() {
     setIsJoining(true);
     try {
       const success = await joinGuild(publicKey, guildId);
-      
-      if (success) {
-        console.log(`Successfully joined guild: ${guildId}`);
-      }
+
+      if (success) {}
 
       return success;
-    } catch (error) {
-      console.error("Failed to join guild:", error);
-      return false;
+    } catch (error) {return false;
     } finally {
       setIsJoining(false);
     }
@@ -129,15 +125,11 @@ export function useGuildProgression() {
     setIsLeaving(true);
     try {
       const success = await leaveGuild(publicKey);
-      
-      if (success) {
-        console.log("Successfully left guild");
-      }
+
+      if (success) {}
 
       return success;
-    } catch (error) {
-      console.error("Failed to leave guild:", error);
-      return false;
+    } catch (error) {return false;
     } finally {
       setIsLeaving(false);
     }
@@ -157,14 +149,10 @@ export function useGuildProgression() {
         amount,
       );
 
-      if (success) {
-        console.log(`Recorded ${contributionType} contribution: ${amount}`);
-      }
+      if (success) {}
 
       return success;
-    } catch (error) {
-      console.error("Failed to record guild contribution:", error);
-      return false;
+    } catch (error) {return false;
     }
   };
 
@@ -178,7 +166,7 @@ export function useGuildProgression() {
   // Calculate guild bonus for activity
   const getGuildBonus = (activityType: string): number => {
     const benefits = getGuildBenefits();
-    
+
     switch (activityType) {
       case "mining":
         return benefits.miningBonus || 0;

@@ -8,7 +8,7 @@ import { Progress } from '@heroui/progress';
 import { Tabs, Tab } from '@heroui/tabs';
 import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
-import { useHoneycombIntegration } from '@/hooks/useHoneycombIntegration';
+import { useLocalMissionIntegration } from '@/hooks/useLocalMissionIntegration';
 import { PREDEFINED_MISSIONS, MISSION_CATEGORIES, getMissionsByCategory } from '@/data/missions';
 import { formatNumber } from '@/utils/gameHelpers';
 
@@ -16,7 +16,7 @@ export default function MissionsPage() {
   const [selectedCategory, setSelectedCategory] = useState<keyof typeof MISSION_CATEGORIES>('BEGINNER');
   const { missions, activeMission } = useGameStore();
   const { player } = usePlayerSync();
-  const { startMission, canStartMission } = useHoneycombIntegration();
+  const { startMission, canStartMission } = useLocalMissionIntegration();
   const categoryMissions = getMissionsByCategory(selectedCategory);
 
   const getMissionStatusColor = (status: string) => {
@@ -202,7 +202,7 @@ export default function MissionsPage() {
                       {mission.type}
                     </Chip>
 
-                    {status === 'available' && canStartMission(mission.id) && (
+                    {status === 'available' && canStartMission(mission) && (
                       <Button
                         size="sm"
                         color="primary"

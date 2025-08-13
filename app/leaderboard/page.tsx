@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Chip } from '@heroui/chip';
-import { Tabs, Tab } from '@heroui/tabs';
-import { usePlayerSync } from '@/hooks/usePlayerSync';
-import { useVerxioStore } from '@/stores/verxioStore';
-import { useHoneycombStore } from '@/stores/honeycombStore';
-import { formatNumber } from '@/utils/gameHelpers';
+import React, { useState, useEffect } from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Tabs, Tab } from "@heroui/tabs";
+
+import { usePlayerSync } from "@/hooks/usePlayerSync";
+import { useVerxioStore } from "@/stores/verxioStore";
+import { useHoneycombStore } from "@/stores/honeycombStore";
+import { formatNumber } from "@/utils/gameHelpers";
 
 interface LeaderboardEntry {
   rank: number;
@@ -19,13 +20,13 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardPage() {
-  const [selectedCategory, setSelectedCategory] = useState('loyalty');
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("loyalty");
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>(
+    [],
+  );
   const { player } = usePlayerSync();
   const { playerLoyalty, availableGuilds, playerGuild } = useVerxioStore();
   const { playerExperience } = useHoneycombStore();
-
-
 
   // Generate leaderboard data
   useEffect(() => {
@@ -34,17 +35,17 @@ export default function LeaderboardPage() {
     // Add current player if they have real data
     if (player && playerLoyalty) {
       let value = 0;
-      let tier = playerLoyalty.currentTier?.name || 'Novice Explorer';
-      let guildName = playerGuild?.name || '';
+      let tier = playerLoyalty.currentTier?.name || "Novice Explorer";
+      let guildName = playerGuild?.name || "";
 
       switch (selectedCategory) {
-        case 'loyalty':
+        case "loyalty":
           value = playerLoyalty.points || 0;
           break;
-        case 'reputation':
+        case "reputation":
           value = playerLoyalty.reputation || 0;
           break;
-        case 'experience':
+        case "experience":
           // Use unified experience calculation
           if (playerExperience > 0) {
             value = playerExperience;
@@ -61,7 +62,7 @@ export default function LeaderboardPage() {
       if (value > 0) {
         entries.push({
           rank: 1,
-          playerId: player.id,
+          playerId: player.address,
           playerName: player.name || `Explorer ${player.id.slice(0, 8)}`,
           value,
           tier,
@@ -81,26 +82,37 @@ export default function LeaderboardPage() {
 
   const getPlayerRank = () => {
     if (!player) return null;
-    return leaderboardData.find(entry => entry.playerId === player.id);
+
+    return leaderboardData.find((entry) => entry.playerId === player.id);
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'loyalty': return '';
-      case 'reputation': return '';
-      case 'experience': return '';
-      case 'guilds': return '';
-      default: return '';
+      case "loyalty":
+        return "";
+      case "reputation":
+        return "";
+      case "experience":
+        return "";
+      case "guilds":
+        return "";
+      default:
+        return "";
     }
   };
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'loyalty': return 'Loyalty Points';
-      case 'reputation': return 'Reputation';
-      case 'experience': return 'Total Experience';
-      case 'guilds': return 'Guild Rankings';
-      default: return 'Unknown';
+      case "loyalty":
+        return "Loyalty Points";
+      case "reputation":
+        return "Reputation";
+      case "experience":
+        return "Total Experience";
+      case "guilds":
+        return "Guild Rankings";
+      default:
+        return "Unknown";
     }
   };
 
@@ -113,7 +125,8 @@ export default function LeaderboardPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">Leaderboards</h1>
           <p className="text-lg text-default-600">
-            See how you rank against other space explorers across different categories
+            See how you rank against other space explorers across different
+            categories
           </p>
         </div>
 
@@ -124,18 +137,29 @@ export default function LeaderboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="text-3xl">
-                    {playerRank.rank <= 3 ? '🥇' : playerRank.rank <= 10 ? '🥈' : '🥉'}
+                    {playerRank.rank <= 3
+                      ? "🥇"
+                      : playerRank.rank <= 10
+                        ? "🥈"
+                        : "🥉"}
                   </div>
                   <div>
                     <h3 className="text-xl font-bold">Your Rank</h3>
-                    <p className="text-default-600">#{playerRank.rank} in {getCategoryLabel(selectedCategory)}</p>
+                    <p className="text-default-600">
+                      #{playerRank.rank} in {getCategoryLabel(selectedCategory)}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold">{formatNumber(playerRank.value)}</div>
+                  <div className="text-2xl font-bold">
+                    {formatNumber(playerRank.value)}
+                  </div>
                   <div className="text-sm text-default-500">
-                    {selectedCategory === 'loyalty' ? 'Points' :
-                      selectedCategory === 'reputation' ? 'Reputation' : 'Total XP'}
+                    {selectedCategory === "loyalty"
+                      ? "Points"
+                      : selectedCategory === "reputation"
+                        ? "Reputation"
+                        : "Total XP"}
                   </div>
                 </div>
               </div>
@@ -146,9 +170,9 @@ export default function LeaderboardPage() {
         {/* Category Tabs */}
         <div className="mb-6">
           <Tabs
+            className="w-full"
             selectedKey={selectedCategory}
             onSelectionChange={(key) => setSelectedCategory(key as string)}
-            className="w-full"
           >
             <Tab key="loyalty" title="Loyalty Points" />
             <Tab key="reputation" title="Reputation" />
@@ -160,8 +184,12 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <span className="text-xl">{getCategoryIcon(selectedCategory)}</span>
-              <h3 className="text-xl font-bold">{getCategoryLabel(selectedCategory)} Leaderboard</h3>
+              <span className="text-xl">
+                {getCategoryIcon(selectedCategory)}
+              </span>
+              <h3 className="text-xl font-bold">
+                {getCategoryLabel(selectedCategory)} Leaderboard
+              </h3>
             </div>
           </CardHeader>
           <CardBody>
@@ -170,7 +198,8 @@ export default function LeaderboardPage() {
                 <div className="text-4xl mb-4">🏆</div>
                 <h3 className="text-lg font-bold mb-2">No Rankings Yet</h3>
                 <p className="text-default-600">
-                  Be the first to appear on the leaderboard by earning {getCategoryLabel(selectedCategory).toLowerCase()}!
+                  Be the first to appear on the leaderboard by earning{" "}
+                  {getCategoryLabel(selectedCategory).toLowerCase()}!
                 </p>
               </div>
             ) : (
@@ -179,46 +208,58 @@ export default function LeaderboardPage() {
                   <div
                     key={entry.playerId}
                     className={`flex items-center justify-between p-3 rounded-lg transition-colors ${entry.playerId === player?.id
-                      ? 'bg-primary-50 border border-primary-200'
-                      : 'bg-default-50 hover:bg-default-100'
+                        ? "bg-primary-50 border border-primary-200"
+                        : "bg-default-50 hover:bg-default-100"
                       }`}
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-8 text-center">
                         {entry.rank <= 3 ? (
                           <span className="text-xl">
-                            {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'}
+                            {entry.rank === 1
+                              ? "🥇"
+                              : entry.rank === 2
+                                ? "🥈"
+                                : "🥉"}
                           </span>
                         ) : (
-                          <span className="font-bold text-default-500">#{entry.rank}</span>
+                          <span className="font-bold text-default-500">
+                            #{entry.rank}
+                          </span>
                         )}
                       </div>
 
                       <div>
                         <div className="font-medium">{entry.playerName}</div>
                         <div className="text-xs text-default-500">
-                          {entry.playerId.slice(0, 8)}...{entry.playerId.slice(-8)}
+                          {entry.playerId.slice(0, 8)}...
+                          {entry.playerId.slice(-8)}
                         </div>
                       </div>
 
                       {entry.guildName && (
-                        <Chip size="sm" color="secondary" variant="flat">
+                        <Chip color="secondary" size="sm" variant="flat">
                           {entry.guildName}
                         </Chip>
                       )}
 
-                      {entry.tier && selectedCategory === 'loyalty' && (
-                        <Chip size="sm" color="primary" variant="flat">
+                      {entry.tier && selectedCategory === "loyalty" && (
+                        <Chip color="primary" size="sm" variant="flat">
                           {entry.tier}
                         </Chip>
                       )}
                     </div>
 
                     <div className="text-right">
-                      <div className="font-bold">{formatNumber(entry.value)}</div>
+                      <div className="font-bold">
+                        {formatNumber(entry.value)}
+                      </div>
                       <div className="text-xs text-default-500">
-                        {selectedCategory === 'loyalty' ? 'points' :
-                          selectedCategory === 'reputation' ? 'reputation' : 'total XP'}
+                        {selectedCategory === "loyalty"
+                          ? "points"
+                          : selectedCategory === "reputation"
+                            ? "reputation"
+                            : "total XP"}
                       </div>
                     </div>
                   </div>
@@ -257,26 +298,34 @@ export default function LeaderboardPage() {
                         <div className="w-8 text-center">
                           {index < 3 ? (
                             <span className="text-xl">
-                              {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                              {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
                             </span>
                           ) : (
-                            <span className="font-bold text-default-500">#{index + 1}</span>
+                            <span className="font-bold text-default-500">
+                              #{index + 1}
+                            </span>
                           )}
                         </div>
 
                         <div>
                           <div className="font-medium">{guild.name}</div>
-                          <div className="text-xs text-default-500 capitalize">{guild.type} guild</div>
+                          <div className="text-xs text-default-500 capitalize">
+                            {guild.type} guild
+                          </div>
                         </div>
 
-                        <Chip size="sm" color="primary" variant="flat">
+                        <Chip color="primary" size="sm" variant="flat">
                           Level {guild.level}
                         </Chip>
                       </div>
 
                       <div className="text-right">
-                        <div className="font-bold">{formatNumber(guild.totalReputation)}</div>
-                        <div className="text-xs text-default-500">{guild.memberCount} members</div>
+                        <div className="font-bold">
+                          {formatNumber(guild.totalReputation)}
+                        </div>
+                        <div className="text-xs text-default-500">
+                          {guild.memberCount} members
+                        </div>
                       </div>
                     </div>
                   ))}

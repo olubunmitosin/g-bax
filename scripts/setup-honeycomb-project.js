@@ -277,8 +277,8 @@ class HoneycombProjectSetup {
 
       // Update authority and payer keys
       envContent = envContent.replace(
-        /NEXT_PUBLIC_AUTORITY_PUBLIC_KEY=.*/,
-        `NEXT_PUBLIC_AUTORITY_PUBLIC_KEY=${project.authority}`
+        /NEXT_PUBLIC_AUTHORITY_PUBLIC_KEY=.*/,
+        `NEXT_PUBLIC_AUTHORITY_PUBLIC_KEY=${project.authority}`
       );
 
       envContent = envContent.replace(
