@@ -1,25 +1,28 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Progress } from '@heroui/progress';
-import { Chip } from '@heroui/chip';
-import { Button } from '@heroui/button';
-import { useVerxioStore } from '@/stores/verxioStore';
-import { formatNumber } from '@/utils/gameHelpers';
-import { useWallet } from '@solana/wallet-adapter-react';
+import React from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Progress } from "@heroui/progress";
+import { Chip } from "@heroui/chip";
+import { Button } from "@heroui/button";
+import { useWallet } from "@solana/wallet-adapter-react";
+
+import { useVerxioStore } from "@/stores/verxioStore";
+import { formatNumber } from "@/utils/gameHelpers";
 
 interface LoyaltyDashboardProps {
   onClose?: () => void;
   className?: string;
 }
 
-export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDashboardProps) {
+export default function LoyaltyDashboard({
+  onClose,
+  className = "",
+}: LoyaltyDashboardProps) {
   const { publicKey } = useWallet();
   const {
     playerLoyalty,
     playerGuild,
-    loyaltyTiers,
     isLoadingLoyalty,
     getPointsToNextTier,
     refreshLoyaltyData,
@@ -36,7 +39,7 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
       <Card className={`w-80 ${className}`}>
         <CardBody className="flex items-center justify-center p-8">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
             <p className="text-sm text-default-500">Loading loyalty data...</p>
           </div>
         </CardBody>
@@ -44,7 +47,7 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
     );
   }
 
-  if (!playerLoyalty) {
+  if (!publicKey) {
     return (
       <Card className={`w-80 ${className}`}>
         <CardHeader>
@@ -59,13 +62,30 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
     );
   }
 
-  const { needed: pointsToNext, nextTier } = getPointsToNextTier(playerLoyalty.points);
+  if (!playerLoyalty) {
+    return (
+      <Card className={`w-80 ${className}`}>
+        <CardHeader>
+          <h3 className="text-lg font-semibold">Loyalty System</h3>
+        </CardHeader>
+        <CardBody>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
+            <p className="text-sm text-default-500">Loading loyalty data...</p>
+          </div>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  const { needed: pointsToNext, nextTier } = getPointsToNextTier(
+    playerLoyalty.points,
+  );
   const currentTier = playerLoyalty.currentTier;
   const progressInTier = playerLoyalty.points - currentTier.minPoints;
   const tierRange = currentTier.maxPoints - currentTier.minPoints;
-  const tierProgress = tierRange === Infinity ? 100 : (progressInTier / tierRange) * 100;
-
-
+  const tierProgress =
+    tierRange === Infinity ? 100 : (progressInTier / tierRange) * 100;
 
   return (
     <Card className={`w-80 ${className}`}>
@@ -74,32 +94,34 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
         <div className="flex items-center gap-2">
           <Chip
             size="sm"
-            variant="flat"
             style={{
               backgroundColor: `${currentTier.color}20`,
               color: currentTier.color,
             }}
+            variant="flat"
           >
             {currentTier.icon} {currentTier.name}
           </Chip>
           <Button
             isIconOnly
+            aria-label="Refresh loyalty data"
+            className="text-default-400 hover:text-default-600"
+            isLoading={isLoadingLoyalty}
             size="sm"
+            title="Refresh loyalty data"
             variant="light"
             onPress={handleRefreshLoyalty}
-            isLoading={isLoadingLoyalty}
-            className="text-default-400 hover:text-default-600"
-            title="Refresh loyalty data"
           >
             🔄
           </Button>
           {onClose && (
             <Button
               isIconOnly
+              aria-label="Close loyalty dashboard"
+              className="text-default-400 hover:text-default-600"
               size="sm"
               variant="light"
               onPress={onClose}
-              className="text-default-400 hover:text-default-600"
             >
               ✕
             </Button>
@@ -112,17 +134,20 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">Loyalty Points</span>
-            <span className="text-lg font-bold">{formatNumber(playerLoyalty.points)}</span>
+            <span className="text-lg font-bold">
+              {formatNumber(playerLoyalty.points)}
+            </span>
           </div>
 
           {nextTier ? (
             <>
               <Progress
-                value={tierProgress}
+                showValueLabel
+                aria-label={`Loyalty tier progress: ${tierProgress.toFixed(1)}% to ${nextTier.name}`}
                 className="w-full"
                 color="primary"
                 label={`Progress to ${nextTier.name}`}
-                showValueLabel
+                value={tierProgress}
               />
               <div className="text-xs text-default-500 text-center">
                 {formatNumber(pointsToNext)} points needed for {nextTier.name}
@@ -130,8 +155,15 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
             </>
           ) : (
             <div className="text-center">
-              <Progress value={100} className="w-full" color="warning" />
-              <div className="text-xs text-warning mt-1">Maximum tier reached!</div>
+              <Progress
+                aria-label="Maximum loyalty tier reached - 100% complete"
+                className="w-full"
+                color="warning"
+                value={100}
+              />
+              <div className="text-xs text-warning mt-1">
+                Maximum tier reached!
+              </div>
             </div>
           )}
         </div>
@@ -139,7 +171,9 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
         {/* Multiplier */}
         <div className="bg-success-50 rounded-lg p-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-success-700">Current Multiplier</span>
+            <span className="text-sm font-medium text-success-700">
+              Current Multiplier
+            </span>
             <span className="text-lg font-bold text-success-700">
               {currentTier.multiplier}x
             </span>
@@ -153,8 +187,8 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium">Reputation</span>
           <Chip
+            color={playerLoyalty.reputation >= 100 ? "success" : "default"}
             size="sm"
-            color={playerLoyalty.reputation >= 100 ? 'success' : 'default'}
             variant="flat"
           >
             {formatNumber(playerLoyalty.reputation)}
@@ -166,12 +200,16 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
           <div className="bg-purple-50 rounded-lg p-3">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-purple-700">Guild</span>
-              <Chip size="sm" color="secondary" variant="flat">
+              <Chip color="secondary" size="sm" variant="flat">
                 Level {playerGuild.level}
               </Chip>
             </div>
-            <h4 className="font-semibold text-purple-800">{playerGuild.name}</h4>
-            <p className="text-xs text-purple-600 mt-1">{playerGuild.description}</p>
+            <h4 className="font-semibold text-purple-800">
+              {playerGuild.name}
+            </h4>
+            <p className="text-xs text-purple-600 mt-1">
+              {playerGuild.description}
+            </p>
             <div className="flex justify-between items-center mt-2">
               <span className="text-xs text-purple-600">
                 {playerGuild.memberCount} members
@@ -184,7 +222,12 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
         ) : (
           <div className="bg-default-100 rounded-lg p-3 text-center">
             <p className="text-sm text-default-600 mb-2">No guild membership</p>
-            <Button size="sm" color="primary" variant="flat">
+            <Button
+              aria-label="Browse available guilds"
+              color="primary"
+              size="sm"
+              variant="flat"
+            >
               Browse Guilds
             </Button>
           </div>
@@ -208,13 +251,15 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Recent Achievements</h4>
             <div className="flex flex-wrap gap-1">
-              {playerLoyalty.achievements.slice(0, 3).map((achievement, index) => (
-                <Chip key={index} size="sm" variant="flat" color="warning">
-                  🏆 {achievement.replace('_', ' ')}
-                </Chip>
-              ))}
+              {playerLoyalty.achievements
+                .slice(0, 3)
+                .map((achievement, index) => (
+                  <Chip key={index} color="warning" size="sm" variant="flat">
+                    🏆 {achievement.replace("_", " ")}
+                  </Chip>
+                ))}
               {playerLoyalty.achievements.length > 3 && (
-                <Chip size="sm" variant="flat" color="default">
+                <Chip color="default" size="sm" variant="flat">
                   +{playerLoyalty.achievements.length - 3} more
                 </Chip>
               )}
@@ -225,12 +270,18 @@ export default function LoyaltyDashboard({ onClose, className = "" }: LoyaltyDas
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="text-center">
-            <div className="font-bold text-lg">{formatNumber(playerLoyalty.totalPointsEarned)}</div>
+            <div className="font-bold text-lg">
+              {formatNumber(playerLoyalty.totalPointsEarned)}
+            </div>
             <div className="text-default-500">Total Earned</div>
           </div>
           <div className="text-center">
             <div className="font-bold text-lg">
-              {Math.floor((Date.now() - new Date(playerLoyalty.lastActivity).getTime()) / (1000 * 60 * 60 * 24))}d
+              {Math.floor(
+                (Date.now() - new Date(playerLoyalty.lastActivity).getTime()) /
+                  (1000 * 60 * 60 * 24),
+              )}
+              d
             </div>
             <div className="text-default-500">Last Active</div>
           </div>

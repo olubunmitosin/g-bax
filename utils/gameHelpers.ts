@@ -1,5 +1,6 @@
-import { GAME_CONFIG, RESOURCE_RARITIES, COLORS } from './constants';
-import type { Resource, Player } from '@/stores/gameStore';
+import type { Resource } from "@/stores/gameStore";
+
+import { GAME_CONFIG, RESOURCE_RARITIES, COLORS } from "./constants";
 
 /**
  * Calculate the experience required for a given level
@@ -29,7 +30,8 @@ export function getExperienceProgress(experience: number): {
   const experienceForNextLevel = getExperienceForLevel(currentLevel);
   const experienceInLevel = experience - experienceForCurrentLevel;
   const experienceToNextLevel = experienceForNextLevel - experience;
-  const progressPercentage = (experienceInLevel / GAME_CONFIG.EXPERIENCE_PER_LEVEL) * 100;
+  const progressPercentage =
+    (experienceInLevel / GAME_CONFIG.EXPERIENCE_PER_LEVEL) * 100;
 
   return {
     currentLevel,
@@ -50,23 +52,27 @@ export function generateRandomResource(): Resource {
     [RESOURCE_RARITIES.LEGENDARY]: 3,
   };
 
-  const totalWeight = Object.values(rarityWeights).reduce((sum, weight) => sum + weight, 0);
+  const totalWeight = Object.values(rarityWeights).reduce(
+    (sum, weight) => sum + weight,
+    0,
+  );
   const random = Math.random() * totalWeight;
-  
+
   let currentWeight = 0;
-  let selectedRarity = RESOURCE_RARITIES.COMMON;
-  
-  for (const [rarity, weight] of Object.entries(rarityWeights)) {
+  let selectedRarity: Resource["rarity"] = RESOURCE_RARITIES.COMMON;
+
+  for (const [rarityKey, weight] of Object.entries(rarityWeights)) {
     currentWeight += weight;
     if (random <= currentWeight) {
-      selectedRarity = rarity as keyof typeof RESOURCE_RARITIES;
+      selectedRarity = rarityKey as Resource["rarity"];
       break;
     }
   }
 
-  const resourceTypes = ['crystal', 'metal', 'energy'] as const;
-  const randomType = resourceTypes[Math.floor(Math.random() * resourceTypes.length)];
-  
+  const resourceTypes = ["crystal", "metal", "energy"] as const;
+  const randomType =
+    resourceTypes[Math.floor(Math.random() * resourceTypes.length)];
+
   const baseQuantity = {
     [RESOURCE_RARITIES.COMMON]: Math.floor(Math.random() * 10) + 1,
     [RESOURCE_RARITIES.RARE]: Math.floor(Math.random() * 5) + 1,
@@ -106,11 +112,11 @@ export function getRarityColor(rarity: string): string {
  */
 export function getResourceTypeColor(type: string): string {
   switch (type) {
-    case 'crystal':
+    case "crystal":
       return COLORS.CRYSTAL;
-    case 'metal':
+    case "metal":
       return COLORS.METAL;
-    case 'energy':
+    case "energy":
       return COLORS.ENERGY;
     default:
       return COLORS.PRIMARY;
@@ -122,22 +128,27 @@ export function getResourceTypeColor(type: string): string {
  */
 export function formatNumber(num: number): string {
   if (num >= 1000000000) {
-    return (num / 1000000000).toFixed(1) + 'B';
+    return (num / 1000000000).toFixed(1) + "B";
   }
   if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M';
+    return (num / 1000000).toFixed(1) + "M";
   }
   if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K';
+    return (num / 1000).toFixed(1) + "K";
   }
+
   return num.toString();
 }
 
 /**
  * Format wallet address for display
  */
-export function formatWalletAddress(address: string, length: number = 4): string {
+export function formatWalletAddress(
+  address: string,
+  length: number = 4,
+): string {
   if (address.length <= length * 2) return address;
+
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 }
 
@@ -146,24 +157,27 @@ export function formatWalletAddress(address: string, length: number = 4): string
  */
 export function calculateDistance(
   point1: [number, number, number],
-  point2: [number, number, number]
+  point2: [number, number, number],
 ): number {
   const [x1, y1, z1] = point1;
   const [x2, y2, z2] = point2;
+
   return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2);
 }
 
 /**
  * Generate random position within a sphere
  */
-export function generateRandomPosition(radius: number = 10): [number, number, number] {
+export function generateRandomPosition(
+  radius: number = 10,
+): [number, number, number] {
   const theta = Math.random() * 2 * Math.PI;
   const phi = Math.acos(2 * Math.random() - 1);
   const r = Math.random() * radius;
-  
+
   const x = r * Math.sin(phi) * Math.cos(theta);
   const y = r * Math.sin(phi) * Math.sin(theta);
   const z = r * Math.cos(phi);
-  
+
   return [x, y, z];
 }

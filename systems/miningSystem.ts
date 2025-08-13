@@ -1,6 +1,7 @@
-import { GAME_CONFIG, RESOURCE_TYPES } from '@/utils/constants';
-import { generateRandomResource } from '@/utils/gameHelpers';
-import type { SpaceObject, Resource } from '@/types/game';
+import type { SpaceObject, Resource } from "@/types/game";
+
+import { GAME_CONFIG } from "@/utils/constants";
+import { generateRandomResource } from "@/utils/gameHelpers";
 
 export interface MiningOperation {
   id: string;
@@ -25,7 +26,8 @@ export interface MiningResult {
 
 export class MiningSystem {
   private activeMiningOperations: Map<string, MiningOperation> = new Map();
-  private miningCallbacks: Map<string, (result: MiningResult) => void> = new Map();
+  private miningCallbacks: Map<string, (result: MiningResult) => void> =
+    new Map();
   private spaceObjects: SpaceObject[] = []; // Store reference to space objects
 
   // Start mining operation on a space object
@@ -33,7 +35,7 @@ export class MiningSystem {
     playerId: string,
     targetObject: SpaceObject,
     efficiency: number = 1.0,
-    loyaltyMultiplier: number = 1.0
+    loyaltyMultiplier: number = 1.0,
   ): MiningOperation | null {
     // Check if object can be mined
     if (!this.canMineObject(targetObject)) {
@@ -41,8 +43,11 @@ export class MiningSystem {
     }
 
     // Check if already mining this object
-    const existingOperation = Array.from(this.activeMiningOperations.values())
-      .find(op => op.targetObjectId === targetObject.id && op.playerId === playerId);
+    const existingOperation = Array.from(
+      this.activeMiningOperations.values(),
+    ).find(
+      (op) => op.targetObjectId === targetObject.id && op.playerId === playerId,
+    );
 
     if (existingOperation) {
       return existingOperation;
@@ -66,6 +71,7 @@ export class MiningSystem {
     };
 
     this.activeMiningOperations.set(operation.id, operation);
+
     return operation;
   }
 
@@ -79,18 +85,20 @@ export class MiningSystem {
 
       // Update progress
       const elapsed = Date.now() - operation.startTime;
-      operation.progress = Math.min(elapsed / operation.duration, 1.0);
 
+      operation.progress = Math.min(elapsed / operation.duration, 1.0);
 
       // Check if mining is complete
       if (operation.progress >= 1.0) {
         operation.isCompleted = true;
         const result = this.completeMining(operation);
+
         results.push(result);
         completedOperations.push(operationId);
 
         // Call callback if registered
         const callback = this.miningCallbacks.get(operationId);
+
         if (callback) {
           callback(result);
           this.miningCallbacks.delete(operationId);
@@ -99,7 +107,7 @@ export class MiningSystem {
     });
 
     // Clean up completed operations
-    completedOperations.forEach(id => {
+    completedOperations.forEach((id) => {
       this.activeMiningOperations.delete(id);
     });
 
@@ -113,14 +121,25 @@ export class MiningSystem {
 
     const resources: Resource[] = [];
 
-    if (targetObject && targetObject.resources && targetObject.resources.length > 0) {
+    if (
+      targetObject &&
+      targetObject.resources &&
+      targetObject.resources.length > 0
+    ) {
       // Use the object's specific resources
-      const baseResourceCount = this.getBaseResourceCount(operation.targetObjectId);
-      const adjustedResourceCount = Math.floor(baseResourceCount * operation.efficiency);
+      const baseResourceCount = this.getBaseResourceCount(
+        operation.targetObjectId,
+      );
+      const adjustedResourceCount = Math.floor(
+        baseResourceCount * operation.efficiency,
+      );
 
       for (let i = 0; i < adjustedResourceCount; i++) {
         // Pick a random resource from the object's available resources
-        const sourceResource = targetObject.resources[Math.floor(Math.random() * targetObject.resources.length)];
+        const sourceResource =
+          targetObject.resources[
+            Math.floor(Math.random() * targetObject.resources.length)
+          ];
 
         // Create a new resource instance based on the source
         const resource: Resource = {
@@ -130,15 +149,21 @@ export class MiningSystem {
           quantity: Math.floor(Math.random() * 5) + 1, // 1-5 quantity per mining
           rarity: sourceResource.rarity,
         };
+
         resources.push(resource);
       }
     } else {
       // Fallback to random generation if object has no specific resources
-      const baseResourceCount = this.getBaseResourceCount(operation.targetObjectId);
-      const adjustedResourceCount = Math.floor(baseResourceCount * operation.efficiency);
+      const baseResourceCount = this.getBaseResourceCount(
+        operation.targetObjectId,
+      );
+      const adjustedResourceCount = Math.floor(
+        baseResourceCount * operation.efficiency,
+      );
 
       for (let i = 0; i < adjustedResourceCount; i++) {
         const resource = generateRandomResource();
+
         resources.push(resource);
       }
     }
@@ -169,12 +194,14 @@ export class MiningSystem {
   // Cancel mining operation
   cancelMining(operationId: string): boolean {
     const operation = this.activeMiningOperations.get(operationId);
+
     if (!operation || operation.isCompleted) {
       return false;
     }
 
     this.activeMiningOperations.delete(operationId);
     this.miningCallbacks.delete(operationId);
+
     return true;
   }
 
@@ -185,26 +212,30 @@ export class MiningSystem {
 
   // Get all active mining operations for a player
   getPlayerMiningOperations(playerId: string): MiningOperation[] {
-    return Array.from(this.activeMiningOperations.values())
-      .filter(op => op.playerId === playerId);
+    return Array.from(this.activeMiningOperations.values()).filter(
+      (op) => op.playerId === playerId,
+    );
   }
 
   // Register callback for mining completion
-  onMiningComplete(operationId: string, callback: (result: MiningResult) => void): void {
+  onMiningComplete(
+    operationId: string,
+    callback: (result: MiningResult) => void,
+  ): void {
     this.miningCallbacks.set(operationId, callback);
   }
 
   // Check if an object can be mined
   private canMineObject(object: SpaceObject): boolean {
-    return object.type === 'asteroid' || object.type === 'resource_node';
+    return object.type === "asteroid" || object.type === "resource_node";
   }
 
   // Get base mining duration for object type
   private getBaseMiningDuration(object: SpaceObject): number {
     switch (object.type) {
-      case 'asteroid':
+      case "asteroid":
         return GAME_CONFIG.MINING_DURATION * 0.8; // Asteroids are easier to mine
-      case 'resource_node':
+      case "resource_node":
         return GAME_CONFIG.MINING_DURATION * 1.5; // Resource nodes take longer but yield more
       default:
         return GAME_CONFIG.MINING_DURATION;
@@ -223,7 +254,7 @@ export class MiningSystem {
     let efficiency = 1.0;
 
     // Apply trait bonuses
-    playerTraits.forEach(trait => {
+    playerTraits.forEach((trait) => {
       if (trait.effects?.miningSpeed) {
         efficiency *= trait.effects.miningSpeed;
       }
@@ -233,7 +264,7 @@ export class MiningSystem {
     });
 
     // Apply equipment bonuses
-    equipment.forEach(item => {
+    equipment.forEach((item) => {
       if (item.effects?.miningBonus) {
         efficiency *= item.effects.miningBonus;
       }
@@ -243,8 +274,11 @@ export class MiningSystem {
   }
 
   // Get mining progress for UI display
-  getMiningProgress(operationId: string): { progress: number; timeRemaining: number } | null {
+  getMiningProgress(
+    operationId: string,
+  ): { progress: number; timeRemaining: number } | null {
     const operation = this.activeMiningOperations.get(operationId);
+
     if (!operation) return null;
 
     const elapsed = Date.now() - operation.startTime;
@@ -255,23 +289,29 @@ export class MiningSystem {
   }
 
   // Check if player can start mining (cooldown, energy, etc.)
-  canStartMining(playerId: string, targetObject: SpaceObject): { canMine: boolean; reason?: string } {
+  canStartMining(
+    playerId: string,
+    targetObject: SpaceObject,
+  ): { canMine: boolean; reason?: string } {
     // Check if object can be mined
     if (!this.canMineObject(targetObject)) {
-      return { canMine: false, reason: 'This object cannot be mined' };
+      return { canMine: false, reason: "This object cannot be mined" };
     }
 
     // Check if object has health remaining
     if (targetObject.health !== undefined && targetObject.health <= 0) {
-      return { canMine: false, reason: 'This object is depleted' };
+      return { canMine: false, reason: "This object is depleted" };
     }
 
     // Check if already mining this object
-    const existingOperation = Array.from(this.activeMiningOperations.values())
-      .find(op => op.targetObjectId === targetObject.id && op.playerId === playerId);
+    const existingOperation = Array.from(
+      this.activeMiningOperations.values(),
+    ).find(
+      (op) => op.targetObjectId === targetObject.id && op.playerId === playerId,
+    );
 
     if (existingOperation && !existingOperation.isCompleted) {
-      return { canMine: false, reason: 'Already mining this object' };
+      return { canMine: false, reason: "Already mining this object" };
     }
 
     // Check maximum concurrent mining operations
@@ -279,14 +319,17 @@ export class MiningSystem {
     const maxConcurrentOperations = 3; // Could be based on player level/traits
 
     if (playerOperations.length >= maxConcurrentOperations) {
-      return { canMine: false, reason: 'Maximum mining operations reached' };
+      return { canMine: false, reason: "Maximum mining operations reached" };
     }
 
     return { canMine: true };
   }
 
   // Get estimated mining yield for an object
-  getEstimatedYield(targetObject: SpaceObject, efficiency: number = 1.0): {
+  getEstimatedYield(
+    targetObject: SpaceObject,
+    efficiency: number = 1.0,
+  ): {
     resourceCount: number;
     duration: number;
     experience: number;
@@ -334,46 +377,55 @@ export class MiningSystem {
 
   // Find object by ID for resource lookup
   private findObjectById(objectId: string): SpaceObject | undefined {
-    return this.spaceObjects.find(obj => obj.id === objectId);
+    return this.spaceObjects.find((obj) => obj.id === objectId);
   }
 
   // Apply loyalty tier bonuses to mined resources
-  private applyLoyaltyResourceBonuses(resources: Resource[], loyaltyMultiplier: number): void {
+  private applyLoyaltyResourceBonuses(
+    resources: Resource[],
+    loyaltyMultiplier: number,
+  ): void {
     // Higher loyalty tiers get better resource bonuses
-    if (loyaltyMultiplier >= 1.1) { // Apprentice Miner tier (1.1x)
+    if (loyaltyMultiplier >= 1.1) {
+      // Apprentice Miner tier (1.1x)
       // 10% chance for bonus resource
       if (Math.random() < 0.1) {
         const bonusResource = generateRandomResource();
+
         bonusResource.name = `Bonus ${bonusResource.name}`;
         resources.push(bonusResource);
       }
     }
 
-    if (loyaltyMultiplier >= 1.25) { // Journeyman Crafter tier (1.25x)
+    if (loyaltyMultiplier >= 1.25) {
+      // Journeyman Crafter tier (1.25x)
       // Upgrade some common resources to rare
-      resources.forEach(resource => {
-        if (resource.rarity === 'common' && Math.random() < 0.15) {
-          resource.rarity = 'rare';
+      resources.forEach((resource) => {
+        if (resource.rarity === "common" && Math.random() < 0.15) {
+          resource.rarity = "rare";
           resource.name = `Rare ${resource.name}`;
         }
       });
     }
 
-    if (loyaltyMultiplier >= 1.5) { // Expert Navigator tier (1.5x)
+    if (loyaltyMultiplier >= 1.5) {
+      // Expert Navigator tier (1.5x)
       // Upgrade some rare resources to epic
-      resources.forEach(resource => {
-        if (resource.rarity === 'rare' && Math.random() < 0.1) {
-          resource.rarity = 'epic';
+      resources.forEach((resource) => {
+        if (resource.rarity === "rare" && Math.random() < 0.1) {
+          resource.rarity = "epic";
           resource.name = `Epic ${resource.name}`;
         }
       });
     }
 
-    if (loyaltyMultiplier >= 2.0) { // Master Explorer tier (2.0x)
+    if (loyaltyMultiplier >= 2.0) {
+      // Master Explorer tier (2.0x)
       // Small chance for legendary resources
       if (Math.random() < 0.05) {
         const legendaryResource = generateRandomResource();
-        legendaryResource.rarity = 'legendary';
+
+        legendaryResource.rarity = "legendary";
         legendaryResource.name = `Legendary ${legendaryResource.name}`;
         legendaryResource.quantity = Math.floor(legendaryResource.quantity * 2);
         resources.push(legendaryResource);

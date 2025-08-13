@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useVerxioStore } from '@/stores/verxioStore';
-import { useGameStore } from '@/stores/gameStore';
-import { PublicKey } from '@solana/web3.js';
+import { useEffect } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+
+import { useVerxioStore } from "@/stores/verxioStore";
+import { useGameStore } from "@/stores/gameStore";
 
 /**
- * Custom hook to integrate Verxio loyalty system with game mechanics
+ * Custom hook to integrate a Verxio loyalty system with game mechanics
  */
 export function useVerxioIntegration() {
   const { publicKey, connected } = useWallet();
@@ -31,36 +31,55 @@ export function useVerxioIntegration() {
   useEffect(() => {
     if (!verxioService && !isInitializing) {
       // Verxio doesn't require an API key
-      const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+      const environment =
+        process.env.NODE_ENV === "production" ? "production" : "development";
 
-      initializeVerxio(undefined, environment as 'development' | 'production');
+      initializeVerxio(undefined, environment as "development" | "production");
     }
   }, [verxioService, isInitializing, initializeVerxio]);
 
-  // Load player loyalty when wallet connects
+  // Load player loyalty when wallet connects (fallback mechanism)
+  // This provides a fallback in case the main wallet setup doesn't load loyalty data
   useEffect(() => {
     if (connected && publicKey && verxioConnected && !playerLoyalty) {
-      loadPlayerLoyalty(publicKey);
+      // Add a small delay to avoid race conditions with wallet setup
+      const timeoutId = setTimeout(() => {
+        loadPlayerLoyalty(publicKey);
+      }, 2000);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [connected, publicKey, verxioConnected, playerLoyalty, loadPlayerLoyalty]);
 
   // Sync existing loyalty points with game store experience (one-time sync)
   useEffect(() => {
-    if (playerLoyalty && player && player.experience === 0 && playerLoyalty.points > 0) {
+    if (
+      playerLoyalty &&
+      player &&
+      player.experience === 0 &&
+      playerLoyalty.points > 0
+    ) {
       // If player has loyalty points but no game experience, sync them
       updatePlayerExperience(playerLoyalty.points);
     }
   }, [playerLoyalty, player, updatePlayerExperience]);
 
   // Award points for game activities
-  const awardPointsForActivity = async (activity: string, basePoints: number) => {
+  const awardPointsForActivity = async (
+    activity: string,
+    basePoints: number,
+  ) => {
     if (!connected || !publicKey || !verxioConnected) return;
 
     try {
-      // Apply guild bonuses if player is in a guild
+      // Apply guild bonuses if a player is in a guild
       let finalPoints = basePoints;
+
       if (playerGuild) {
-        const experienceBonus = playerGuild.benefits.find(b => b.type === 'experience_boost');
+        const experienceBonus = playerGuild.benefits.find(
+          (b) => b.type === "experience_boost",
+        );
+
         if (experienceBonus) {
           finalPoints = Math.floor(basePoints * experienceBonus.value);
         }
@@ -72,18 +91,23 @@ export function useVerxioIntegration() {
       updatePlayerExperience(finalPoints);
 
       // Also update reputation for certain activities
-      if (activity.includes('mining') || activity.includes('crafting')) {
-        await updateReputation(publicKey, Math.floor(finalPoints / 10), activity);
+      if (activity.includes("mining") || activity.includes("crafting")) {
+        await updateReputation(
+          publicKey,
+          Math.floor(finalPoints / 10),
+          activity,
+        );
       }
 
-      // Contribute to guild reputation if player is in a guild
+      // Contribute to a guild reputation if a player is in a guild
       if (playerGuild && verxioService) {
         const guildContribution = Math.floor(finalPoints / 5); // 20% of points go to guild
+
         await verxioService.updateGuildContribution(
           publicKey,
           playerGuild.id,
           guildContribution,
-          activity
+          activity,
         );
       }
 
@@ -113,12 +137,13 @@ export function useVerxioIntegration() {
     // Apply guild bonuses (additive, not multiplicative to prevent exponential growth)
     if (playerGuild) {
       let guildBonus = 0;
-      playerGuild.benefits.forEach(benefit => {
+
+      playerGuild.benefits.forEach((benefit) => {
         switch (benefit.type) {
-          case 'experience_boost':
-          case 'resource_bonus':
-          case 'mining_efficiency':
-          case 'crafting_speed':
+          case "experience_boost":
+          case "resource_bonus":
+          case "mining_efficiency":
+          case "crafting_speed":
             // Convert to additive bonus (benefit.value - 1) and cap at 0.5 (50%)
             guildBonus += Math.min(benefit.value - 1, 0.5);
             break;
@@ -133,28 +158,30 @@ export function useVerxioIntegration() {
   };
 
   // Get guild benefits for specific activity
-  const getGuildBenefits = (activityType: 'mining' | 'crafting' | 'exploration' | 'combat') => {
+  const getGuildBenefits = (
+    activityType: "mining" | "crafting" | "exploration" | "combat",
+  ) => {
     if (!playerGuild) return {};
 
     const benefits: Record<string, number> = {};
 
-    playerGuild.benefits.forEach(benefit => {
+    playerGuild.benefits.forEach((benefit) => {
       switch (benefit.type) {
-        case 'mining_efficiency':
-          if (activityType === 'mining') {
+        case "mining_efficiency":
+          if (activityType === "mining") {
             benefits.efficiency = benefit.value;
           }
           break;
-        case 'crafting_speed':
-          if (activityType === 'crafting') {
+        case "crafting_speed":
+          if (activityType === "crafting") {
             benefits.speed = benefit.value;
           }
           break;
-        case 'experience_boost':
+        case "experience_boost":
           benefits.experience = benefit.value;
           break;
-        case 'resource_bonus':
-          if (activityType === 'mining') {
+        case "resource_bonus":
+          if (activityType === "mining") {
             benefits.resourceBonus = benefit.value;
           }
           break;
@@ -165,13 +192,15 @@ export function useVerxioIntegration() {
   };
 
   // Check if player can join a specific guild
-  const canJoinGuild = (guildId: string): { canJoin: boolean; reason?: string } => {
+  const canJoinGuild = (
+    guildId: string,
+  ): { canJoin: boolean; reason?: string } => {
     if (!player) {
-      return { canJoin: false, reason: 'No player data available' };
+      return { canJoin: false, reason: "No player data available" };
     }
 
     if (playerGuild) {
-      return { canJoin: false, reason: 'Already in a guild' };
+      return { canJoin: false, reason: "Already in a guild" };
     }
 
     // Additional checks would go here based on guild requirements
@@ -181,13 +210,13 @@ export function useVerxioIntegration() {
   // Calculate loyalty points for different activities
   const calculateActivityPoints = (activity: string, data?: any): number => {
     const basePoints: Record<string, number> = {
-      'mining_complete': 10,
-      'crafting_complete': 15,
-      'mission_complete': 25,
-      'exploration_discovery': 20,
-      'guild_contribution': 30,
-      'daily_login': 5,
-      'achievement_unlock': 50,
+      mining_complete: 10,
+      crafting_complete: 15,
+      mission_complete: 25,
+      exploration_discovery: 20,
+      guild_contribution: 30,
+      daily_login: 5,
+      achievement_unlock: 50,
     };
 
     let points = basePoints[activity] || 0;
@@ -195,13 +224,18 @@ export function useVerxioIntegration() {
     // Apply multipliers based on activity data
     if (data) {
       switch (activity) {
-        case 'mining_complete':
+        case "mining_complete":
           points += (data.resourcesFound || 0) * 2;
           break;
-        case 'crafting_complete':
-          points += data.itemRarity === 'legendary' ? 20 : data.itemRarity === 'epic' ? 10 : 0;
+        case "crafting_complete":
+          points +=
+            data.itemRarity === "legendary"
+              ? 20
+              : data.itemRarity === "epic"
+                ? 10
+                : 0;
           break;
-        case 'mission_complete':
+        case "mission_complete":
           points += (data.difficulty || 1) * 10;
           break;
       }
@@ -218,11 +252,13 @@ export function useVerxioIntegration() {
     const points = playerLoyalty.points;
 
     const progressInTier = points - currentTier.minPoints;
-    const tierRange = currentTier.maxPoints === Infinity
-      ? 1
-      : currentTier.maxPoints - currentTier.minPoints;
+    const tierRange =
+      currentTier.maxPoints === Infinity
+        ? 1
+        : currentTier.maxPoints - currentTier.minPoints;
 
-    const progressPercentage = tierRange === 1 ? 100 : (progressInTier / tierRange) * 100;
+    const progressPercentage =
+      tierRange === 1 ? 100 : (progressInTier / tierRange) * 100;
 
     return {
       currentTier,
@@ -239,25 +275,25 @@ export function useVerxioIntegration() {
 
     return [
       {
-        id: 'resource_donation',
-        name: 'Donate Resources',
-        description: 'Contribute resources to guild treasury',
+        id: "resource_donation",
+        name: "Donate Resources",
+        description: "Contribute resources to guild treasury",
         pointsReward: 15,
-        requirements: ['Have resources in inventory'],
+        requirements: ["Have resources in inventory"],
       },
       {
-        id: 'mission_completion',
-        name: 'Complete Guild Missions',
-        description: 'Complete missions on behalf of the guild',
+        id: "mission_completion",
+        name: "Complete Guild Missions",
+        description: "Complete missions on behalf of the guild",
         pointsReward: 30,
-        requirements: ['Be guild member'],
+        requirements: ["Be guild member"],
       },
       {
-        id: 'recruitment',
-        name: 'Recruit New Members',
-        description: 'Invite new players to join the guild',
+        id: "recruitment",
+        name: "Recruit New Members",
+        description: "Invite new players to join the guild",
         pointsReward: 50,
-        requirements: ['Guild officer rank or higher'],
+        requirements: ["Guild officer rank or higher"],
       },
     ];
   };

@@ -197,29 +197,6 @@ npm run type-check   # Run TypeScript compiler check
 - **Camera Controls**: Smooth navigation and interaction
 - **Performance**: Optimized rendering for smooth gameplay
 
-## Deployment
-
-### Netlify Deployment
-
-This project is configured for easy deployment on Netlify:
-
-1. **Quick Deploy**:
-   ```bash
-   # Connect your GitHub repo to Netlify
-   # Build settings are auto-configured via netlify.toml
-   ```
-
-2. **Environment Variables**: Set in Netlify dashboard:
-   - `NEXT_PUBLIC_SOLANA_NETWORK=devnet`
-
-3. **Build Configuration**:
-   - Build command: `npm run build`
-   - Publish directory: `out`
-   - Node version: 18
-
-For detailed deployment instructions, see [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
-For a complete deployment checklist, see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
-
 ### Alternative Deployments
 
 The project can also be deployed on:

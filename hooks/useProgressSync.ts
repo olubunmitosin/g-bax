@@ -1,20 +1,24 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { useGameStore } from '@/stores/gameStore';
-import { useVerxioStore, resetVerxioStore } from '@/stores/verxioStore';
-import { useHoneycombStore } from '@/stores/honeycombStore';
-import { resetItemEffectsStore } from '@/stores/itemEffectsStore';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useEffect, useRef } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+
+import { useGameStore } from "@/stores/gameStore";
+import { useVerxioStore, resetVerxioStore } from "@/stores/verxioStore";
+import { useHoneycombStore } from "@/stores/honeycombStore";
+import { useCrossSessionProgress } from "./useCrossSessionProgress";
+import { resetItemEffectsStore } from "@/stores/itemEffectsStore";
 
 /**
  * Hook to automatically sync game progress to localStorage and blockchain
  */
 export function useProgressSync() {
   const { connected, publicKey } = useWallet();
+  const contextWallet = useWallet();
   const gameState = useGameStore();
   const verxioState = useVerxioStore();
   const honeycombState = useHoneycombStore();
+  const { initializeProgress, syncProgress } = useCrossSessionProgress();
 
   const lastSaveRef = useRef<number>(0);
   const saveIntervalRef = useRef<NodeJS.Timeout>();
@@ -29,7 +33,9 @@ export function useProgressSync() {
 
     // Save immediately when state changes (debounced)
     const now = Date.now();
-    if (now - lastSaveRef.current > 5000) { // Debounce to 5 seconds
+
+    if (now - lastSaveRef.current > 5000) {
+      // Debounce to 5 seconds
       lastSaveRef.current = now;
       autoSave();
     }
@@ -53,13 +59,6 @@ export function useProgressSync() {
     gameState.activeMission?.id,
   ]);
 
-  // Load progress on wallet connection (only once)
-  useEffect(() => {
-    if (connected && publicKey && !gameState.player) {
-      loadPlayerProgress();
-    }
-  }, [connected, publicKey?.toString()]); // Only depend on connection state and wallet address
-
   // Function to load player progress from blockchain and localStorage
   const loadPlayerProgress = async () => {
     if (!connected || !publicKey) return;
@@ -67,13 +66,16 @@ export function useProgressSync() {
     try {
       // First, try to load from blockchain if Honeycomb is connected
       if (honeycombState.isConnected && honeycombState.honeycombService) {
-        const blockchainProfile = await honeycombState.honeycombService.getPlayerProfile(publicKey);
+        const blockchainProfile =
+          await honeycombState.honeycombService.getPlayerProfile(publicKey);
 
         if (blockchainProfile && blockchainProfile.experience > 0) {
           // Load from blockchain
           gameState.setPlayer({
             id: publicKey.toString(),
-            name: blockchainProfile.name || `Explorer ${publicKey.toString().slice(0, 8)}`,
+            name:
+              blockchainProfile.name ||
+              `Explorer ${publicKey.toString().slice(0, 8)}`,
             level: blockchainProfile.level || 1,
             experience: blockchainProfile.experience || 0,
             position: [0, 0, 0],
@@ -81,9 +83,11 @@ export function useProgressSync() {
           });
 
           // Load missions from blockchain
-          const playerMissions = await honeycombState.honeycombService.getPlayerMissions(publicKey);
+          const playerMissions =
+            await honeycombState.honeycombService.getPlayerMissions(publicKey);
+
           if (playerMissions && playerMissions.length > 0) {
-            gameState.setMissions(playerMissions);
+            // gameState.setMissions([playerMissions]);
           }
 
           return; // Successfully loaded from blockchain
@@ -92,10 +96,14 @@ export function useProgressSync() {
 
       // Fallback: Try to load saved progress from wallet-specific localStorage
       const walletSpecificKey = `g-bax-game-progress-${publicKey.toString()}`;
-      const saved = localStorage.getItem(walletSpecificKey) || localStorage.getItem('g-bax-game-progress');
+      const saved =
+        localStorage.getItem(walletSpecificKey) ||
+        localStorage.getItem("g-bax-game-progress");
+
       if (saved) {
         try {
           const gameData = JSON.parse(saved);
+
           if (gameData.player && gameData.player.id === publicKey.toString()) {
             gameState.setPlayer(gameData.player);
             gameState.setInventory(gameData.inventory || []);
@@ -103,6 +111,7 @@ export function useProgressSync() {
             if (gameData.activeMission) {
               gameState.setActiveMission(gameData.activeMission);
             }
+
             return;
           }
         } catch (error) {
@@ -119,6 +128,7 @@ export function useProgressSync() {
         position: [0, 0, 0],
         credits: 1000,
       });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // If blockchain loading fails, create new player
       gameState.setPlayer({
@@ -135,11 +145,12 @@ export function useProgressSync() {
   // Clear all data when wallet disconnects
   useEffect(() => {
     const currentPlayer = gameState.player;
+
     if (!connected && currentPlayer) {
       // Save final progress to blockchain before clearing
       syncToBlockchain();
 
-      // Save to localStorage as backup (with wallet-specific key)
+      // Save to localStorage as backup (with a wallet-specific key)
       const walletSpecificKey = `g-bax-game-progress-${currentPlayer.id}`;
       const gameData = {
         player: currentPlayer,
@@ -149,13 +160,14 @@ export function useProgressSync() {
         currentScene: gameState.currentScene,
         lastSaved: new Date().toISOString(),
       };
+
       localStorage.setItem(walletSpecificKey, JSON.stringify(gameData));
 
-      // Clear all game state
+      // Clear all game states
       gameState.reset();
 
       // Clear general localStorage data
-      localStorage.removeItem('g-bax-game-progress');
+      localStorage.removeItem("g-bax-game-progress");
 
       // Clear Verxio state and localStorage
       resetVerxioStore();
@@ -165,7 +177,7 @@ export function useProgressSync() {
     }
   }, [connected]);
 
-  // Save progress before page unload
+  // Save progress before page unloaded
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (gameState.player) {
@@ -173,30 +185,48 @@ export function useProgressSync() {
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [gameState]);
 
   // Sync with blockchain when connected
   useEffect(() => {
-    if (connected && publicKey && honeycombState.isConnected && gameState.player) {
+    if (
+      connected &&
+      publicKey &&
+      honeycombState.isConnected &&
+      gameState.player
+    ) {
       // Sync player progress to blockchain
       syncToBlockchain();
     }
-  }, [connected, publicKey, honeycombState.isConnected, gameState.player?.experience, gameState.player?.level]);
+  }, [
+    connected,
+    publicKey,
+    honeycombState.isConnected,
+    gameState.player?.experience,
+    gameState.player?.level,
+  ]);
 
   // Function to sync progress to blockchain
   const syncToBlockchain = async () => {
-    if (!connected || !publicKey || !honeycombState.honeycombService || !gameState.player) return;
+    if (
+      !connected ||
+      !publicKey ||
+      !honeycombState.honeycombService ||
+      !gameState.player
+    )
+      return;
 
     try {
       // Update player experience on blockchain
-      await honeycombState.honeycombService.updatePlayerExperience(
+      await honeycombState.updateChainPlayerExperience(
         publicKey,
-        gameState.player.experience
+        gameState.player.experience,
+        contextWallet,
       );
 
       // Update mission progress on blockchain
@@ -204,9 +234,10 @@ export function useProgressSync() {
         await honeycombState.updateMissionProgress(
           publicKey,
           gameState.activeMission.id,
-          gameState.activeMission.progress
+          gameState.activeMission.progress,
         );
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // Silently handle blockchain sync errors
     }
@@ -224,10 +255,12 @@ export function useProgressSync() {
     },
     loadProgress: () => {
       // Manual load progress implementation
-      const saved = localStorage.getItem('g-bax-game-progress');
+      const saved = localStorage.getItem("g-bax-game-progress");
+
       if (saved && connected && publicKey) {
         try {
           const gameData = JSON.parse(saved);
+
           if (gameData.player && gameData.player.id === publicKey.toString()) {
             gameState.setPlayer(gameData.player);
             gameState.setInventory(gameData.inventory || []);
@@ -236,8 +269,8 @@ export function useProgressSync() {
               gameState.setActiveMission(gameData.activeMission);
             }
           }
-        } catch (error) {
-        }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) { }
       }
     },
     resetProgress: () => {
@@ -247,18 +280,20 @@ export function useProgressSync() {
 
       // Clear localStorage
       const keysToRemove = [];
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (
-          key.startsWith('g-bax-') ||
-          key.startsWith('verxio_') ||
-          key.startsWith('honeycomb_')
-        )) {
+
+        if (
+          key &&
+          (key.startsWith("g-bax-") ||
+            key.startsWith("verxio_") ||
+            key.startsWith("honeycomb_"))
+        ) {
           keysToRemove.push(key);
         }
       }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
     },
   };
 }

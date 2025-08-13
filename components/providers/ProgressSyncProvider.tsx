@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useProgressSync } from '@/hooks/useProgressSync';
+import { useProgressSync } from "@/hooks/useProgressSync";
 
 interface ProgressSyncProviderProps {
   children: React.ReactNode;

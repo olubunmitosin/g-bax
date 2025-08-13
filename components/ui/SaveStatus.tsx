@@ -1,17 +1,24 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Chip } from '@heroui/chip';
-import { useGameStore } from '@/stores/gameStore';
+import React, { useState, useEffect } from "react";
+import { Chip } from "@heroui/chip";
+
+import { useGameStore } from "@/stores/gameStore";
 
 export function SaveStatus() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showSaved, setShowSaved] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { player } = useGameStore();
+
+  // Set client-side flag to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Show save indicator when player exists (simplified)
   useEffect(() => {
-    if (player) {
+    if (player && isClient) {
       setLastSaved(new Date());
       setShowSaved(true);
 
@@ -20,22 +27,27 @@ export function SaveStatus() {
 
       return () => clearTimeout(timer);
     }
-  }, [player?.experience, player?.credits]); // Track changes that indicate progress
+  }, [player?.experience, player?.credits, isClient]); // Track changes that indicate progress
 
-  // Check for existing save on mount
+  // Check for existing save on mount (only on client)
   useEffect(() => {
-    const saved = localStorage.getItem('g-bax-game-storage');
+    if (!isClient) return;
+
+    const saved = localStorage.getItem("g-bax-game-storage");
+
     if (saved) {
       try {
         const data = JSON.parse(saved);
+
         if (data.state?.lastSaved) {
           setLastSaved(new Date(data.state.lastSaved));
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         // Ignore parsing errors
       }
     }
-  }, []);
+  }, [isClient]);
 
   if (!player) return null;
 
@@ -43,19 +55,19 @@ export function SaveStatus() {
     <div className="w-full">
       {showSaved && (
         <Chip
+          className="animate-in slide-in-from-left-2 duration-300 shadow-lg"
           color="success"
           variant="flat"
-          className="animate-in slide-in-from-left-2 duration-300 shadow-lg"
         >
           ✅ Progress Saved
         </Chip>
       )}
       {lastSaved && !showSaved && (
         <Chip
-          color="default"
-          variant="flat"
-          size="sm"
           className="opacity-70 shadow-md"
+          color="default"
+          size="sm"
+          variant="flat"
         >
           Last saved: {lastSaved.toLocaleTimeString()}
         </Chip>

@@ -1,22 +1,23 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Conditional imports to avoid Node.js modules in browser
 let EdgeClient: any = null;
 let HiveControl: any = null;
 
 // Only import Honeycomb packages on the server side or when needed
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   try {
-    EdgeClient = require('@honeycomb-protocol/edge-client').EdgeClient;
-    HiveControl = require('@honeycomb-protocol/hive-control').HiveControl;
-  } catch (error) {
-  }
+    EdgeClient = require("@honeycomb-protocol/edge-client").EdgeClient;
+    HiveControl = require("@honeycomb-protocol/hive-control").HiveControl;
+  } catch (error) {}
 }
 
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
-import type { HoneycombMission, HoneycombTrait } from '@/types/game';
+import type { HoneycombMission } from "@/types/game";
+
+import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 
 export interface HoneycombConfig {
   rpcUrl: string;
-  environment: 'devnet' | 'mainnet-beta';
+  environment: "devnet" | "mainnet-beta";
   projectAddress?: string;
 }
 
@@ -47,7 +48,7 @@ export class HoneycombService {
 
   constructor(config: HoneycombConfig) {
     this.config = config;
-    this.connection = new Connection(config.rpcUrl, 'confirmed');
+    this.connection = new Connection(config.rpcUrl, "confirmed");
 
     // Initialize Honeycomb clients only if available
     if (EdgeClient && HiveControl) {
@@ -75,11 +76,11 @@ export class HoneycombService {
       requirements: any[];
       rewards: any[];
       duration?: number;
-    }
+    },
   ): Promise<string> {
     try {
       if (!this.hiveControl) {
-        throw new Error('Honeycomb not available');
+        throw new Error("Honeycomb not available");
       }
 
       // Create mission using Honeycomb Protocol
@@ -94,14 +95,14 @@ export class HoneycombService {
 
       return mission.address.toString();
     } catch (error) {
-      throw new Error('Failed to create mission');
+      throw new Error("Failed to create mission");
     }
   }
 
   async startMission(
     player: PublicKey,
     missionId: string,
-    playerKeypair?: Keypair
+    playerKeypair?: Keypair,
   ): Promise<MissionProgress> {
     try {
       if (!this.hiveControl) {
@@ -132,7 +133,7 @@ export class HoneycombService {
         startedAt: new Date(),
       };
     } catch (error) {
-      throw new Error('Failed to start mission');
+      throw new Error("Failed to start mission");
     }
   }
 
@@ -140,7 +141,7 @@ export class HoneycombService {
     player: PublicKey,
     missionId: string,
     progress: number,
-    playerKeypair?: Keypair
+    playerKeypair?: Keypair,
   ): Promise<MissionProgress> {
     try {
       if (!this.hiveControl) {
@@ -176,7 +177,7 @@ export class HoneycombService {
         completedAt: isCompleted ? new Date() : undefined,
       };
     } catch (error) {
-      throw new Error('Failed to update mission progress');
+      throw new Error("Failed to update mission progress");
     }
   }
 
@@ -187,7 +188,10 @@ export class HoneycombService {
       }
 
       // Fetch mission rewards from on-chain data
-      const mission = await this.edgeClient.getMission(new PublicKey(missionId));
+      const mission = await this.edgeClient.getMission(
+        new PublicKey(missionId),
+      );
+
       return mission?.rewards || [];
     } catch (error) {
       return [];
@@ -203,7 +207,7 @@ export class HoneycombService {
       effects: Record<string, number>;
       level?: number;
     },
-    authority?: Keypair
+    authority?: Keypair,
   ): Promise<PlayerTrait> {
     try {
       // Assign trait using Honeycomb Protocol
@@ -225,7 +229,7 @@ export class HoneycombService {
         acquiredAt: new Date(),
       };
     } catch (error) {
-      throw new Error('Failed to assign trait');
+      throw new Error("Failed to assign trait");
     }
   }
 
@@ -233,7 +237,7 @@ export class HoneycombService {
     player: PublicKey,
     traitId: string,
     newLevel: number,
-    playerKeypair?: Keypair
+    playerKeypair?: Keypair,
   ): Promise<PlayerTrait> {
     try {
       // Upgrade trait level
@@ -246,13 +250,17 @@ export class HoneycombService {
 
       // Fetch updated trait data
       const trait = await this.getPlayerTrait(player, traitId);
+
       return trait;
     } catch (error) {
-      throw new Error('Failed to upgrade trait');
+      throw new Error("Failed to upgrade trait");
     }
   }
 
-  async getPlayerTrait(player: PublicKey, traitId: string): Promise<PlayerTrait> {
+  async getPlayerTrait(
+    player: PublicKey,
+    traitId: string,
+  ): Promise<PlayerTrait> {
     try {
       // Fetch trait data from on-chain
       const trait = await this.edgeClient.getTrait(new PublicKey(traitId));
@@ -266,7 +274,7 @@ export class HoneycombService {
         acquiredAt: new Date(trait?.createdAt || Date.now()),
       };
     } catch (error) {
-      throw new Error('Failed to fetch player trait');
+      throw new Error("Failed to fetch player trait");
     }
   }
 
@@ -280,14 +288,22 @@ export class HoneycombService {
       // Fetch all traits for a player
       const traits = await this.edgeClient.getPlayerTraits(player);
 
-      return traits.map(trait => ({
-        traitId: trait.address.toString(),
-        playerId: player.toString(),
-        level: trait.level,
-        experience: trait.experience,
-        effects: trait.effects,
-        acquiredAt: new Date(trait.createdAt),
-      }));
+      return traits.map(
+        (trait: {
+          address: { toString: () => any };
+          level: any;
+          experience: any;
+          effects: any;
+          createdAt: string | number | Date;
+        }) => ({
+          traitId: trait.address.toString(),
+          playerId: player.toString(),
+          level: trait.level,
+          experience: trait.experience,
+          effects: trait.effects,
+          acquiredAt: new Date(trait.createdAt),
+        }),
+      );
     } catch (error) {
       return [];
     }
@@ -301,7 +317,7 @@ export class HoneycombService {
       avatar?: string;
       metadata?: Record<string, any>;
     },
-    playerKeypair?: Keypair
+    playerKeypair?: Keypair,
   ): Promise<any> {
     try {
       // Create player profile on Honeycomb
@@ -315,7 +331,7 @@ export class HoneycombService {
 
       return profile;
     } catch (error) {
-      throw new Error('Failed to create player profile');
+      throw new Error("Failed to create player profile");
     }
   }
 
@@ -325,6 +341,7 @@ export class HoneycombService {
         // Use localStorage as blockchain simulation when Honeycomb is not available
         const blockchainKey = `honeycomb-profile-${player.toString()}`;
         const saved = localStorage.getItem(blockchainKey);
+
         if (saved) {
           try {
             return JSON.parse(saved);
@@ -339,31 +356,17 @@ export class HoneycombService {
 
       // Fetch player profile from Honeycomb
       const profile = await this.edgeClient.getProfile(player);
+
       return profile;
     } catch (error) {
       return null;
     }
   }
 
-  async getPlayerMissions(player: PublicKey): Promise<any[]> {
-    try {
-      if (!this.edgeClient) {
-        // Return empty missions when Honeycomb is not available
-        return [];
-      }
-
-      // Fetch player missions from Honeycomb
-      const missions = await this.edgeClient.getPlayerMissions(player);
-      return missions || [];
-    } catch (error) {
-      return [];
-    }
-  }
-
   async updatePlayerExperience(
     player: PublicKey,
     experience: number,
-    playerKeypair?: Keypair
+    playerKeypair?: Keypair,
   ): Promise<void> {
     try {
       if (!this.hiveControl) {
@@ -392,6 +395,7 @@ export class HoneycombService {
 
         // Save to localStorage (simulating blockchain)
         localStorage.setItem(blockchainKey, JSON.stringify(profile));
+
         return;
       }
 
@@ -402,26 +406,7 @@ export class HoneycombService {
         playerKeypair,
       });
     } catch (error) {
-      throw new Error('Failed to update player experience');
-    }
-  }
-
-  async updateMissionProgress(
-    player: PublicKey,
-    missionId: string,
-    progress: number,
-    playerKeypair?: Keypair
-  ): Promise<void> {
-    try {
-      // Update mission progress on-chain
-      await this.hiveControl.updateMissionProgress({
-        player,
-        missionId,
-        progress,
-        playerKeypair,
-      });
-    } catch (error) {
-      // Silently handle mission progress update errors
+      throw new Error("Failed to update player experience");
     }
   }
 
@@ -436,15 +421,23 @@ export class HoneycombService {
       // Fetch all available missions
       const missions = await this.edgeClient.getMissions();
 
-      return missions.map(mission => ({
-        id: mission.address.toString(),
-        title: mission.name,
-        description: mission.description,
-        requirements: mission.requirements,
-        rewards: mission.rewards,
-        status: 'available',
-        onChainData: mission,
-      }));
+      return missions.map(
+        (mission: {
+          address: { toString: () => any };
+          name: any;
+          description: any;
+          requirements: any;
+          rewards: any;
+        }) => ({
+          id: mission.address.toString(),
+          title: mission.name,
+          description: mission.description,
+          requirements: mission.requirements,
+          rewards: mission.rewards,
+          status: "available",
+          onChainData: mission,
+        }),
+      );
     } catch (error) {
       return [];
     }
@@ -453,22 +446,33 @@ export class HoneycombService {
   async getPlayerMissions(player: PublicKey): Promise<MissionProgress[]> {
     try {
       if (!this.edgeClient) {
-        // Return empty array when Honeycomb is not available
+        // Return an empty array when Honeycomb is not available
         return [];
       }
 
-      // Fetch player's mission participations
+      // Fetch player's mission participation's
       const participations = await this.edgeClient.getPlayerMissions(player);
 
-      return participations.map(participation => ({
-        missionId: participation.missionAddress.toString(),
-        playerId: player.toString(),
-        progress: participation.progress,
-        completed: participation.completed,
-        rewards: participation.rewards,
-        startedAt: new Date(participation.startedAt),
-        completedAt: participation.completedAt ? new Date(participation.completedAt) : undefined,
-      }));
+      return participations.map(
+        (participation: {
+          missionAddress: { toString: () => any };
+          progress: any;
+          completed: any;
+          rewards: any;
+          startedAt: string | number | Date;
+          completedAt: string | number | Date;
+        }) => ({
+          missionId: participation.missionAddress.toString(),
+          playerId: player.toString(),
+          progress: participation.progress,
+          completed: participation.completed,
+          rewards: participation.rewards,
+          startedAt: new Date(participation.startedAt),
+          completedAt: participation.completedAt
+            ? new Date(participation.completedAt)
+            : undefined,
+        }),
+      );
     } catch (error) {
       return [];
     }
@@ -478,6 +482,7 @@ export class HoneycombService {
   async isConnected(): Promise<boolean> {
     try {
       const slot = await this.connection.getSlot();
+
       return slot > 0;
     } catch (error) {
       return false;
@@ -487,6 +492,7 @@ export class HoneycombService {
   async getNetworkInfo(): Promise<{ cluster: string; slot: number }> {
     try {
       const slot = await this.connection.getSlot();
+
       return {
         cluster: this.config.environment,
         slot,

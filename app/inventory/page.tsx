@@ -15,7 +15,7 @@ export default function InventoryPage() {
   const [selectedTab, setSelectedTab] = useState('all');
   const { inventory, removeResource, updatePlayerExperience } = useGameStore();
   const { player } = usePlayerSync();
-  const { addEffect, useItems } = useItemEffectsStore();
+  const { addEffect } = useItemEffectsStore();
   const { notifications, removeNotification, showSuccess, showInfo, showWarning } = useNotifications();
 
   if (!player) {
@@ -59,7 +59,14 @@ export default function InventoryPage() {
   });
 
   // Get unique resource types for tabs
-  const resourceTypes = [...new Set(inventory.map(item => item.type))];
+  const resourceTypes: string[] = [];
+  const typeSet = new Set<string>();
+  inventory.forEach((item) => {
+    if (!typeSet.has(item.type)) {
+      typeSet.add(item.type);
+      resourceTypes.push(item.type);
+    }
+  });
 
   // Calculate inventory statistics
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0);
@@ -103,7 +110,7 @@ export default function InventoryPage() {
     switch (item.type) {
       case 'energy':
         // Energy items provide mining efficiency boost using tiered system
-        useItems('mining_efficiency', quantity, totalDuration, `${item.name} Mining Boost`);
+        useItemEffectsStore.getState().useItems('mining_efficiency', quantity, totalDuration, `${item.name} Mining Boost`);
 
         showSuccess(
           'Mining Efficiency Boosted!',
@@ -124,7 +131,7 @@ export default function InventoryPage() {
         const expDuration = 600000 * quantity; // 10 minutes per crystal
 
         updatePlayerExperience(Math.floor(experienceGained));
-        useItems('experience_boost', quantity, expDuration, `${item.name} Experience Boost`);
+        useItemEffectsStore.getState().useItems('experience_boost', quantity, expDuration, `${item.name} Experience Boost`);
 
         showSuccess(
           'Experience Boosted!',
@@ -136,8 +143,8 @@ export default function InventoryPage() {
         // Metals provide crafting speed and resource yield boost using tiered system
         const metalDuration = 450000 * quantity; // 7.5 minutes per metal
 
-        useItems('crafting_speed', quantity, metalDuration, `${item.name} Crafting Boost`);
-        useItems('resource_yield', quantity, metalDuration, `${item.name} Resource Yield`);
+        useItemEffectsStore.getState().useItems('crafting_speed', quantity, metalDuration, `${item.name} Crafting Boost`);
+        useItemEffectsStore.getState().useItems('resource_yield', quantity, metalDuration, `${item.name} Resource Yield`);
 
         showSuccess(
           'Equipment Enhanced!',
@@ -149,7 +156,7 @@ export default function InventoryPage() {
         // Generic items provide small temporary boosts using tiered system
         const genericDuration = 180000 * quantity; // 3 minutes per item
 
-        useItems('mining_efficiency', quantity, genericDuration, `${item.name} Boost`);
+        useItemEffectsStore.getState().useItems('mining_efficiency', quantity, genericDuration, `${item.name} Boost`);
 
         showInfo(
           'Item Used',

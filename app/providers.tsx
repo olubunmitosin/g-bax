@@ -6,6 +6,7 @@ import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+
 import SolanaWalletProvider from "@/components/providers/WalletProvider";
 
 export interface ProvidersProps {
@@ -27,9 +28,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <HeroUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
-        <SolanaWalletProvider>
-          {children}
-        </SolanaWalletProvider>
+        <SolanaWalletProvider>{children}</SolanaWalletProvider>
       </NextThemesProvider>
     </HeroUIProvider>
   );

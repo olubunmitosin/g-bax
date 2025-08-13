@@ -1,10 +1,13 @@
-import { MiningSystem, type MiningResult } from './miningSystem';
-import { CraftingSystem, type CraftingResult } from './craftingSystem';
-import { ExplorationSystem, type ExplorationResult } from './explorationSystem';
-import type { SpaceObject, Resource } from '@/types/game';
-import { useGameStore } from '@/stores/gameStore';
-import { useItemEffectsStore } from '@/stores/itemEffectsStore';
-import * as THREE from 'three';
+import type { SpaceObject, Resource } from "@/types/game";
+
+import * as THREE from "three";
+
+import { MiningSystem, type MiningResult } from "./miningSystem";
+import { CraftingSystem, type CraftingResult } from "./craftingSystem";
+import { ExplorationSystem, type ExplorationResult } from "./explorationSystem";
+
+import { useGameStore } from "@/stores/gameStore";
+import { useItemEffectsStore } from "@/stores/itemEffectsStore";
 
 export interface GameSystemsConfig {
   enableMining: boolean;
@@ -33,7 +36,10 @@ export class GameSystemsManager {
   private updateInterval: number | null = null;
   private autoSaveInterval: number | null = null;
 
-  constructor(config: Partial<GameSystemsConfig> = {}, callbacks: GameSystemsCallbacks = {}) {
+  constructor(
+    config: Partial<GameSystemsConfig> = {},
+    callbacks: GameSystemsCallbacks = {},
+  ) {
     this.config = {
       enableMining: true,
       enableCrafting: true,
@@ -64,9 +70,11 @@ export class GameSystemsManager {
   private startUpdateLoop(): void {
     const update = () => {
       const deltaTime = 16; // Assuming 60 FPS
+
       this.update(deltaTime);
       this.updateInterval = requestAnimationFrame(update);
     };
+
     update();
   }
 
@@ -79,21 +87,23 @@ export class GameSystemsManager {
   private update(deltaTime: number): void {
     if (this.config.enableMining) {
       const miningResults = this.miningSystem.updateMining(deltaTime);
+
       this.handleMiningResults(miningResults);
     }
 
     if (this.config.enableCrafting) {
       const craftingResults = this.craftingSystem.updateCrafting(deltaTime);
+
       this.handleCraftingResults(craftingResults);
     }
   }
 
   // Handle mining results
   private handleMiningResults(results: MiningResult[]): void {
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.success) {
         // Add resources to player inventory via callback
-        result.resources.forEach(resource => {
+        result.resources.forEach((resource) => {
           if (this.callbacks.onResourceAdded) {
             this.callbacks.onResourceAdded(resource);
           }
@@ -112,26 +122,25 @@ export class GameSystemsManager {
         // Track mission progress for mining
         if (this.callbacks.onMissionProgress) {
           // Track general mining progress
-          this.callbacks.onMissionProgress('mining', 1);
+          this.callbacks.onMissionProgress("mining", 1);
 
           // Track specific resource type mining for targeted missions
-          const resourceTypes = result.resources.map(r => r.type);
+          const resourceTypes = result.resources.map((r) => r.type);
           const uniqueResourceTypes = Array.from(new Set(resourceTypes));
 
-          uniqueResourceTypes.forEach(resourceType => {
+          uniqueResourceTypes.forEach((resourceType) => {
             if (this.callbacks.onMissionProgress) {
               this.callbacks.onMissionProgress(`mining_${resourceType}`, 1);
             }
           });
         }
-
       }
     });
   }
 
   // Handle crafting results
   private handleCraftingResults(results: CraftingResult[]): void {
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.success) {
         // Add crafted item to inventory via callback
         if (this.callbacks.onResourceAdded) {
@@ -140,7 +149,7 @@ export class GameSystemsManager {
 
         // Add bonus items if any
         if (result.bonusItems) {
-          result.bonusItems.forEach(item => {
+          result.bonusItems.forEach((item) => {
             if (this.callbacks.onResourceAdded) {
               this.callbacks.onResourceAdded(item);
             }
@@ -159,9 +168,8 @@ export class GameSystemsManager {
 
         // Track mission progress for crafting
         if (this.callbacks.onMissionProgress) {
-          this.callbacks.onMissionProgress('crafting', 1);
+          this.callbacks.onMissionProgress("crafting", 1);
         }
-
       }
     });
   }
@@ -179,6 +187,7 @@ export class GameSystemsManager {
     if (!this.config.enableMining) return false;
 
     const canMine = this.miningSystem.canStartMining(playerId, targetObject);
+
     if (!canMine.canMine) {
       return false;
     }
@@ -192,26 +201,33 @@ export class GameSystemsManager {
 
     // Apply item effect bonuses (additive to prevent exponential growth)
     const itemMultipliers = itemEffectsStore.getActiveMultipliers();
-    efficiency += (itemMultipliers.miningEfficiency - 1.0); // Convert to additive
-    efficiency += (itemMultipliers.resourceYield - 1.0); // Convert to additive
+
+    efficiency += itemMultipliers.miningEfficiency - 1.0; // Convert to additive
+    efficiency += itemMultipliers.resourceYield - 1.0; // Convert to additive
 
     // Get loyalty multiplier for bonuses
     let loyaltyMultiplier = 1.0;
+
     if (this.callbacks.onGetLoyaltyMultiplier) {
       loyaltyMultiplier = this.callbacks.onGetLoyaltyMultiplier();
       // Apply loyalty bonus additively and cap at 2.0x total efficiency
-      efficiency += (loyaltyMultiplier - 1.0);
+      efficiency += loyaltyMultiplier - 1.0;
     }
 
     // Cap final efficiency at 3.0x (200% bonus maximum)
     efficiency = Math.min(efficiency, 3.0);
 
-    const operation = this.miningSystem.startMining(playerId, targetObject, efficiency, loyaltyMultiplier);
+    const operation = this.miningSystem.startMining(
+      playerId,
+      targetObject,
+      efficiency,
+      loyaltyMultiplier,
+    );
 
     if (operation) {
       // Set up completion callback
-      this.miningSystem.onMiningComplete(operation.id, (result) => {
-      });
+      this.miningSystem.onMiningComplete(operation.id, (result) => {});
+
       return true;
     }
 
@@ -231,15 +247,24 @@ export class GameSystemsManager {
   }
 
   // Crafting operations
-  startCrafting(playerId: string, recipeId: string, playerResources: Resource[]): boolean {
+  startCrafting(
+    playerId: string,
+    recipeId: string,
+    playerResources: Resource[],
+  ): boolean {
     if (!this.config.enableCrafting) return false;
 
     const recipe = this.craftingSystem.getRecipe(recipeId);
+
     if (!recipe) {
       return false;
     }
 
-    const canCraft = this.craftingSystem.canCraftRecipe(recipe, playerResources);
+    const canCraft = this.craftingSystem.canCraftRecipe(
+      recipe,
+      playerResources,
+    );
+
     if (!canCraft.canCraft) {
       return false;
     }
@@ -250,27 +275,34 @@ export class GameSystemsManager {
 
     // Apply item effect bonuses (additive to prevent exponential growth)
     const itemMultipliers = itemEffectsStore.getActiveMultipliers();
-    efficiency += (itemMultipliers.craftingSpeed - 1.0); // Convert to additive
+
+    efficiency += itemMultipliers.craftingSpeed - 1.0; // Convert to additive
 
     // Apply loyalty tier crafting bonuses
     if (this.callbacks.onGetLoyaltyMultiplier) {
       const loyaltyMultiplier = this.callbacks.onGetLoyaltyMultiplier();
+
       // Apply loyalty bonus additively
-      efficiency += (loyaltyMultiplier - 1.0);
+      efficiency += loyaltyMultiplier - 1.0;
     }
 
     // Cap final efficiency at 3.0x (200% bonus maximum)
     efficiency = Math.min(efficiency, 3.0);
 
-    const operation = this.craftingSystem.startCrafting(playerId, recipeId, playerResources, efficiency);
+    const operation = this.craftingSystem.startCrafting(
+      playerId,
+      recipeId,
+      playerResources,
+      efficiency,
+    );
 
     if (operation) {
       // Note: Resource removal should be handled by the calling code
       // since we can't access the game store directly from here
 
       // Set up completion callback
-      this.craftingSystem.onCraftingComplete(operation.id, (result) => {
-      });
+      this.craftingSystem.onCraftingComplete(operation.id, (result) => {});
+
       return true;
     }
 
@@ -290,13 +322,19 @@ export class GameSystemsManager {
   }
 
   // Exploration operations
-  updatePlayerPosition(playerId: string, position: THREE.Vector3): ExplorationResult[] {
+  updatePlayerPosition(
+    playerId: string,
+    position: THREE.Vector3,
+  ): ExplorationResult[] {
     if (!this.config.enableExploration) return [];
 
-    const results = this.explorationSystem.updatePlayerPosition(playerId, position);
+    const results = this.explorationSystem.updatePlayerPosition(
+      playerId,
+      position,
+    );
 
     // Process exploration results
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.success) {
         // Add experience
         if (this.callbacks.onExperienceGained) {
@@ -307,11 +345,11 @@ export class GameSystemsManager {
         if (this.callbacks.onMissionProgress) {
           if (result.discoveredObject) {
             // Track object discoveries for "Sector Scout" type missions
-            this.callbacks.onMissionProgress('exploration', 1);
-            this.callbacks.onMissionProgress('object_discovery', 1);
+            this.callbacks.onMissionProgress("exploration", 1);
+            this.callbacks.onMissionProgress("object_discovery", 1);
           } else if (result.newLocation) {
             // Track location discoveries for "Deep Space Cartographer" type missions
-            this.callbacks.onMissionProgress('location_discovery', 1);
+            this.callbacks.onMissionProgress("location_discovery", 1);
           }
         }
 
@@ -327,6 +365,7 @@ export class GameSystemsManager {
 
   initializeExploration(playerId: string) {
     if (!this.config.enableExploration) return null;
+
     return this.explorationSystem.initializeExploration(playerId);
   }
 
@@ -362,18 +401,19 @@ export class GameSystemsManager {
     };
 
     try {
-      localStorage.setItem('g-bax-systems-state', JSON.stringify(systemState));
-    } catch (error) {
-    }
+      localStorage.setItem("g-bax-systems-state", JSON.stringify(systemState));
+    } catch (error) {}
   }
 
   // Load game state
   loadGameState(): boolean {
     try {
-      const savedState = localStorage.getItem('g-bax-systems-state');
+      const savedState = localStorage.getItem("g-bax-systems-state");
+
       if (!savedState) return false;
 
       const systemState = JSON.parse(savedState);
+
       return true;
     } catch (error) {
       return false;
@@ -385,7 +425,8 @@ export class GameSystemsManager {
     return {
       mining: this.miningSystem.getMiningStats(),
       crafting: {
-        activeOperations: this.craftingSystem.getPlayerCraftingOperations('').length,
+        activeOperations:
+          this.craftingSystem.getPlayerCraftingOperations("").length,
         availableRecipes: this.craftingSystem.getAvailableRecipes(1).length,
       },
     };

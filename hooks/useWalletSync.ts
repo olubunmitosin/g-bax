@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { useWalletStore } from '@/stores/walletStore';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useEffect } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+
+import { useWalletStore } from "@/stores/walletStore";
 
 /**
  * Custom hook to sync Solana wallet state with our Zustand store
@@ -11,7 +12,7 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 export function useWalletSync() {
   const { publicKey, wallet, connected } = useWallet();
   const { connection } = useConnection();
-  
+
   const {
     setWalletConnected,
     setWalletDisconnected,
@@ -37,7 +38,9 @@ export function useWalletSync() {
       try {
         setLoadingBalance(true);
         const balance = await connection.getBalance(publicKey);
+
         setSolBalance(balance / LAMPORTS_PER_SOL);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         setSolBalance(0);
       } finally {

@@ -10,7 +10,7 @@ function PlaceholderScene() {
       <div className="absolute inset-0">
         {[...Array(50)].map((_, i) => (
           <div
-            key={i}
+            key={`star-${i}`}
             className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,

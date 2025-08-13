@@ -5,8 +5,10 @@
 /.pnp
 .pnp.js
 .vscode
+.idea
 # testing
 /coverage
+.zencoder
 
 # next.js
 /.next/
@@ -27,9 +29,15 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# honeycomb project details (contains private keys)
+honeycomb-project-details.json
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local Netlify folder
+.netlify

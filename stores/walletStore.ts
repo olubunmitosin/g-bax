@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { PublicKey } from '@solana/web3.js';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { PublicKey } from "@solana/web3.js";
 
 // Wallet state types
 export interface WalletState {
@@ -8,15 +8,15 @@ export interface WalletState {
   isConnected: boolean;
   publicKey: PublicKey | null;
   walletName: string | null;
-  
+
   // Balance and transactions
   solBalance: number;
   isLoadingBalance: boolean;
-  
+
   // Honeycomb Protocol state
   honeycombProfile: any | null; // Will be typed properly when we integrate Honeycomb
   isLoadingProfile: boolean;
-  
+
   // Actions
   setWalletConnected: (publicKey: PublicKey, walletName: string) => void;
   setWalletDisconnected: () => void;
@@ -27,7 +27,7 @@ export interface WalletState {
 }
 
 export const useWalletStore = create<WalletState>()(
-  devtools(
+  devtools<WalletState>(
     (set) => ({
       // Initial state
       isConnected: false,
@@ -39,7 +39,7 @@ export const useWalletStore = create<WalletState>()(
       isLoadingProfile: false,
 
       // Actions
-      setWalletConnected: (publicKey, walletName) =>
+      setWalletConnected: (publicKey: PublicKey, walletName: string) =>
         set({
           isConnected: true,
           publicKey,
@@ -55,16 +55,16 @@ export const useWalletStore = create<WalletState>()(
           honeycombProfile: null,
         }),
 
-      setSolBalance: (balance) => set({ solBalance: balance }),
-      
-      setLoadingBalance: (loading) => set({ isLoadingBalance: loading }),
-      
-      setHoneycombProfile: (profile) => set({ honeycombProfile: profile }),
-      
-      setLoadingProfile: (loading) => set({ isLoadingProfile: loading }),
+      setSolBalance: (balance: number) => set({ solBalance: balance }),
+
+      setLoadingBalance: (loading: boolean) => set({ isLoadingBalance: loading }),
+
+      setHoneycombProfile: (profile: any) => set({ honeycombProfile: profile }),
+
+      setLoadingProfile: (loading: boolean) => set({ isLoadingProfile: loading }),
     }),
     {
-      name: 'g-bax-wallet-store',
-    }
-  )
+      name: "g-bax-wallet-store",
+    },
+  ),
 );

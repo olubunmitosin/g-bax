@@ -1,19 +1,13 @@
 // Re-export types from stores for easier importing
-export type {
-  Player,
-  Resource,
-  Mission,
-  GameState,
-} from '@/stores/gameStore';
+import { Resource } from "@/stores/gameStore";
 
-export type {
-  WalletState,
-} from '@/stores/walletStore';
+export type { WalletState } from "@/stores/walletStore";
+export type { Resource } from "@/stores/gameStore";
 
 // Additional game types
 export interface SpaceObject {
   id: string;
-  type: 'asteroid' | 'station' | 'resource_node' | 'enemy';
+  type: "asteroid" | "station" | "resource_node" | "enemy";
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
@@ -21,6 +15,7 @@ export interface SpaceObject {
   maxHealth?: number;
   resources?: Resource[];
 }
+
 
 export interface CraftingRecipe {
   id: string;
@@ -39,7 +34,7 @@ export interface Guild {
   id: string;
   name: string;
   description: string;
-  type: 'miners' | 'forgers' | 'explorers';
+  type: "miners" | "forgers" | "explorers";
   level: number;
   experience: number;
   benefits: {
@@ -53,7 +48,7 @@ export interface Achievement {
   id: string;
   title: string;
   description: string;
-  category: 'mining' | 'crafting' | 'exploration' | 'social' | 'progression';
+  category: "mining" | "crafting" | "exploration" | "social" | "progression";
   requirements: {
     type: string;
     target: number;
@@ -81,7 +76,7 @@ export interface GameUIState {
 
 export interface NotificationMessage {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: "success" | "error" | "warning" | "info";
   title: string;
   message: string;
   duration?: number;
@@ -95,7 +90,7 @@ export interface HoneycombMission {
   description: string;
   requirements: any[];
   rewards: any[];
-  status: 'available' | 'active' | 'completed';
+  status: "available" | "active" | "completed";
   onChainData?: any;
 }
 

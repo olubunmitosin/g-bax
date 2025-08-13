@@ -1,24 +1,29 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Chip } from '@heroui/chip';
-import { Progress } from '@heroui/progress';
-import { useGameStore } from '@/stores/gameStore';
-import { usePlayerSync } from '@/hooks/usePlayerSync';
-import { useVerxioStore } from '@/stores/verxioStore';
-import { useWalletStore } from '@/stores/walletStore';
-import { useHoneycombStore } from '@/stores/honeycombStore';
-import { useVerxioIntegration } from '@/hooks/useVerxioIntegration';
-import { formatNumber, getLevelFromExperience, getExperienceProgress } from '@/utils/gameHelpers';
-import LoyaltyDashboard from '@/components/ui/LoyaltyDashboard';
+import React from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Progress } from "@heroui/progress";
+
+import { useGameStore } from "@/stores/gameStore";
+import { usePlayerSync } from "@/hooks/usePlayerSync";
+import { useVerxioStore } from "@/stores/verxioStore";
+import { useWalletStore } from "@/stores/walletStore";
+import { useHoneycombStore } from "@/stores/honeycombStore";
+import { useVerxioIntegration } from "@/hooks/useVerxioIntegration";
+import {
+  formatNumber,
+  getLevelFromExperience,
+  getExperienceProgress,
+} from "@/utils/gameHelpers";
+import LoyaltyDashboard from "@/components/ui/LoyaltyDashboard";
 
 export default function ProfilePage() {
   const { inventory, missions } = useGameStore();
   const { player } = usePlayerSync();
   const { playerLoyalty, playerGuild } = useVerxioStore();
   const { solBalance } = useWalletStore();
-  const { playerExperience, playerLevel } = useHoneycombStore();
+  const { playerExperience } = useHoneycombStore();
 
   // Initialize Verxio integration
   useVerxioIntegration();
@@ -38,8 +43,10 @@ export default function ProfilePage() {
     );
   }
 
-  const completedMissions = missions.filter(m => m.status === 'completed').length;
-  const activeMissions = missions.filter(m => m.status === 'active').length;
+  const completedMissions = missions.filter(
+    (m) => m.status === "completed",
+  ).length;
+  const activeMissions = missions.filter((m) => m.status === "active").length;
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0);
   const uniqueItems = inventory.length;
 
@@ -54,6 +61,7 @@ export default function ProfilePage() {
       // Convert loyalty points to experience (1 loyalty point = 1 XP)
       return playerLoyalty.points;
     }
+
     return 0;
   };
 
@@ -63,13 +71,15 @@ export default function ProfilePage() {
 
   // Calculate inventory value
   const inventoryValue = inventory.reduce((total, item) => {
-    const rarityMultiplier = {
-      common: 10,
-      rare: 50,
-      epic: 200,
-      legendary: 1000,
-    }[item.rarity] || 10;
-    return total + (item.quantity * rarityMultiplier);
+    const rarityMultiplier =
+      {
+        common: 10,
+        rare: 50,
+        epic: 200,
+        legendary: 1000,
+      }[item.rarity] || 10;
+
+    return total + item.quantity * rarityMultiplier;
   }, 0);
 
   return (
@@ -100,37 +110,67 @@ export default function ProfilePage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <div>
-                      <span className="text-sm text-default-500">Player Name</span>
+                      <span className="text-sm text-default-500">
+                        Player Name
+                      </span>
                       <p className="font-medium">{player.name}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-default-500">Wallet Address</span>
-                      <p className="font-mono text-sm">{player.id.slice(0, 8)}...{player.id.slice(-8)}</p>
+                      <span className="text-sm text-default-500">
+                        Wallet Address
+                      </span>
+                      <p className="font-mono text-sm">
+                        {player.id.slice(0, 8)}...{player.id.slice(-8)}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-sm text-default-500">Current Level</span>
+                      <span className="text-sm text-default-500">
+                        Current Level
+                      </span>
                       <p className="font-medium">Level {currentLevel}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-default-500">Experience Points</span>
-                      <p className="font-medium">{formatNumber(unifiedExperience)} XP</p>
-                      {playerLoyalty && playerLoyalty.points > 0 && unifiedExperience === playerLoyalty.points && (
-                        <p className="text-xs text-default-400">From loyalty points</p>
-                      )}
+                      <span className="text-sm text-default-500">
+                        Experience Points
+                      </span>
+                      <p className="font-medium">
+                        {formatNumber(unifiedExperience)} XP
+                      </p>
+                      {playerLoyalty &&
+                        playerLoyalty.points > 0 &&
+                        unifiedExperience === playerLoyalty.points && (
+                          <p className="text-xs text-default-400">
+                            From loyalty points
+                          </p>
+                        )}
                     </div>
                     <div>
-                      <span className="text-sm text-default-500">Level Progress</span>
+                      <span className="text-sm text-default-500">
+                        Level Progress
+                      </span>
                       <div className="space-y-1">
                         <div className="flex justify-between text-xs">
-                          <span>{formatNumber(experienceProgress.experienceInLevel)} XP</span>
-                          <span>{formatNumber(experienceProgress.experienceToNextLevel)} XP to next level</span>
+                          <span>
+                            {formatNumber(experienceProgress.experienceInLevel)}{" "}
+                            XP
+                          </span>
+                          <span>
+                            {formatNumber(
+                              experienceProgress.experienceToNextLevel,
+                            )}{" "}
+                            XP to next level
+                          </span>
                         </div>
                         <Progress
-                          value={experienceProgress.progressPercentage}
-                          color="success"
-                          size="sm"
                           showValueLabel
-                          formatOptions={{ style: 'percent', maximumFractionDigits: 1 }}
+                          aria-label={`Level progress: ${experienceProgress.progressPercentage.toFixed(1)}% to level ${currentLevel + 1}`}
+                          color="success"
+                          formatOptions={{
+                            style: "percent",
+                            maximumFractionDigits: 1,
+                          }}
+                          size="sm"
+                          value={experienceProgress.progressPercentage}
                         />
                       </div>
                     </div>
@@ -139,24 +179,36 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <div>
                       <span className="text-sm text-default-500">Credits</span>
-                      <p className="font-medium">{formatNumber(player.credits)}</p>
+                      <p className="font-medium">
+                        {formatNumber(player.credits)}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-sm text-default-500">SOL Balance</span>
+                      <span className="text-sm text-default-500">
+                        SOL Balance
+                      </span>
                       <p className="font-medium">{solBalance.toFixed(4)} SOL</p>
                     </div>
                     <div>
-                      <span className="text-sm text-default-500">Current Position</span>
+                      <span className="text-sm text-default-500">
+                        Current Position
+                      </span>
                       <p className="font-mono text-sm">
-                        ({player.position[0].toFixed(1)}, {player.position[1].toFixed(1)}, {player.position[2].toFixed(1)})
+                        ({player.position[0].toFixed(1)},{" "}
+                        {player.position[1].toFixed(1)},{" "}
+                        {player.position[2].toFixed(1)})
                       </p>
                     </div>
                     {playerLoyalty && (
                       <div>
-                        <span className="text-sm text-default-500">Loyalty Tier</span>
+                        <span className="text-sm text-default-500">
+                          Loyalty Tier
+                        </span>
                         <div className="flex items-center gap-2">
                           <span>{playerLoyalty.currentTier.icon}</span>
-                          <span className="font-medium">{playerLoyalty.currentTier.name}</span>
+                          <span className="font-medium">
+                            {playerLoyalty.currentTier.name}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -173,19 +225,31 @@ export default function ProfilePage() {
               <CardBody>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-success-500">{completedMissions}</div>
-                    <div className="text-sm text-default-500">Missions Completed</div>
+                    <div className="text-2xl font-bold text-success-500">
+                      {completedMissions}
+                    </div>
+                    <div className="text-sm text-default-500">
+                      Missions Completed
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-warning-500">{activeMissions}</div>
-                    <div className="text-sm text-default-500">Active Missions</div>
+                    <div className="text-2xl font-bold text-warning-500">
+                      {activeMissions}
+                    </div>
+                    <div className="text-sm text-default-500">
+                      Active Missions
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary-500">{totalItems}</div>
+                    <div className="text-2xl font-bold text-primary-500">
+                      {totalItems}
+                    </div>
                     <div className="text-sm text-default-500">Total Items</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-secondary-500">{uniqueItems}</div>
+                    <div className="text-2xl font-bold text-secondary-500">
+                      {uniqueItems}
+                    </div>
                     <div className="text-sm text-default-500">Unique Items</div>
                   </div>
                 </div>
@@ -212,9 +276,12 @@ export default function ProfilePage() {
                   <div>
                     <h4 className="font-semibold mb-3">Item Distribution</h4>
                     <div className="space-y-2">
-                      {['common', 'rare', 'epic', 'legendary'].map(rarity => {
-                        const count = inventory.filter(item => item.rarity === rarity).length;
-                        const percentage = uniqueItems > 0 ? (count / uniqueItems) * 100 : 0;
+                      {["common", "rare", "epic", "legendary"].map((rarity) => {
+                        const count = inventory.filter(
+                          (item) => item.rarity === rarity,
+                        ).length;
+                        const percentage =
+                          uniqueItems > 0 ? (count / uniqueItems) * 100 : 0;
 
                         return (
                           <div key={rarity}>
@@ -222,7 +289,11 @@ export default function ProfilePage() {
                               <span className="capitalize">{rarity}</span>
                               <span>{count} items</span>
                             </div>
-                            <Progress value={percentage} size="sm" />
+                            <Progress
+                              aria-label={`${rarity} items: ${percentage.toFixed(1)}% of inventory`}
+                              size="sm"
+                              value={percentage}
+                            />
                           </div>
                         );
                       })}
@@ -241,27 +312,39 @@ export default function ProfilePage() {
                 <CardBody>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="text-3xl">
-                      {playerGuild.type === 'mining' ? '⛏️' :
-                        playerGuild.type === 'exploration' ? '🚀' :
-                          playerGuild.type === 'crafting' ? '🔨' : '🏛️'}
+                      {playerGuild.type === "mining"
+                        ? "⛏️"
+                        : playerGuild.type === "exploration"
+                          ? "🚀"
+                          : playerGuild.type === "crafting"
+                            ? "🔨"
+                            : "🏛️"}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-lg">{playerGuild.name}</h4>
-                      <p className="text-default-600">{playerGuild.description}</p>
+                      <h4 className="font-semibold text-lg">
+                        {playerGuild.name}
+                      </h4>
+                      <p className="text-default-600">
+                        {playerGuild.description}
+                      </p>
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="font-bold">Level {playerGuild.level}</div>
-                      <div className="text-sm text-default-500">Guild Level</div>
+                      <div className="text-sm text-default-500">
+                        Guild Level
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="font-bold">{playerGuild.memberCount}</div>
                       <div className="text-sm text-default-500">Members</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-bold">{formatNumber(playerGuild.totalReputation)}</div>
+                      <div className="font-bold">
+                        {formatNumber(playerGuild.totalReputation)}
+                      </div>
                       <div className="text-sm text-default-500">Reputation</div>
                     </div>
                   </div>
@@ -286,7 +369,10 @@ export default function ProfilePage() {
               <div className="flex flex-wrap gap-2">
                 {playerLoyalty.achievements.map((achievement, index) => (
                   <Chip key={index} color="warning" variant="flat">
-                    🏆 {achievement.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    🏆{" "}
+                    {achievement
+                      .replace("_", " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </Chip>
                 ))}
               </div>

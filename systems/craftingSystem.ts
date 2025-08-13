@@ -1,5 +1,6 @@
-import { GAME_CONFIG, RESOURCE_TYPES, RESOURCE_RARITIES } from '@/utils/constants';
-import type { Resource, CraftingRecipe } from '@/types/game';
+import type { CraftingRecipe } from "@/types/game";
+
+import { Resource } from "@/stores/gameStore";
 
 export interface CraftingOperation {
   id: string;
@@ -24,7 +25,8 @@ export interface CraftingResult {
 
 export class CraftingSystem {
   private activeCraftingOperations: Map<string, CraftingOperation> = new Map();
-  private craftingCallbacks: Map<string, (result: CraftingResult) => void> = new Map();
+  private craftingCallbacks: Map<string, (result: CraftingResult) => void> =
+    new Map();
   private recipes: Map<string, CraftingRecipe> = new Map();
 
   constructor() {
@@ -36,19 +38,19 @@ export class CraftingSystem {
     const recipes: CraftingRecipe[] = [
       // Basic Tools
       {
-        id: 'basic_mining_tool',
-        name: 'Basic Mining Tool',
-        description: 'A simple tool that increases mining efficiency',
+        id: "basic_mining_tool",
+        name: "Basic Mining Tool",
+        description: "A simple tool that increases mining efficiency",
         requiredResources: [
-          { resourceType: 'metal', quantity: 3 },
-          { resourceType: 'crystal', quantity: 1 },
+          { resourceType: "metal", quantity: 3 },
+          { resourceType: "crystal", quantity: 1 },
         ],
         output: {
-          id: 'basic_mining_tool_001',
-          name: 'Basic Mining Tool',
-          type: 'metal',
+          id: "basic_mining_tool_001",
+          name: "Basic Mining Tool",
+          type: "metal",
           quantity: 1,
-          rarity: 'common',
+          rarity: "common",
         },
         craftingTime: 3000,
         requiredLevel: 1,
@@ -56,20 +58,20 @@ export class CraftingSystem {
 
       // Advanced Tools
       {
-        id: 'advanced_scanner',
-        name: 'Advanced Scanner',
-        description: 'Detects rare resources more effectively',
+        id: "advanced_scanner",
+        name: "Advanced Scanner",
+        description: "Detects rare resources more effectively",
         requiredResources: [
-          { resourceType: 'crystal', quantity: 5 },
-          { resourceType: 'energy', quantity: 3 },
-          { resourceType: 'metal', quantity: 2 },
+          { resourceType: "crystal", quantity: 5 },
+          { resourceType: "energy", quantity: 3 },
+          { resourceType: "metal", quantity: 2 },
         ],
         output: {
-          id: 'advanced_scanner_001',
-          name: 'Advanced Scanner',
-          type: 'crystal',
+          id: "advanced_scanner_001",
+          name: "Advanced Scanner",
+          type: "crystal",
           quantity: 1,
-          rarity: 'rare',
+          rarity: "rare",
         },
         craftingTime: 8000,
         requiredLevel: 3,
@@ -77,19 +79,19 @@ export class CraftingSystem {
 
       // Energy Cells
       {
-        id: 'energy_cell',
-        name: 'Energy Cell',
-        description: 'Stores energy for extended operations',
+        id: "energy_cell",
+        name: "Energy Cell",
+        description: "Stores energy for extended operations",
         requiredResources: [
-          { resourceType: 'energy', quantity: 10 },
-          { resourceType: 'crystal', quantity: 2 },
+          { resourceType: "energy", quantity: 10 },
+          { resourceType: "crystal", quantity: 2 },
         ],
         output: {
-          id: 'energy_cell_001',
-          name: 'Energy Cell',
-          type: 'energy',
+          id: "energy_cell_001",
+          name: "Energy Cell",
+          type: "energy",
           quantity: 1,
-          rarity: 'common',
+          rarity: "common",
         },
         craftingTime: 5000,
         requiredLevel: 2,
@@ -97,20 +99,20 @@ export class CraftingSystem {
 
       // Rare Alloys
       {
-        id: 'quantum_alloy',
-        name: 'Quantum Alloy',
-        description: 'An extremely durable and lightweight material',
+        id: "quantum_alloy",
+        name: "Quantum Alloy",
+        description: "An extremely durable and lightweight material",
         requiredResources: [
-          { resourceType: 'metal', quantity: 15 },
-          { resourceType: 'crystal', quantity: 8 },
-          { resourceType: 'energy', quantity: 5 },
+          { resourceType: "metal", quantity: 15 },
+          { resourceType: "crystal", quantity: 8 },
+          { resourceType: "energy", quantity: 5 },
         ],
         output: {
-          id: 'quantum_alloy_001',
-          name: 'Quantum Alloy',
-          type: 'metal',
+          id: "quantum_alloy_001",
+          name: "Quantum Alloy",
+          type: "metal",
           quantity: 1,
-          rarity: 'epic',
+          rarity: "epic",
         },
         craftingTime: 15000,
         requiredLevel: 5,
@@ -118,27 +120,28 @@ export class CraftingSystem {
 
       // Legendary Equipment
       {
-        id: 'stellar_forge',
-        name: 'Stellar Forge',
-        description: 'A legendary crafting station that enhances all operations',
+        id: "stellar_forge",
+        name: "Stellar Forge",
+        description:
+          "A legendary crafting station that enhances all operations",
         requiredResources: [
-          { resourceType: 'metal', quantity: 50 },
-          { resourceType: 'crystal', quantity: 30 },
-          { resourceType: 'energy', quantity: 20 },
+          { resourceType: "metal", quantity: 50 },
+          { resourceType: "crystal", quantity: 30 },
+          { resourceType: "energy", quantity: 20 },
         ],
         output: {
-          id: 'stellar_forge_001',
-          name: 'Stellar Forge',
-          type: 'crystal',
+          id: "stellar_forge_001",
+          name: "Stellar Forge",
+          type: "crystal",
           quantity: 1,
-          rarity: 'legendary',
+          rarity: "legendary",
         },
         craftingTime: 30000,
         requiredLevel: 8,
       },
     ];
 
-    recipes.forEach(recipe => {
+    recipes.forEach((recipe) => {
       this.recipes.set(recipe.id, recipe);
     });
   }
@@ -148,13 +151,15 @@ export class CraftingSystem {
     playerId: string,
     recipeId: string,
     playerResources: Resource[],
-    efficiency: number = 1.0
+    efficiency: number = 1.0,
   ): CraftingOperation | null {
     const recipe = this.recipes.get(recipeId);
+
     if (!recipe) return null;
 
     // Check if player has required resources
     const canCraft = this.canCraftRecipe(recipe, playerResources);
+
     if (!canCraft.canCraft) return null;
 
     // Calculate crafting duration based on efficiency
@@ -168,12 +173,16 @@ export class CraftingSystem {
       duration: adjustedDuration,
       progress: 0,
       isCompleted: false,
-      requiredResources: this.getRequiredResourcesFromInventory(recipe, playerResources),
+      requiredResources: this.getRequiredResourcesFromInventory(
+        recipe,
+        playerResources,
+      ),
       outputItem: { ...recipe.output },
       efficiency,
     };
 
     this.activeCraftingOperations.set(operation.id, operation);
+
     return operation;
   }
 
@@ -187,17 +196,20 @@ export class CraftingSystem {
 
       // Update progress
       const elapsed = Date.now() - operation.startTime;
+
       operation.progress = Math.min(elapsed / operation.duration, 1.0);
 
       // Check if crafting is complete
       if (operation.progress >= 1.0) {
         operation.isCompleted = true;
         const result = this.completeCrafting(operation);
+
         results.push(result);
         completedOperations.push(operationId);
 
         // Call callback if registered
         const callback = this.craftingCallbacks.get(operationId);
+
         if (callback) {
           callback(result);
           this.craftingCallbacks.delete(operationId);
@@ -206,7 +218,7 @@ export class CraftingSystem {
     });
 
     // Clean up completed operations
-    completedOperations.forEach(id => {
+    completedOperations.forEach((id) => {
       this.activeCraftingOperations.delete(id);
     });
 
@@ -216,12 +228,13 @@ export class CraftingSystem {
   // Complete crafting operation
   private completeCrafting(operation: CraftingOperation): CraftingResult {
     const recipe = this.recipes.get(operation.recipeId);
+
     if (!recipe) {
       return {
         success: false,
         item: operation.outputItem,
         experience: 0,
-        message: 'Recipe not found',
+        message: "Recipe not found",
       };
     }
 
@@ -242,19 +255,23 @@ export class CraftingSystem {
   }
 
   // Calculate bonus items from high efficiency crafting
-  private calculateBonusItems(recipe: CraftingRecipe, efficiency: number): Resource[] {
+  private calculateBonusItems(
+    recipe: CraftingRecipe,
+    efficiency: number,
+  ): Resource[] {
     const bonusItems: Resource[] = [];
-    
+
     // Higher efficiency has chance for bonus materials
     if (efficiency > 1.5 && Math.random() < 0.3) {
       // Return some materials used in crafting
       const bonusResource = recipe.requiredResources[0];
+
       bonusItems.push({
         id: `bonus_${Date.now()}`,
         name: `Recycled ${bonusResource.resourceType}`,
-        type: bonusResource.resourceType as 'crystal' | 'metal' | 'energy',
+        type: bonusResource.resourceType as "crystal" | "metal" | "energy",
         quantity: Math.floor(bonusResource.quantity * 0.2),
-        rarity: 'common',
+        rarity: "common",
       });
     }
 
@@ -262,15 +279,25 @@ export class CraftingSystem {
   }
 
   // Check if player can craft a recipe
-  canCraftRecipe(recipe: CraftingRecipe, playerResources: Resource[]): {
+  canCraftRecipe(
+    recipe: CraftingRecipe,
+    playerResources: Resource[],
+  ): {
     canCraft: boolean;
     missingResources?: { resourceType: string; needed: number; have: number }[];
   } {
-    const missingResources: { resourceType: string; needed: number; have: number }[] = [];
+    const missingResources: {
+      resourceType: string;
+      needed: number;
+      have: number;
+    }[] = [];
 
     for (const requirement of recipe.requiredResources) {
-      const playerAmount = this.getResourceAmount(playerResources, requirement.resourceType);
-      
+      const playerAmount = this.getResourceAmount(
+        playerResources,
+        requirement.resourceType,
+      );
+
       if (playerAmount < requirement.quantity) {
         missingResources.push({
           resourceType: requirement.resourceType,
@@ -282,27 +309,35 @@ export class CraftingSystem {
 
     return {
       canCraft: missingResources.length === 0,
-      missingResources: missingResources.length > 0 ? missingResources : undefined,
+      missingResources:
+        missingResources.length > 0 ? missingResources : undefined,
     };
   }
 
   // Get amount of specific resource type in inventory
-  private getResourceAmount(resources: Resource[], resourceType: string): number {
+  private getResourceAmount(
+    resources: Resource[],
+    resourceType: string,
+  ): number {
     return resources
-      .filter(resource => resource.type === resourceType)
+      .filter((resource) => resource.type === resourceType)
       .reduce((total, resource) => total + resource.quantity, 0);
   }
 
   // Get required resources from player inventory
-  private getRequiredResourcesFromInventory(recipe: CraftingRecipe, playerResources: Resource[]): Resource[] {
+  private getRequiredResourcesFromInventory(
+    recipe: CraftingRecipe,
+    playerResources: Resource[],
+  ): Resource[] {
     const requiredResources: Resource[] = [];
 
     for (const requirement of recipe.requiredResources) {
       let remainingNeeded = requirement.quantity;
-      
+
       for (const resource of playerResources) {
         if (resource.type === requirement.resourceType && remainingNeeded > 0) {
           const takeAmount = Math.min(resource.quantity, remainingNeeded);
+
           requiredResources.push({
             ...resource,
             quantity: takeAmount,
@@ -329,8 +364,9 @@ export class CraftingSystem {
 
   // Get all available recipes
   getAvailableRecipes(playerLevel: number): CraftingRecipe[] {
-    return Array.from(this.recipes.values())
-      .filter(recipe => recipe.requiredLevel <= playerLevel);
+    return Array.from(this.recipes.values()).filter(
+      (recipe) => recipe.requiredLevel <= playerLevel,
+    );
   }
 
   // Get recipe by ID
@@ -340,24 +376,30 @@ export class CraftingSystem {
 
   // Get active crafting operations for player
   getPlayerCraftingOperations(playerId: string): CraftingOperation[] {
-    return Array.from(this.activeCraftingOperations.values())
-      .filter(op => op.playerId === playerId);
+    return Array.from(this.activeCraftingOperations.values()).filter(
+      (op) => op.playerId === playerId,
+    );
   }
 
   // Cancel crafting operation
   cancelCrafting(operationId: string): boolean {
     const operation = this.activeCraftingOperations.get(operationId);
+
     if (!operation || operation.isCompleted) {
       return false;
     }
 
     this.activeCraftingOperations.delete(operationId);
     this.craftingCallbacks.delete(operationId);
+
     return true;
   }
 
   // Register callback for crafting completion
-  onCraftingComplete(operationId: string, callback: (result: CraftingResult) => void): void {
+  onCraftingComplete(
+    operationId: string,
+    callback: (result: CraftingResult) => void,
+  ): void {
     this.craftingCallbacks.set(operationId, callback);
   }
 
@@ -366,7 +408,7 @@ export class CraftingSystem {
     let efficiency = 1.0;
 
     // Apply trait bonuses
-    playerTraits.forEach(trait => {
+    playerTraits.forEach((trait) => {
       if (trait.effects?.craftingSpeed) {
         efficiency *= trait.effects.craftingSpeed;
       }
@@ -376,7 +418,7 @@ export class CraftingSystem {
     });
 
     // Apply equipment bonuses
-    equipment.forEach(item => {
+    equipment.forEach((item) => {
       if (item.effects?.craftingBonus) {
         efficiency *= item.effects.craftingBonus;
       }
@@ -386,8 +428,11 @@ export class CraftingSystem {
   }
 
   // Get crafting progress for UI
-  getCraftingProgress(operationId: string): { progress: number; timeRemaining: number } | null {
+  getCraftingProgress(
+    operationId: string,
+  ): { progress: number; timeRemaining: number } | null {
     const operation = this.activeCraftingOperations.get(operationId);
+
     if (!operation) return null;
 
     const elapsed = Date.now() - operation.startTime;

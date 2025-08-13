@@ -1,6 +1,7 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import { getLevelFromExperience } from '@/utils/gameHelpers';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
+
+import { getLevelFromExperience } from "@/utils/gameHelpers";
 
 // Game state types
 export interface Player {
@@ -10,22 +11,32 @@ export interface Player {
   experience: number;
   position: [number, number, number];
   credits: number;
+  stats?: {
+    miningOperations?: number;
+    itemsCrafted?: number;
+    sectorsExplored?: number;
+    combatWins?: number;
+    leadershipActions?: number;
+    missionsCompleted?: number;
+    traitCategories?: number;
+    achievements?: number;
+  };
 }
 
 export interface Resource {
   id: string;
   name: string;
-  type: 'crystal' | 'metal' | 'energy';
+  type: "crystal" | "metal" | "energy";
   quantity: number;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: "common" | "rare" | "epic" | "legendary";
 }
 
 export interface Mission {
   id: string;
   title: string;
   description: string;
-  type: 'mining' | 'crafting' | 'exploration';
-  status: 'available' | 'active' | 'completed' | 'locked';
+  type: "mining" | "crafting" | "exploration";
+  status: "available" | "active" | "completed" | "locked";
   rewards: {
     experience: number;
     credits: number;
@@ -48,10 +59,10 @@ export interface GameState {
 
   // Game state
   isLoading: boolean;
-  currentScene: 'menu' | 'space' | 'crafting' | 'missions';
+  currentScene: "menu" | "space" | "crafting" | "missions";
 
   // Actions
-  setPlayer: (player: Player) => void;
+  setPlayer: (player: Player | null) => void;
   updatePlayerPosition: (position: [number, number, number]) => void;
   updatePlayerExperience: (experience: number) => void;
   setInventory: (inventory: Resource[]) => void;
@@ -60,7 +71,7 @@ export interface GameState {
   setMissions: (missions: Mission[]) => void;
   setActiveMission: (mission: Mission | null) => void;
   updateMissionProgress: (missionId: string, progress: number) => void;
-  setCurrentScene: (scene: GameState['currentScene']) => void;
+  setCurrentScene: (scene: GameState["currentScene"]) => void;
   setLoading: (loading: boolean) => void;
   reset: () => void;
   saveProgress: () => void;
@@ -77,7 +88,7 @@ export const useGameStore = create<GameState>()(
         missions: [],
         activeMission: null,
         isLoading: false,
-        currentScene: 'menu',
+        currentScene: "menu",
 
         // Actions
         setPlayer: (player) => {
@@ -85,6 +96,7 @@ export const useGameStore = create<GameState>()(
             // Ensure level is calculated correctly from experience
             const correctedLevel = getLevelFromExperience(player.experience);
             const correctedPlayer = { ...player, level: correctedLevel };
+
             set({ player: correctedPlayer });
           } else {
             set({ player });
@@ -107,8 +119,8 @@ export const useGameStore = create<GameState>()(
               player: {
                 ...state.player,
                 experience: newExperience,
-                level: newLevel
-              }
+                level: newLevel,
+              },
             };
           }),
 
@@ -117,7 +129,7 @@ export const useGameStore = create<GameState>()(
         addResource: (resource) =>
           set((state) => {
             const existingResource = state.inventory.find(
-              (r) => r.id === resource.id
+              (r) => r.id === resource.id,
             );
 
             if (existingResource) {
@@ -125,7 +137,7 @@ export const useGameStore = create<GameState>()(
                 inventory: state.inventory.map((r) =>
                   r.id === resource.id
                     ? { ...r, quantity: r.quantity + resource.quantity }
-                    : r
+                    : r,
                 ),
               };
             }
@@ -141,7 +153,7 @@ export const useGameStore = create<GameState>()(
               .map((r) =>
                 r.id === resourceId
                   ? { ...r, quantity: Math.max(0, r.quantity - quantity) }
-                  : r
+                  : r,
               )
               .filter((r) => r.quantity > 0),
           })),
@@ -157,16 +169,21 @@ export const useGameStore = create<GameState>()(
                 ? {
                   ...m,
                   progress,
-                  status: progress >= m.maxProgress ? 'completed' as const : m.status
+                  status:
+                    progress >= m.maxProgress
+                      ? ("completed" as const)
+                      : m.status,
                 }
-                : m
+                : m,
             );
 
-            const updatedMission = updatedMissions.find(m => m.id === missionId);
+            const updatedMission = updatedMissions.find(
+              (m) => m.id === missionId,
+            );
             let newActiveMission = state.activeMission;
 
             if (state.activeMission?.id === missionId) {
-              if (updatedMission && updatedMission.status === 'completed') {
+              if (updatedMission && updatedMission.status === "completed") {
                 // Clear active mission if completed
                 newActiveMission = null;
               } else if (updatedMission) {
@@ -185,14 +202,15 @@ export const useGameStore = create<GameState>()(
 
         setLoading: (loading) => set({ isLoading: loading }),
 
-        reset: () => set({
-          player: null,
-          inventory: [],
-          missions: [],
-          activeMission: null,
-          isLoading: false,
-          currentScene: 'menu',
-        }),
+        reset: () =>
+          set({
+            player: null,
+            inventory: [],
+            missions: [],
+            activeMission: null,
+            isLoading: false,
+            currentScene: "menu",
+          }),
 
         saveProgress: () => {
           const state = get();
@@ -204,7 +222,8 @@ export const useGameStore = create<GameState>()(
             currentScene: state.currentScene,
             lastSaved: new Date().toISOString(),
           };
-          localStorage.setItem('g-bax-game-progress', JSON.stringify(gameData));
+
+          localStorage.setItem("g-bax-game-progress", JSON.stringify(gameData));
         },
 
         loadProgress: () => {
@@ -213,7 +232,7 @@ export const useGameStore = create<GameState>()(
         },
       }),
       {
-        name: 'g-bax-game-storage',
+        name: "g-bax-game-storage",
         partialize: (state) => ({
           player: state.player,
           inventory: state.inventory,
@@ -221,18 +240,18 @@ export const useGameStore = create<GameState>()(
           activeMission: state.activeMission,
           currentScene: state.currentScene,
         }),
-      }
+      },
     ),
     {
-      name: 'g-bax-game-store',
-    }
-  )
+      name: "g-bax-game-store",
+    },
+  ),
 );
 
 // Export reset function for external use
 export const resetGameStore = () => {
   useGameStore.getState().reset();
   // Also clear the persisted storage
-  localStorage.removeItem('g-bax-game-storage');
-  localStorage.removeItem('g-bax-game-progress');
+  localStorage.removeItem("g-bax-game-storage");
+  localStorage.removeItem("g-bax-game-progress");
 };

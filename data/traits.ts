@@ -2,7 +2,7 @@ export interface TraitDefinition {
   id: string;
   name: string;
   description: string;
-  category: 'mining' | 'exploration' | 'crafting' | 'combat' | 'social';
+  category: "mining" | "exploration" | "crafting" | "combat" | "social";
   maxLevel: number;
   baseEffects: Record<string, number>;
   levelMultiplier: Record<string, number>;
@@ -16,10 +16,10 @@ export interface TraitDefinition {
 export const PREDEFINED_TRAITS: TraitDefinition[] = [
   // Mining Traits
   {
-    id: 'mining_efficiency',
-    name: 'Mining Efficiency',
-    description: 'Increases the speed and yield of mining operations.',
-    category: 'mining',
+    id: "mining_efficiency",
+    name: "Mining Efficiency",
+    description: "Increases the speed and yield of mining operations.",
+    category: "mining",
     maxLevel: 10,
     baseEffects: {
       miningSpeed: 1.1,
@@ -32,10 +32,10 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
   },
 
   {
-    id: 'ore_detection',
-    name: 'Ore Detection',
-    description: 'Enhances ability to locate valuable resources in asteroids.',
-    category: 'mining',
+    id: "ore_detection",
+    name: "Ore Detection",
+    description: "Enhances ability to locate valuable resources in asteroids.",
+    category: "mining",
     maxLevel: 8,
     baseEffects: {
       rareResourceChance: 1.15,
@@ -47,15 +47,16 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 3,
-      completedMissions: ['mining_001'],
+      completedMissions: ["mining_001"],
     },
   },
 
   {
-    id: 'crystal_resonance',
-    name: 'Crystal Resonance',
-    description: 'Specialized knowledge in crystal extraction and purification.',
-    category: 'mining',
+    id: "crystal_resonance",
+    name: "Crystal Resonance",
+    description:
+      "Specialized knowledge in crystal extraction and purification.",
+    category: "mining",
     maxLevel: 6,
     baseEffects: {
       crystalYield: 1.25,
@@ -67,16 +68,16 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 5,
-      completedMissions: ['mining_002'],
+      completedMissions: ["mining_002"],
     },
   },
 
   // Exploration Traits
   {
-    id: 'navigation_mastery',
-    name: 'Navigation Mastery',
-    description: 'Improved movement speed and fuel efficiency in space.',
-    category: 'exploration',
+    id: "navigation_mastery",
+    name: "Navigation Mastery",
+    description: "Improved movement speed and fuel efficiency in space.",
+    category: "exploration",
     maxLevel: 10,
     baseEffects: {
       movementSpeed: 1.15,
@@ -89,10 +90,10 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
   },
 
   {
-    id: 'sector_mapping',
-    name: 'Sector Mapping',
-    description: 'Enhanced ability to discover and catalog space objects.',
-    category: 'exploration',
+    id: "sector_mapping",
+    name: "Sector Mapping",
+    description: "Enhanced ability to discover and catalog space objects.",
+    category: "exploration",
     maxLevel: 8,
     baseEffects: {
       discoveryRange: 1.3,
@@ -104,15 +105,16 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 2,
-      completedMissions: ['exploration_001'],
+      completedMissions: ["exploration_001"],
     },
   },
 
   {
-    id: 'deep_space_adaptation',
-    name: 'Deep Space Adaptation',
-    description: 'Resistance to the harsh conditions of deep space exploration.',
-    category: 'exploration',
+    id: "deep_space_adaptation",
+    name: "Deep Space Adaptation",
+    description:
+      "Resistance to the harsh conditions of deep space exploration.",
+    category: "exploration",
     maxLevel: 7,
     baseEffects: {
       hazardResistance: 1.2,
@@ -124,16 +126,16 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 6,
-      completedMissions: ['exploration_002'],
+      completedMissions: ["exploration_002"],
     },
   },
 
   // Crafting Traits
   {
-    id: 'material_synthesis',
-    name: 'Material Synthesis',
-    description: 'Improved efficiency in combining and refining materials.',
-    category: 'crafting',
+    id: "material_synthesis",
+    name: "Material Synthesis",
+    description: "Improved efficiency in combining and refining materials.",
+    category: "crafting",
     maxLevel: 10,
     baseEffects: {
       craftingSpeed: 1.2,
@@ -146,10 +148,11 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
   },
 
   {
-    id: 'blueprint_mastery',
-    name: 'Blueprint Mastery',
-    description: 'Enhanced understanding of complex crafting patterns and designs.',
-    category: 'crafting',
+    id: "blueprint_mastery",
+    name: "Blueprint Mastery",
+    description:
+      "Enhanced understanding of complex crafting patterns and designs.",
+    category: "crafting",
     maxLevel: 8,
     baseEffects: {
       craftingQuality: 1.15,
@@ -161,15 +164,15 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 3,
-      completedMissions: ['crafting_001'],
+      completedMissions: ["crafting_001"],
     },
   },
 
   {
-    id: 'legendary_forging',
-    name: 'Legendary Forging',
-    description: 'Mastery in creating the most powerful and rare equipment.',
-    category: 'crafting',
+    id: "legendary_forging",
+    name: "Legendary Forging",
+    description: "Mastery in creating the most powerful and rare equipment.",
+    category: "crafting",
     maxLevel: 5,
     baseEffects: {
       legendaryChance: 1.5,
@@ -181,17 +184,17 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 8,
-      completedMissions: ['crafting_002'],
-      otherTraits: ['material_synthesis', 'blueprint_mastery'],
+      completedMissions: ["crafting_002"],
+      otherTraits: ["material_synthesis", "blueprint_mastery"],
     },
   },
 
   // Combat Traits
   {
-    id: 'tactical_awareness',
-    name: 'Tactical Awareness',
-    description: 'Enhanced combat reflexes and situational awareness.',
-    category: 'combat',
+    id: "tactical_awareness",
+    name: "Tactical Awareness",
+    description: "Enhanced combat reflexes and situational awareness.",
+    category: "combat",
     maxLevel: 10,
     baseEffects: {
       combatAccuracy: 1.1,
@@ -204,10 +207,10 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
   },
 
   {
-    id: 'shield_mastery',
-    name: 'Shield Mastery',
-    description: 'Improved shield efficiency and energy management.',
-    category: 'combat',
+    id: "shield_mastery",
+    name: "Shield Mastery",
+    description: "Improved shield efficiency and energy management.",
+    category: "combat",
     maxLevel: 8,
     baseEffects: {
       shieldCapacity: 1.2,
@@ -223,10 +226,10 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
   },
 
   {
-    id: 'weapon_specialization',
-    name: 'Weapon Specialization',
-    description: 'Advanced proficiency with space combat weapons.',
-    category: 'combat',
+    id: "weapon_specialization",
+    name: "Weapon Specialization",
+    description: "Advanced proficiency with space combat weapons.",
+    category: "combat",
     maxLevel: 7,
     baseEffects: {
       weaponDamage: 1.25,
@@ -238,16 +241,17 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 6,
-      otherTraits: ['tactical_awareness'],
+      otherTraits: ["tactical_awareness"],
     },
   },
 
   // Social Traits
   {
-    id: 'diplomatic_relations',
-    name: 'Diplomatic Relations',
-    description: 'Enhanced ability to negotiate and build relationships with stations.',
-    category: 'social',
+    id: "diplomatic_relations",
+    name: "Diplomatic Relations",
+    description:
+      "Enhanced ability to negotiate and build relationships with stations.",
+    category: "social",
     maxLevel: 8,
     baseEffects: {
       tradingBonus: 1.15,
@@ -260,10 +264,11 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
   },
 
   {
-    id: 'guild_leadership',
-    name: 'Guild Leadership',
-    description: 'Natural leadership abilities that inspire and coordinate teams.',
-    category: 'social',
+    id: "guild_leadership",
+    name: "Guild Leadership",
+    description:
+      "Natural leadership abilities that inspire and coordinate teams.",
+    category: "social",
     maxLevel: 6,
     baseEffects: {
       teamBonus: 1.2,
@@ -275,15 +280,16 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 7,
-      completedMissions: ['exploration_003'],
+      completedMissions: ["exploration_003"],
     },
   },
 
   {
-    id: 'network_influence',
-    name: 'Network Influence',
-    description: 'Extensive connections across the galaxy providing unique opportunities.',
-    category: 'social',
+    id: "network_influence",
+    name: "Network Influence",
+    description:
+      "Extensive connections across the galaxy providing unique opportunities.",
+    category: "social",
     maxLevel: 5,
     baseEffects: {
       missionAccess: 1.5,
@@ -295,88 +301,103 @@ export const PREDEFINED_TRAITS: TraitDefinition[] = [
     },
     unlockRequirements: {
       level: 10,
-      otherTraits: ['diplomatic_relations', 'guild_leadership'],
+      otherTraits: ["diplomatic_relations", "guild_leadership"],
     },
   },
 ];
 
 // Helper functions
 export function getTraitById(traitId: string): TraitDefinition | undefined {
-  return PREDEFINED_TRAITS.find(trait => trait.id === traitId);
+  return PREDEFINED_TRAITS.find((trait) => trait.id === traitId);
 }
 
-export function getTraitsByCategory(category: TraitDefinition['category']): TraitDefinition[] {
-  return PREDEFINED_TRAITS.filter(trait => trait.category === category);
+export function getTraitsByCategory(
+  category: TraitDefinition["category"],
+): TraitDefinition[] {
+  return PREDEFINED_TRAITS.filter((trait) => trait.category === category);
 }
 
 export function getAvailableTraits(
   playerLevel: number,
   completedMissionIds: string[],
-  playerTraitIds: string[]
+  playerTraitIds: string[],
 ): TraitDefinition[] {
-  return PREDEFINED_TRAITS.filter(trait => {
+  return PREDEFINED_TRAITS.filter((trait) => {
     const requirements = trait.unlockRequirements;
-    
+
     if (!requirements) return true; // No requirements
-    
+
     // Check level requirement
     if (requirements.level && playerLevel < requirements.level) return false;
-    
+
     // Check completed missions requirement
     if (requirements.completedMissions) {
       const hasCompletedRequired = requirements.completedMissions.every(
-        requiredMissionId => completedMissionIds.includes(requiredMissionId)
+        (requiredMissionId) => completedMissionIds.includes(requiredMissionId),
       );
+
       if (!hasCompletedRequired) return false;
     }
-    
+
     // Check other traits requirement
     if (requirements.otherTraits) {
       const hasRequiredTraits = requirements.otherTraits.every(
-        requiredTraitId => playerTraitIds.includes(requiredTraitId)
+        (requiredTraitId) => playerTraitIds.includes(requiredTraitId),
       );
+
       if (!hasRequiredTraits) return false;
     }
-    
+
     return true;
   });
 }
 
-export function calculateTraitEffects(traitId: string, level: number): Record<string, number> {
+export function calculateTraitEffects(
+  traitId: string,
+  level: number,
+): Record<string, number> {
   const trait = getTraitById(traitId);
+
   if (!trait) return {};
-  
+
   const effects: Record<string, number> = {};
-  
-  Object.keys(trait.baseEffects).forEach(effectKey => {
+
+  Object.keys(trait.baseEffects).forEach((effectKey) => {
     const baseValue = trait.baseEffects[effectKey];
     const multiplier = trait.levelMultiplier[effectKey] || 0;
-    effects[effectKey] = baseValue + (multiplier * (level - 1));
+
+    effects[effectKey] = baseValue + multiplier * (level - 1);
   });
-  
+
   return effects;
 }
 
-export function getTraitUpgradeCost(traitId: string, currentLevel: number): number {
+export function getTraitUpgradeCost(
+  traitId: string,
+  currentLevel: number,
+): number {
   const trait = getTraitById(traitId);
+
   if (!trait || currentLevel >= trait.maxLevel) return 0;
-  
+
   // Base cost increases exponentially with level
   const baseCost = 1000;
   const levelMultiplier = 1.5;
-  
+
   return Math.floor(baseCost * Math.pow(levelMultiplier, currentLevel));
 }
 
 export function getTraitDescription(traitId: string, level: number): string {
   const trait = getTraitById(traitId);
-  if (!trait) return '';
-  
+
+  if (!trait) return "";
+
   const effects = calculateTraitEffects(traitId, level);
   const effectDescriptions = Object.entries(effects).map(([key, value]) => {
     const percentage = ((value - 1) * 100).toFixed(0);
+
     return `${key}: +${percentage}%`;
   });
-  
-  return `${trait.description}\n\nLevel ${level} Effects:\n${effectDescriptions.join('\n')}`;
+
+  return `${trait.description}\n\nLevel ${level} Effects:\n${effectDescriptions.join("\n")}`;
 }

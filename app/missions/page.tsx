@@ -99,6 +99,7 @@ export default function MissionsPage() {
                     value={(activeMission.progress / activeMission.maxProgress) * 100}
                     color="warning"
                     className="mb-3"
+                    aria-label={`Active mission progress: ${activeMission.progress} of ${activeMission.maxProgress} completed`}
                   />
                   <p className="text-sm text-default-500">
                     Continue playing to complete this mission automatically
@@ -172,6 +173,7 @@ export default function MissionsPage() {
                       <Progress
                         value={(progress / mission.maxProgress) * 100}
                         color="primary"
+                        aria-label={`Mission progress: ${progress} of ${mission.maxProgress} completed`}
                       />
                     </div>
                   )}
@@ -206,19 +208,20 @@ export default function MissionsPage() {
                         color="primary"
                         onPress={() => handleStartMission(mission.id)}
                         isDisabled={!player}
+                        aria-label={!player ? 'Connect wallet to start mission' : `Start mission: ${mission.title}`}
                       >
                         {!player ? 'Connect Wallet' : 'Start Mission'}
                       </Button>
                     )}
 
                     {status === 'locked' && (
-                      <Button size="sm" variant="flat" isDisabled>
+                      <Button size="sm" variant="flat" isDisabled aria-label="Mission locked - complete previous missions to unlock">
                         Locked
                       </Button>
                     )}
 
                     {status === 'completed' && (
-                      <Button size="sm" color="success" variant="flat" isDisabled>
+                      <Button size="sm" color="success" variant="flat" isDisabled aria-label="Mission completed successfully">
                         Completed
                       </Button>
                     )}

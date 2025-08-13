@@ -1,20 +1,33 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Chip } from '@heroui/chip';
-import { Progress } from '@heroui/progress';
-import { Button } from '@heroui/button';
-import { Modal, ModalContent, ModalHeader, ModalBody, useDisclosure } from '@heroui/modal';
-import { useItemEffectsStore } from '@/stores/itemEffectsStore';
+import React, { useEffect, useState } from "react";
+import { Button } from "@heroui/button";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  useDisclosure,
+} from "@heroui/modal";
+
+import { useItemEffectsStore } from "@/stores/itemEffectsStore";
 
 interface ActiveEffectsPanelProps {
   onClose?: () => void;
   className?: string;
 }
 
-export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEffectsPanelProps) {
-  const { activeEffects, clearExpiredEffects, getActiveMultipliers, totalItemsUsed, getTieredBenefit } = useItemEffectsStore();
+export default function ActiveEffectsPanel({
+  onClose,
+  className = "",
+}: ActiveEffectsPanelProps) {
+  const {
+    activeEffects,
+    clearExpiredEffects,
+    getActiveMultipliers,
+    totalItemsUsed,
+    getTieredBenefit,
+  } = useItemEffectsStore();
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [, forceUpdate] = useState({});
   const { isOpen, onOpen, onClose: onModalClose } = useDisclosure();
@@ -23,66 +36,17 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(Date.now());
-      clearExpiredEffects(); // Clean up expired effects
-      forceUpdate({}); // Force re-render to ensure UI updates
+      clearExpiredEffects();
+      forceUpdate({});
     }, 1000);
 
     return () => clearInterval(interval);
   }, [clearExpiredEffects]);
 
-  const formatTimeRemaining = (effect: any): string => {
+
+  const activeEffectsList = activeEffects.filter((effect) => {
     const elapsed = currentTime - effect.startTime;
-    const remaining = Math.max(0, effect.duration - elapsed);
 
-    if (remaining === 0) return 'Expired';
-
-    const minutes = Math.floor(remaining / 60000);
-    const seconds = Math.floor((remaining % 60000) / 1000);
-
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
-
-  const getProgressPercentage = (effect: any): number => {
-    const elapsed = currentTime - effect.startTime;
-    const progress = Math.min(elapsed / effect.duration, 1) * 100;
-    return 100 - progress; // Invert so it shows remaining time
-  };
-
-  const getEffectColor = (type: string): string => {
-    switch (type) {
-      case 'mining_efficiency':
-        return 'warning';
-      case 'crafting_speed':
-        return 'secondary';
-      case 'experience_boost':
-        return 'success';
-      case 'resource_yield':
-        return 'primary';
-      default:
-        return 'default';
-    }
-  };
-
-  const getEffectIcon = (type: string): string => {
-    switch (type) {
-      case 'mining_efficiency':
-        return '⛏️';
-      case 'crafting_speed':
-        return '🔨';
-      case 'experience_boost':
-        return '⭐';
-      case 'resource_yield':
-        return '💎';
-      default:
-        return '✨';
-    }
-  };
-
-  const activeEffectsList = activeEffects.filter(effect => {
-    const elapsed = currentTime - effect.startTime;
     return elapsed < effect.duration;
   });
 
@@ -95,6 +59,7 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
     }
 
     const bonuses = [];
+
     if (multipliers.miningEfficiency > 1.0) {
       bonuses.push(`⛏️ ${Math.round(multipliers.miningEfficiency * 100)}%`);
     }
@@ -108,27 +73,38 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
       bonuses.push(`💎 ${Math.round(multipliers.resourceYield * 100)}%`);
     }
 
-    return bonuses.length > 0 ? bonuses.join(" ") : `${activeEffectsList.length} effects`;
+    return bonuses.length > 0
+      ? bonuses.join(" ")
+      : `${activeEffectsList.length} effects`;
   };
 
   // Compact panel that can be clicked to expand
   const compactPanel = (
     <div
       className={`bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-white/10 cursor-pointer hover:bg-black/40 transition-colors ${className}`}
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-green-300">Active Effects</h3>
         {onClose && (
           <Button
             isIconOnly
+            className="text-default-400 hover:text-default-600"
             size="sm"
             variant="light"
             onPress={(e) => {
+              // @ts-ignore
               e.stopPropagation();
               onClose();
             }}
-            className="text-default-400 hover:text-default-600"
           >
             ✕
           </Button>
@@ -150,11 +126,11 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
 
       {/* Detailed Modal */}
       <Modal
-        isOpen={isOpen}
-        onClose={onModalClose}
-        size="2xl"
-        scrollBehavior="inside"
         backdrop="blur"
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="2xl"
+        onClose={onModalClose}
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
@@ -162,8 +138,7 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
             <p className="text-sm text-default-500">
               {activeEffectsList.length === 0
                 ? "No active effects - use items from inventory to gain bonuses"
-                : `${activeEffectsList.length} active effect${activeEffectsList.length > 1 ? 's' : ''}`
-              }
+                : `${activeEffectsList.length} active effect${activeEffectsList.length > 1 ? "s" : ""}`}
             </p>
           </ModalHeader>
           <ModalBody className="pb-6">
@@ -171,17 +146,28 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
               <>
                 {/* Tiered Benefit System Info */}
                 <div className="bg-primary-50 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-lg mb-3">Tiered Benefit System</h4>
+                  <h4 className="font-semibold text-lg mb-3">
+                    Tiered Benefit System
+                  </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-2xl font-bold text-primary-600">{totalItemsUsed}</div>
-                      <div className="text-sm text-default-600">Total Items Used</div>
+                      <div className="text-2xl font-bold text-primary-600">
+                        {totalItemsUsed}
+                      </div>
+                      <div className="text-sm text-default-600">
+                        Total Items Used
+                      </div>
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-success-600">
-                        {Math.round((getTieredBenefit(totalItemsUsed) - 1) * 100)}%
+                        {Math.round(
+                          (getTieredBenefit(totalItemsUsed) - 1) * 100,
+                        )}
+                        %
                       </div>
-                      <div className="text-sm text-default-600">Current Tier Bonus</div>
+                      <div className="text-sm text-default-600">
+                        Current Tier Bonus
+                      </div>
                     </div>
                   </div>
                   <div className="mt-3 text-xs text-default-500">
@@ -198,7 +184,9 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
 
                 {/* Current Multipliers Summary */}
                 <div className="bg-default-50 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-lg mb-3">Current Bonuses</h4>
+                  <h4 className="font-semibold text-lg mb-3">
+                    Current Bonuses
+                  </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">⛏️</span>
@@ -206,7 +194,9 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
                         <div className="font-semibold text-warning-600">
                           {(multipliers.miningEfficiency * 100).toFixed(0)}%
                         </div>
-                        <div className="text-xs text-default-600">Mining Efficiency</div>
+                        <div className="text-xs text-default-600">
+                          Mining Efficiency
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -215,7 +205,9 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
                         <div className="font-semibold text-secondary-600">
                           {(multipliers.craftingSpeed * 100).toFixed(0)}%
                         </div>
-                        <div className="text-xs text-default-600">Crafting Speed</div>
+                        <div className="text-xs text-default-600">
+                          Crafting Speed
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -224,7 +216,9 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
                         <div className="font-semibold text-success-600">
                           {(multipliers.experienceBoost * 100).toFixed(0)}%
                         </div>
-                        <div className="text-xs text-default-600">Experience Gain</div>
+                        <div className="text-xs text-default-600">
+                          Experience Gain
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -233,28 +227,44 @@ export default function ActiveEffectsPanel({ onClose, className = "" }: ActiveEf
                         <div className="font-semibold text-primary-600">
                           {(multipliers.resourceYield * 100).toFixed(0)}%
                         </div>
-                        <div className="text-xs text-default-600">Resource Yield</div>
+                        <div className="text-xs text-default-600">
+                          Resource Yield
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-
               </>
             ) : (
               <div className="text-center py-8">
                 <div className="text-6xl mb-4">✨</div>
-                <h3 className="text-xl font-semibold mb-2">No Active Effects</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  No Active Effects
+                </h3>
                 <p className="text-default-500 mb-4">
-                  Use items from your inventory to gain temporary bonuses for mining, crafting, and experience.
+                  Use items from your inventory to gain temporary bonuses for
+                  mining, crafting, and experience.
                 </p>
                 <div className="bg-blue-50 rounded-lg p-4 text-left">
-                  <h4 className="font-semibold text-blue-700 mb-2">💡 How to Get Effects:</h4>
+                  <h4 className="font-semibold text-blue-700 mb-2">
+                    💡 How to Get Effects:
+                  </h4>
                   <ul className="text-sm text-blue-600 space-y-1">
-                    <li>• <strong>Energy items</strong> boost mining efficiency</li>
-                    <li>• <strong>Crystals</strong> provide experience boosts + immediate XP</li>
-                    <li>• <strong>Metals</strong> enhance crafting speed + resource yield</li>
-                    <li>• <strong>Higher rarity items</strong> provide stronger effects</li>
+                    <li>
+                      • <strong>Energy items</strong> boost mining efficiency
+                    </li>
+                    <li>
+                      • <strong>Crystals</strong> provide experience boosts +
+                      immediate XP
+                    </li>
+                    <li>
+                      • <strong>Metals</strong> enhance crafting speed +
+                      resource yield
+                    </li>
+                    <li>
+                      • <strong>Higher rarity items</strong> provide stronger
+                      effects
+                    </li>
                   </ul>
                 </div>
               </div>

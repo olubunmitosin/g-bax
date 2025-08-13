@@ -1,5 +1,6 @@
-import type { SpaceObject } from '@/types/game';
-import * as THREE from 'three';
+import type { SpaceObject } from "@/types/game";
+
+import * as THREE from "three";
 
 export interface ExplorationResult {
   success: boolean;
@@ -20,7 +21,10 @@ export interface ExplorationProgress {
 
 export class ExplorationSystem {
   private explorationProgress: Map<string, ExplorationProgress> = new Map();
-  private explorationCallbacks: Map<string, (result: ExplorationResult) => void> = new Map();
+  private explorationCallbacks: Map<
+    string,
+    (result: ExplorationResult) => void
+  > = new Map();
   private spaceObjects: SpaceObject[] = [];
   private lastPlayerPosition: THREE.Vector3 = new THREE.Vector3();
   private discoveryRadius: number = 5.0; // Distance to discover objects
@@ -39,6 +43,7 @@ export class ExplorationSystem {
     };
 
     this.explorationProgress.set(playerId, progress);
+
     return progress;
   }
 
@@ -48,7 +53,10 @@ export class ExplorationSystem {
   }
 
   // Update player position and check for discoveries
-  updatePlayerPosition(playerId: string, newPosition: THREE.Vector3): ExplorationResult[] {
+  updatePlayerPosition(
+    playerId: string,
+    newPosition: THREE.Vector3,
+  ): ExplorationResult[] {
     const results: ExplorationResult[] = [];
     let progress = this.explorationProgress.get(playerId);
 
@@ -58,16 +66,19 @@ export class ExplorationSystem {
 
     // Calculate distance traveled
     const distance = this.lastPlayerPosition.distanceTo(newPosition);
+
     progress.totalDistance += distance;
     this.lastPlayerPosition.copy(newPosition);
 
     // Check for discoveries (notifications disabled)
     const discoveryResult = this.checkObjectDiscovery(playerId, newPosition);
+
     if (discoveryResult) {
       results.push(discoveryResult);
     } else {
       // Only check for location discovery if no object was discovered
       const locationResult = this.checkLocationDiscovery(playerId, newPosition);
+
       if (locationResult) {
         results.push(locationResult);
       }
@@ -77,8 +88,12 @@ export class ExplorationSystem {
   }
 
   // Check if player discovered any new objects
-  private checkObjectDiscovery(playerId: string, playerPosition: THREE.Vector3): ExplorationResult | null {
+  private checkObjectDiscovery(
+    playerId: string,
+    playerPosition: THREE.Vector3,
+  ): ExplorationResult | null {
     const progress = this.explorationProgress.get(playerId);
+
     if (!progress) return null;
 
     for (const spaceObject of this.spaceObjects) {
@@ -87,9 +102,9 @@ export class ExplorationSystem {
 
       // Check if player is close enough to discover
       const objectPosition = new THREE.Vector3(
-        spaceObject.position.x,
-        spaceObject.position.y,
-        spaceObject.position.z
+        spaceObject.position[0],
+        spaceObject.position[1],
+        spaceObject.position[2],
       );
       const distance = playerPosition.distanceTo(objectPosition);
 
@@ -104,7 +119,7 @@ export class ExplorationSystem {
           success: true,
           discoveredObject: spaceObject,
           experience,
-          message: '', // Exploration notifications disabled
+          message: "", // Exploration notifications disabled
         };
       }
     }
@@ -113,13 +128,17 @@ export class ExplorationSystem {
   }
 
   // Check if player discovered a new location
-  private checkLocationDiscovery(playerId: string, playerPosition: THREE.Vector3): ExplorationResult | null {
+  private checkLocationDiscovery(
+    playerId: string,
+    playerPosition: THREE.Vector3,
+  ): ExplorationResult | null {
     const progress = this.explorationProgress.get(playerId);
+
     if (!progress) return null;
 
     // Check if this location is significantly different from previous ones
-    const isNewLocation = progress.visitedLocations.every(location =>
-      location.distanceTo(playerPosition) > this.locationRadius
+    const isNewLocation = progress.visitedLocations.every(
+      (location) => location.distanceTo(playerPosition) > this.locationRadius,
     );
 
     if (isNewLocation) {
@@ -133,7 +152,7 @@ export class ExplorationSystem {
         success: true,
         newLocation: playerPosition.clone(),
         experience,
-        message: '', // Exploration notifications disabled
+        message: "", // Exploration notifications disabled
       };
     }
 
@@ -145,13 +164,13 @@ export class ExplorationSystem {
     const baseExperience = 20;
 
     // Bonus based on object type
-    const typeBonus = {
-      'asteroid': 10,
-      'station': 50,
-      'resource_node': 25,
-      'debris': 5,
-      'anomaly': 100,
-    }[spaceObject.type] || 10;
+    const typeBonus =
+      {
+        asteroid: 10,
+        station: 50,
+        resource_node: 25,
+        enemy: 75, // Added enemy type bonus
+      }[spaceObject.type] || 10;
 
     return baseExperience + typeBonus;
   }
@@ -164,6 +183,7 @@ export class ExplorationSystem {
     explorationTime: number;
   } | null {
     const progress = this.explorationProgress.get(playerId);
+
     if (!progress) return null;
 
     return {
@@ -180,7 +200,10 @@ export class ExplorationSystem {
   }
 
   // Set up callback for exploration events
-  onExplorationEvent(eventId: string, callback: (result: ExplorationResult) => void): void {
+  onExplorationEvent(
+    eventId: string,
+    callback: (result: ExplorationResult) => void,
+  ): void {
     this.explorationCallbacks.set(eventId, callback);
   }
 
@@ -191,11 +214,11 @@ export class ExplorationSystem {
 
   // Trigger exploration callbacks
   private triggerCallbacks(result: ExplorationResult): void {
-    this.explorationCallbacks.forEach(callback => {
+    this.explorationCallbacks.forEach((callback) => {
       try {
         callback(result);
       } catch (error) {
-        console.error('Exploration callback error:', error);
+        console.error("Exploration callback error:", error);
       }
     });
   }
@@ -203,12 +226,14 @@ export class ExplorationSystem {
   // Get discovered objects for a player
   getDiscoveredObjects(playerId: string): string[] {
     const progress = this.explorationProgress.get(playerId);
+
     return progress ? Array.from(progress.discoveredObjects) : [];
   }
 
   // Get visited locations for a player
   getVisitedLocations(playerId: string): THREE.Vector3[] {
     const progress = this.explorationProgress.get(playerId);
+
     return progress ? [...progress.visitedLocations] : [];
   }
 
@@ -223,11 +248,16 @@ export class ExplorationSystem {
   }
 
   // Force discovery of an object (for testing or special events)
-  forceDiscoverObject(playerId: string, objectId: string): ExplorationResult | null {
+  forceDiscoverObject(
+    playerId: string,
+    objectId: string,
+  ): ExplorationResult | null {
     const progress = this.explorationProgress.get(playerId);
+
     if (!progress) return null;
 
-    const spaceObject = this.spaceObjects.find(obj => obj.id === objectId);
+    const spaceObject = this.spaceObjects.find((obj) => obj.id === objectId);
+
     if (!spaceObject || progress.discoveredObjects.has(objectId)) return null;
 
     progress.discoveredObjects.add(objectId);
@@ -237,7 +267,7 @@ export class ExplorationSystem {
       success: true,
       discoveredObject: spaceObject,
       experience,
-      message: '', // Exploration notifications disabled
+      message: "", // Exploration notifications disabled
     };
   }
 }

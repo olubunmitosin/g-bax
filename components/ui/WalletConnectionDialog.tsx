@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/modal';
-import { Button } from '@heroui/button';
-import { Card, CardBody } from '@heroui/card';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import React from "react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
+import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 interface WalletConnectionDialogProps {
   isOpen: boolean;
@@ -20,7 +26,7 @@ export default function WalletConnectionDialog({
   onClose,
   title = "Wallet Required",
   message = "You need to connect your wallet to perform this action.",
-  action = "mining"
+  action = "mining",
 }: WalletConnectionDialogProps) {
   const { connected, connecting } = useWallet();
   const { setVisible } = useWalletModal();
@@ -43,11 +49,11 @@ export default function WalletConnectionDialog({
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      size="md"
-      placement="center"
       backdrop="blur"
+      isOpen={isOpen}
+      placement="center"
+      size="md"
+      onClose={handleClose}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
@@ -59,11 +65,10 @@ export default function WalletConnectionDialog({
             {/* Main message */}
             <div className="text-center">
               <div className="text-6xl mb-4">🔒</div>
-              <p className="text-lg text-default-600 mb-2">
-                {message}
-              </p>
+              <p className="text-lg text-default-600 mb-2">{message}</p>
               <p className="text-sm text-default-500">
-                Connect your Solana wallet to start {action} and track your progress on-chain.
+                Connect your Solana wallet to start {action} and track your
+                progress on-chain.
               </p>
             </div>
 
@@ -103,7 +108,9 @@ export default function WalletConnectionDialog({
               <div className="flex items-start gap-2">
                 <span className="text-blue-400 text-lg">🛡️</span>
                 <div className="text-sm">
-                  <p className="font-medium text-blue-700 mb-1">Secure & Safe</p>
+                  <p className="font-medium text-blue-700 mb-1">
+                    Secure & Safe
+                  </p>
                   <p className="text-blue-800">
                     We only request wallet connection for signing transactions.
                     Your private keys never leave your wallet.
@@ -114,12 +121,22 @@ export default function WalletConnectionDialog({
 
             {/* Supported wallets */}
             <div className="text-center">
-              <p className="text-xs text-default-500 mb-2">Supported Wallets:</p>
+              <p className="text-xs text-default-500 mb-2">
+                Supported Wallets:
+              </p>
               <div className="flex justify-center gap-3">
-                <div className="text-xs bg-default-100 rounded px-2 py-1">Phantom</div>
-                <div className="text-xs bg-default-100 rounded px-2 py-1">Solflare</div>
-                <div className="text-xs bg-default-100 rounded px-2 py-1">Torus</div>
-                <div className="text-xs bg-default-100 rounded px-2 py-1">Ledger</div>
+                <div className="text-xs bg-default-100 rounded px-2 py-1">
+                  Phantom
+                </div>
+                <div className="text-xs bg-default-100 rounded px-2 py-1">
+                  Solflare
+                </div>
+                <div className="text-xs bg-default-100 rounded px-2 py-1">
+                  Torus
+                </div>
+                <div className="text-xs bg-default-100 rounded px-2 py-1">
+                  Ledger
+                </div>
               </div>
             </div>
           </div>
@@ -127,20 +144,26 @@ export default function WalletConnectionDialog({
 
         <ModalFooter className="flex justify-center gap-3">
           <Button
+            aria-label="Close wallet connection dialog"
+            className="min-w-[120px]"
             variant="light"
             onPress={handleClose}
-            className="min-w-[120px]"
           >
             Maybe Later
           </Button>
           <Button
-            color="primary"
-            onPress={handleConnectWallet}
-            isLoading={connecting}
+            aria-label={
+              connecting
+                ? "Connecting to Solana wallet"
+                : "Connect Solana wallet to continue"
+            }
             className="min-w-[120px]"
+            color="primary"
+            isLoading={connecting}
             size="lg"
+            onPress={handleConnectWallet}
           >
-            {connecting ? 'Connecting...' : 'Connect Wallet'}
+            {connecting ? "Connecting..." : "Connect Wallet"}
           </Button>
         </ModalFooter>
       </ModalContent>

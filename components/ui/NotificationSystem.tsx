@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardBody } from '@heroui/card';
-import { Chip } from '@heroui/chip';
+import React, { useState, useEffect } from "react";
+import { Card, CardBody } from "@heroui/card";
+import { Chip } from "@heroui/chip";
 
 export interface Notification {
   id: string;
-  type: 'success' | 'info' | 'warning' | 'error';
+  type: "success" | "info" | "warning" | "error";
   title: string;
   message: string;
   duration?: number;
@@ -23,12 +23,11 @@ export default function NotificationSystem({
   onRemoveNotification,
   className = "",
 }: NotificationSystemProps) {
-  
   // Auto-remove notifications after their duration
   useEffect(() => {
-    notifications.forEach(notification => {
+    notifications.forEach((notification) => {
       const duration = notification.duration || 3000; // Default 3 seconds
-      
+
       const timer = setTimeout(() => {
         onRemoveNotification(notification.id);
       }, duration);
@@ -37,23 +36,33 @@ export default function NotificationSystem({
     });
   }, [notifications, onRemoveNotification]);
 
-  const getNotificationColor = (type: Notification['type']) => {
+  const getNotificationColor = (type: Notification["type"]) => {
     switch (type) {
-      case 'success': return 'success';
-      case 'info': return 'primary';
-      case 'warning': return 'warning';
-      case 'error': return 'danger';
-      default: return 'default';
+      case "success":
+        return "success";
+      case "info":
+        return "primary";
+      case "warning":
+        return "warning";
+      case "error":
+        return "danger";
+      default:
+        return "default";
     }
   };
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
-      case 'success': return '✅';
-      case 'info': return 'ℹ️';
-      case 'warning': return '⚠️';
-      case 'error': return '❌';
-      default: return '📢';
+      case "success":
+        return "✅";
+      case "info":
+        return "ℹ️";
+      case "warning":
+        return "⚠️";
+      case "error":
+        return "❌";
+      default:
+        return "📢";
     }
   };
 
@@ -74,30 +83,30 @@ export default function NotificationSystem({
               <span className="text-xl flex-shrink-0">
                 {getNotificationIcon(notification.type)}
               </span>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <h4 className="font-semibold text-sm truncate">
                     {notification.title}
                   </h4>
                   <Chip
-                    size="sm"
                     color={getNotificationColor(notification.type)}
+                    size="sm"
                     variant="flat"
                   >
                     {notification.type}
                   </Chip>
                 </div>
-                
+
                 <p className="text-sm text-default-600 break-words">
                   {notification.message}
                 </p>
               </div>
-              
+
               <button
-                onClick={() => onRemoveNotification(notification.id)}
-                className="text-default-400 hover:text-default-600 transition-colors flex-shrink-0"
                 aria-label="Close notification"
+                className="text-default-400 hover:text-default-600 transition-colors flex-shrink-0"
+                onClick={() => onRemoveNotification(notification.id)}
               >
                 ✕
               </button>
@@ -113,19 +122,20 @@ export default function NotificationSystem({
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const addNotification = (notification: Omit<Notification, 'id'>) => {
+  const addNotification = (notification: Omit<Notification, "id">) => {
     const id = `notification_${Date.now()}_${Math.random()}`;
     const newNotification: Notification = {
       ...notification,
       id,
     };
-    
-    setNotifications(prev => [...prev, newNotification]);
+
+    setNotifications((prev) => [...prev, newNotification]);
+
     return id;
   };
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   const clearAllNotifications = () => {
@@ -134,19 +144,19 @@ export function useNotifications() {
 
   // Convenience methods
   const showSuccess = (title: string, message: string, duration?: number) => {
-    return addNotification({ type: 'success', title, message, duration });
+    return addNotification({ type: "success", title, message, duration });
   };
 
   const showInfo = (title: string, message: string, duration?: number) => {
-    return addNotification({ type: 'info', title, message, duration });
+    return addNotification({ type: "info", title, message, duration });
   };
 
   const showWarning = (title: string, message: string, duration?: number) => {
-    return addNotification({ type: 'warning', title, message, duration });
+    return addNotification({ type: "warning", title, message, duration });
   };
 
   const showError = (title: string, message: string, duration?: number) => {
-    return addNotification({ type: 'error', title, message, duration });
+    return addNotification({ type: "error", title, message, duration });
   };
 
   return {

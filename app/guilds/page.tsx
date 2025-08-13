@@ -197,14 +197,14 @@ export default function GuildsPage() {
                         <div>
                           <h5 className="text-sm font-medium mb-2">Guild Members</h5>
                           <div className="space-y-1">
-                            {guildMembers.slice(0, 5).map((member, index) => {
+                            {guildMembers.slice(0, 5).map((member) => {
                               const lastActive = new Date(member.lastActive);
                               const now = new Date();
                               const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
                               const isActive = daysSinceActive <= 3;
 
                               return (
-                                <div key={index} className="flex justify-between items-center text-xs">
+                                <div key={`${member.playerId}_${member.playerName}`} className="flex justify-between items-center text-xs">
                                   <div className="flex items-center gap-2">
                                     <span>{member.playerName}</span>
                                     {!isActive && (
