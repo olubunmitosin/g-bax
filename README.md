@@ -22,8 +22,9 @@ G-Bax is a revolutionary blockchain-powered space exploration game that combines
 
 
 ## VIDEO
-- **[G-Bax Demo Video](https://drive.google.com/file/d/1j0KGRtVLBlGXAUFKv4OW3huWUJXS7MDs/view?usp=sharing)**: React framework
-- 
+- **[G-Bax Demo Video](https://drive.google.com/file/d/1j0KGRtVLBlGXAUFKv4OW3huWUJXS7MDs/view?usp=sharing)**
+
+
 ### Key Features
 
 - **3D Space Exploration**: Navigate through beautifully rendered space environments with Three.js
