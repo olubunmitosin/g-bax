@@ -215,7 +215,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Author
 
-**Kesty Vickky (Tosin Victor Olubunmi)** - Sole Author & Lead Developer
+**Kesty Vickky (Olubunmi Tosin Victor)** - Sole Author & Lead Developer
 - GitHub: [@olubunmitosin](https://github.com/olubunmitosin)
 - Repository: [olubunmitosin/g-bax](https://github.com/olubunmitosin/g-bax)
 
@@ -235,7 +235,7 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed contribution information.
 
 <div align="center">
 
-**Built with ❤️ by Kesty Vickky (Tosin Victor Olubunmi)**
+**Built with ❤️ by Kesty Vickky (Olubunmi Tosin Victor)**
 
 [⭐ Star me on GitHub](https://github.com/olubunmitosin/g-bax) • [🐛 Report Bug](https://github.com/olubunmitosin/g-bax/issues) • [💡 Request Feature](https://github.com/olubunmitosin/g-bax/issues)
 
