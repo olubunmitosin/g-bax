@@ -600,6 +600,9 @@ export const useHoneycombStore = create<HoneycombState>()(
           try {
             // Find user's profile
             const profile = await honeycombService.getPlayerProfile(player);
+            if(!profile) {
+              return;
+            }
             const currentXp = profile?.experience || 0;
             const xpDifference = experience - currentXp;
 
