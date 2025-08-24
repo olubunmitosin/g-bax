@@ -16,6 +16,9 @@ external_node_modules = [
     "@honeycomb-protocol/hive-control",
     "@honeycomb-protocol/edge-client",
     "@solana/web3.js",
+    "@netlify/neon",
+    "pg",
+    "sqlite3",
 ]
 included_files = ["backend/**/*"]
 
@@ -105,3 +108,7 @@ status = 404
 # NEXT_PUBLIC_HONEYCOMB_PROFILES_TREE_ADDRESS
 # NEXT_PUBLIC_HONEYCOMB_RPC_URL
 # NEXT_PUBLIC_HONEYCOMB_ENVIRONMENT
+
+# Database environment variables (required for Neon PostgreSQL):
+# DATABASE_URL - Neon PostgreSQL connection string
+# NODE_ENV - Set to "production" for Netlify deployment
