@@ -30,6 +30,7 @@ import TraitBonusesPanel from "@/components/ui/TraitBonusesPanel";
 import { useGameStore } from "@/stores/gameStore";
 import { useHoneycombStore } from "@/stores/honeycombStore";
 import { usePlayerSync } from "@/hooks/usePlayerSync";
+import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useVerxioIntegration } from "@/hooks/useVerxioIntegration";
 import { useItemEffectsStore } from "@/stores/itemEffectsStore";
 import { useHoneycombIntegration } from "@/hooks/useHoneycombIntegration";
@@ -74,9 +75,11 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
     activeMission,
     addResource,
     removeResource,
-    updatePlayerExperience,
   } = useGameStore();
   const { player } = usePlayerSync();
+
+  // Use new database-backed stats system
+  const { addExperience } = usePlayerStats();
 
   // Honeycomb system states
   const {
@@ -282,7 +285,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         onResourceAdded: (resource) => {
           addResource(resource);
         },
-        onExperienceGained: (experience) => {
+        onExperienceGained: async (experience) => {
           // Apply loyalty tier multiplier and item effect multipliers to experience
           const loyaltyMultiplier = getCurrentMultiplier();
           const itemMultipliers = getActiveMultipliers();
@@ -290,7 +293,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
             loyaltyMultiplier * itemMultipliers.experienceBoost;
           const finalExperience = Math.floor(experience * totalMultiplier);
 
-          updatePlayerExperience(finalExperience);
+          // Use database-backed stats system
+          await addExperience(finalExperience, "Game activity");
         },
         onGetLoyaltyMultiplier: () => {
           return getCurrentMultiplier();
@@ -1148,8 +1152,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         {/* Inventory Button */}
         <button
           className={`group relative bg-gradient-to-r ${showInventory
-              ? "from-gray-700/90 to-gray-600/90 border-gray-400/40"
-              : "from-gray-800/70 to-gray-700/70 border-gray-500/30"
+            ? "from-gray-700/90 to-gray-600/90 border-gray-400/40"
+            : "from-gray-800/70 to-gray-700/70 border-gray-500/30"
             } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-gray-600/90 hover:to-gray-500/90 hover:border-gray-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowInventory(!showInventory)}
         >
@@ -1165,8 +1169,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         {/* Crafting Button */}
         <button
           className={`group relative bg-gradient-to-r ${showCrafting
-              ? "from-orange-700/90 to-orange-600/90 border-orange-400/40"
-              : "from-orange-800/70 to-orange-700/70 border-orange-500/30"
+            ? "from-orange-700/90 to-orange-600/90 border-orange-400/40"
+            : "from-orange-800/70 to-orange-700/70 border-orange-500/30"
             } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-orange-600/90 hover:to-orange-500/90 hover:border-orange-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowCrafting(!showCrafting)}
         >
@@ -1182,8 +1186,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         {/* Loyalty Button */}
         <button
           className={`group relative bg-gradient-to-r ${showLoyalty
-              ? "from-purple-700/90 to-purple-600/90 border-purple-400/40"
-              : "from-purple-800/70 to-purple-700/70 border-purple-500/30"
+            ? "from-purple-700/90 to-purple-600/90 border-purple-400/40"
+            : "from-purple-800/70 to-purple-700/70 border-purple-500/30"
             } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-purple-600/90 hover:to-purple-500/90 hover:border-purple-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowLoyalty(!showLoyalty)}
         >
@@ -1199,8 +1203,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         {/* Guilds Button */}
         <button
           className={`group relative bg-gradient-to-r ${showGuilds
-              ? "from-blue-700/90 to-blue-600/90 border-blue-400/40"
-              : "from-blue-800/70 to-blue-700/70 border-blue-500/30"
+            ? "from-blue-700/90 to-blue-600/90 border-blue-400/40"
+            : "from-blue-800/70 to-blue-700/70 border-blue-500/30"
             } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-blue-600/90 hover:to-blue-500/90 hover:border-blue-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowGuilds(!showGuilds)}
         >

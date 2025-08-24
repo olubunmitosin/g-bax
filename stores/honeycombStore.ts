@@ -599,29 +599,12 @@ export const useHoneycombStore = create<HoneycombState>()(
           } catch (error) { }
         }
 
-        // Fallback 2: localStorage simulation (when no service available)
-        const blockchainKey = `honeycomb-profile-${player.toString()}`;
-        const existing = localStorage.getItem(blockchainKey);
-        let profile = {
-          id: player.toString(),
-          name: `Explorer ${player.toString().slice(0, 8)}`,
-          experience: 0,
-          credits: 0,
-          level: 1,
-        };
+        // Fallback 2: Note that stats are now handled by database system
+        console.log("Experience update fallback - stats are now managed by database system");
+        console.log(`Experience would be updated to: ${experience} for player: ${player.toString()}`);
 
-        if (existing) {
-          try {
-            profile = JSON.parse(existing);
-          } catch (error) { }
-        }
-
-        // Update experience and level
-        profile.experience = experience;
-        profile.level = Math.floor(experience / 1000) + 1;
-
-        // Save to localStorage (simulating blockchain)
-        localStorage.setItem(blockchainKey, JSON.stringify(profile));
+        // The database system (usePlayerStats hook) should handle all stat updates
+        // This fallback is kept for compatibility but stats updates should go through the database
       },
 
       // Profile actions

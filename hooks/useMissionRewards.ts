@@ -7,6 +7,7 @@ import { useGameStore } from "@/stores/gameStore";
 import { useVerxioIntegration } from "./useVerxioIntegration";
 import { useAchievementTracker } from "./useAchievementTracker";
 import { useGuildProgression } from "./useGuildProgression";
+import { usePlayerStats } from "./usePlayerStats";
 import { formatNumber } from "@/utils/gameHelpers";
 
 /**
@@ -17,12 +18,10 @@ export function useMissionRewards() {
   const {
     player,
     addResource,
-    updatePlayerExperience,
-    setPlayer,
   } = useGameStore();
 
-  // Local mission system doesn't need blockchain sync for core rewards
-  // Experience and credits are handled locally
+  // Use new database-backed stats system
+  const { addExperience, addCredits, addReputation } = usePlayerStats();
 
   const { awardPointsForActivity } = useVerxioIntegration();
   const { trackActivity } = useAchievementTracker();
@@ -48,34 +47,34 @@ export function useMissionRewards() {
       if (rewards.experience > 0) {
         rewardSummary.experience = rewards.experience;
 
-        // Update local experience
-        updatePlayerExperience(rewards.experience);
+        // Update experience in database and sync with stores
+        const success = await addExperience(
+          rewards.experience,
+          `Mission completed: ${completedMission.title}`
+        );
 
-        // Update player level if needed
-        const newExperience = player.experience + rewards.experience;
-        const newLevel = Math.floor(newExperience / 1000) + 1;
-
-        if (newLevel > player.level) {
-          setPlayer({
-            ...player,
-            experience: newExperience,
-            level: newLevel,
-          });
+        if (success) {
+          console.log(`Awarded ${rewards.experience} experience points via database`);
+        } else {
+          console.warn("Failed to award experience via database");
         }
-
-        // Experience is now handled locally - no blockchain sync needed
-        console.log(`Awarded ${rewards.experience} experience points locally`);
       }
 
       // 2. Award Credits
       if (rewards.credits > 0) {
         rewardSummary.credits = rewards.credits;
 
-        // Update player credits
-        setPlayer({
-          ...player,
-          credits: player.credits + rewards.credits,
-        });
+        // Update credits in database and sync with stores
+        const success = await addCredits(
+          rewards.credits,
+          `Mission completed: ${completedMission.title}`
+        );
+
+        if (success) {
+          console.log(`Awarded ${rewards.credits} credits via database`);
+        } else {
+          console.warn("Failed to award credits via database");
+        }
       }
 
       // 3. Award Resources
@@ -131,9 +130,9 @@ export function useMissionRewards() {
     player,
     publicKey,
     addResource,
-    updatePlayerExperience,
-    setPlayer,
-    // Removed Honeycomb dependencies - now using local system
+    addExperience,
+    addCredits,
+    addReputation,
     awardPointsForActivity,
     trackActivity,
     recordContribution,

@@ -121,6 +121,10 @@ export const useGameStore = create<GameState>()(
           set((state) => {
             if (!state.player) return state;
 
+            // Note: This method is deprecated in favor of usePlayerStats hook
+            // Keeping for backward compatibility but should use database updates
+            console.warn("updatePlayerExperience is deprecated. Use usePlayerStats.addExperience() instead.");
+
             const newExperience = state.player.experience + experienceGained;
             const newLevel = getLevelFromExperience(newExperience);
 
@@ -176,13 +180,13 @@ export const useGameStore = create<GameState>()(
             const updatedMissions = state.missions.map((m) =>
               m.id === missionId
                 ? {
-                    ...m,
-                    progress,
-                    status:
-                      progress >= m.maxProgress
-                        ? ("completed" as const)
-                        : m.status,
-                  }
+                  ...m,
+                  progress,
+                  status:
+                    progress >= m.maxProgress
+                      ? ("completed" as const)
+                      : m.status,
+                }
                 : m,
             );
 

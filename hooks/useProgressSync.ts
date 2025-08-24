@@ -8,6 +8,7 @@ import { useVerxioStore, resetVerxioStore } from "@/stores/verxioStore";
 import { useHoneycombStore } from "@/stores/honeycombStore";
 // import { useCrossSessionProgress } from "./useCrossSessionProgress";
 import { resetItemEffectsStore } from "@/stores/itemEffectsStore";
+import { useAutoSave } from "./useAutoSave";
 
 /**
  * Hook to automatically sync game progress to localStorage and blockchain
@@ -21,14 +22,19 @@ export function useProgressSync() {
   // Cross-session progress hook available if needed
   // const { initializeProgress, syncProgress } = useCrossSessionProgress();
 
+  // Use new database-backed auto-save system
+  const { isAutoSaveEnabled } = useAutoSave();
+
   const lastSaveRef = useRef<number>(0);
   const saveIntervalRef = useRef<NodeJS.Timeout>();
 
-  // Auto-save to localStorage every 30 seconds
+  // Auto-save to localStorage every 30 seconds (for non-stat data)
+  // Note: Player stats (credits, level, experience, reputation) are now saved to database via useAutoSave
   useEffect(() => {
     if (!gameState.player) return;
 
     const autoSave = () => {
+      // Save non-stat game data to localStorage (inventory, missions, etc.)
       gameState.saveProgress();
     };
 

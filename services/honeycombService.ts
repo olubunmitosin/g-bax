@@ -192,13 +192,12 @@ export class HoneycombService {
         }
       }
 
-      // Update experience and level
-      profile.experience = experience;
-      profile.level = Math.floor(experience / 1000) + 1; // Simple level calculation
-      profile.lastUpdated = new Date().toISOString();
+      // Note: Experience updates are now handled by the database system
+      console.log("Experience update fallback - stats are now managed by database system");
+      console.log(`Experience would be updated to: ${experience} for player: ${player.toString()}`);
 
-      // Save to localStorage
-      localStorage.setItem(blockchainKey, JSON.stringify(profile));
+      // The database system (usePlayerStats hook) should handle all stat updates
+      // This method is kept for compatibility but should not be used for stat updates
     } catch (error) {
       throw new Error("Failed to update player experience");
     }

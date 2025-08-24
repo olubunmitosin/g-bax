@@ -5,13 +5,15 @@ import { useWallet } from "@solana/wallet-adapter-react";
 
 import { useVerxioStore } from "@/stores/verxioStore";
 import { useGameStore } from "@/stores/gameStore";
+import { usePlayerStats } from "./usePlayerStats";
 
 /**
  * Custom hook to integrate a Verxio loyalty system with game mechanics
  */
 export function useVerxioIntegration() {
   const { publicKey, connected } = useWallet();
-  const { player, updatePlayerExperience } = useGameStore();
+  const { player } = useGameStore();
+  const { addExperience, addReputation } = usePlayerStats();
 
   const {
     verxioService,
@@ -79,15 +81,19 @@ export function useVerxioIntegration() {
       await awardLoyaltyPoints(publicKey, finalPoints, activity);
 
       // Sync loyalty points with game store experience (1 loyalty point = 1 XP)
-      updatePlayerExperience(finalPoints);
+      await addExperience(finalPoints, `Verxio activity: ${activity}`);
 
       // Also update reputation for certain activities
       if (activity.includes("mining") || activity.includes("crafting")) {
+        const reputationGain = Math.floor(finalPoints / 10);
         await updateReputation(
           publicKey,
-          Math.floor(finalPoints / 10),
+          reputationGain,
           activity,
         );
+
+        // Also update in our database
+        await addReputation(reputationGain, `Verxio activity: ${activity}`);
       }
 
       // Contribute to a guild reputation if a player is in a guild
