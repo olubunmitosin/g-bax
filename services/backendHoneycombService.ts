@@ -231,9 +231,28 @@ export class BackendHoneycombService {
   }
 }
 
+// Detect the appropriate backend URL based on environment
+const getBackendUrl = (): string => {
+  // If explicitly set, use that
+  if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+    return process.env.NEXT_PUBLIC_BACKEND_URL;
+  }
+
+  // If running in browser and on Netlify (or any deployed site), use current origin
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('netlify.app') || hostname !== 'localhost') {
+      return window.location.origin;
+    }
+  }
+
+  // Default to localhost for development
+  return 'http://localhost:3001';
+};
+
 // Create and export a default instance
 export const backendHoneycombService = new BackendHoneycombService({
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
+  backendUrl: getBackendUrl(),
 });
 
 export default backendHoneycombService;

@@ -36,7 +36,8 @@
     "lint": "eslint --fix",
     "setup-honeycomb-project": "node scripts/setup-honeycomb-project.js",
     "setup-local-admin": "node -r dotenv/config scripts/setup-local-admin.js dotenv_config_path=.env.local",
-    "test-admin-function": "node -r dotenv/config scripts/test-admin-function.js dotenv_config_path=.env.local"
+    "test-admin-function": "node -r dotenv/config scripts/test-admin-function.js dotenv_config_path=.env.local",
+    "netlify-env-setup": "node scripts/netlify-env-setup.js"
   },
   "dependencies": {
     "@heroui/accordion": "^2.2.19",

@@ -8,9 +8,15 @@ publish = "out"
 # Node.js version
 environment = { NODE_VERSION = "18", NPM_FLAGS = "--production=false", NEXT_TELEMETRY_DISABLED = "1" }
 
-# Netlify Functions (if needed for API routes)
+# Netlify Functions for backend API
 [functions]
 directory = "netlify/functions"
+node_bundler = "esbuild"
+external_node_modules = [
+    "@honeycomb-protocol/hive-control",
+    "@honeycomb-protocol/edge-client",
+    "@solana/web3.js",
+]
 
 # Headers for security and performance
 [[headers]]
@@ -53,5 +59,13 @@ to = "/404.html"
 status = 404
 
 # Environment variables (these will be set in Netlify dashboard)
+# Frontend environment variables:
 # NEXT_PUBLIC_SOLANA_NETWORK
 # NEXT_PUBLIC_HONEYCOMB_API_KEY
+
+# Backend environment variables (required for Netlify Functions):
+# NEXT_PUBLIC_HONEYCOMB_ADMIN_PRIVATE_KEY
+# NEXT_PUBLIC_HONEYCOMB_PROJECT_ADDRESS
+# NEXT_PUBLIC_HONEYCOMB_PROFILES_TREE_ADDRESS
+# NEXT_PUBLIC_HONEYCOMB_RPC_URL
+# NEXT_PUBLIC_HONEYCOMB_ENVIRONMENT

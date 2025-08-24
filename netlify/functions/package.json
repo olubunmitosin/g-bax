@@ -1,0 +1,15 @@
+{
+  "name": "g-bax-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for G-Bax Backend API",
+  "main": "index.js",
+  "dependencies": {
+    "@honeycomb-protocol/hive-control": "^0.3.0",
+    "@honeycomb-protocol/edge-client": "^0.3.0",
+    "@solana/web3.js": "^1.95.4",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
