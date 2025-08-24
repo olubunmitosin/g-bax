@@ -169,7 +169,7 @@ export default function CraftingInterface({
 
   return (
     <>
-      <Card className={`w-[500px] h-[700px] ${className}`}>
+      <Card className={`w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-2xl h-[75vh] max-h-[700px] ${className}`}>
         <CardHeader className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Crafting Station</h3>
           <div className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function CraftingInterface({
                       <div className="text-xs text-default-500">
                         {formatTime(
                           operation.duration -
-                            (Date.now() - operation.startTime),
+                          (Date.now() - operation.startTime),
                         )}{" "}
                         remaining
                       </div>
@@ -284,9 +284,8 @@ export default function CraftingInterface({
                     <Card
                       key={recipe.id}
                       isPressable
-                      className={`hover:scale-[1.02] transition-transform cursor-pointer ${
-                        !craftCheck.canCraft ? "opacity-60" : ""
-                      }`}
+                      className={`hover:scale-[1.02] transition-transform cursor-pointer ${!craftCheck.canCraft ? "opacity-60" : ""
+                        }`}
                       onPress={() => handleRecipeClick(recipe)}
                     >
                       <CardBody className="p-3">

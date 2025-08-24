@@ -57,13 +57,17 @@ export default function MissionCompletionModal({
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
+    <Modal
+      isOpen={isOpen}
       onClose={onClose}
-      size="md"
+      size="sm"
       backdrop="blur"
+      scrollBehavior="inside"
       classNames={{
-        backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20"
+        backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20",
+        base: "mx-4 my-4 max-h-[90vh]",
+        body: "py-4",
+        header: "pb-2"
       }}
     >
       <ModalContent>
@@ -108,7 +112,7 @@ export default function MissionCompletionModal({
                 <span>🎁</span>
                 Rewards Earned
               </h4>
-              
+
               <div className="space-y-3">
                 {/* Experience */}
                 {rewardSummary.experience > 0 && (
@@ -181,8 +185,8 @@ export default function MissionCompletionModal({
         </ModalBody>
 
         <ModalFooter>
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             onPress={onClose}
             className="w-full"
           >

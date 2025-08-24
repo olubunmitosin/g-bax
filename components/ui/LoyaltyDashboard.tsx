@@ -36,7 +36,7 @@ export default function LoyaltyDashboard({
 
   if (isLoadingLoyalty) {
     return (
-      <Card className={`w-80 ${className}`}>
+      <Card className={`w-full max-w-xs sm:max-w-sm lg:max-w-md ${className}`}>
         <CardBody className="flex items-center justify-center p-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
@@ -49,7 +49,7 @@ export default function LoyaltyDashboard({
 
   if (!publicKey) {
     return (
-      <Card className={`w-80 ${className}`}>
+      <Card className={`w-full max-w-xs sm:max-w-sm lg:max-w-md ${className}`}>
         <CardHeader>
           <h3 className="text-lg font-semibold">Loyalty System</h3>
         </CardHeader>
@@ -64,7 +64,7 @@ export default function LoyaltyDashboard({
 
   if (!playerLoyalty) {
     return (
-      <Card className={`w-80 ${className}`}>
+      <Card className={`w-full max-w-xs sm:max-w-sm lg:max-w-md ${className}`}>
         <CardHeader>
           <h3 className="text-lg font-semibold">Loyalty System</h3>
         </CardHeader>
@@ -88,7 +88,7 @@ export default function LoyaltyDashboard({
     tierRange === Infinity ? 100 : (progressInTier / tierRange) * 100;
 
   return (
-    <Card className={`w-80 ${className}`}>
+    <Card className={`w-full max-w-xs sm:max-w-sm lg:max-w-md ${className}`}>
       <CardHeader className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Loyalty Status</h3>
         <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ export default function LoyaltyDashboard({
             <div className="font-bold text-lg">
               {Math.floor(
                 (Date.now() - new Date(playerLoyalty.lastActivity).getTime()) /
-                  (1000 * 60 * 60 * 24),
+                (1000 * 60 * 60 * 24),
               )}
               d
             </div>

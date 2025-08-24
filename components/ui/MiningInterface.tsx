@@ -159,7 +159,7 @@ export default function MiningInterface({
 
   if (!selectedObject) {
     return (
-      <Card className={`w-80 ${className}`}>
+      <Card className={`w-full max-w-xs sm:max-w-sm lg:max-w-md ${className}`}>
         <CardHeader>
           <h3 className="text-lg font-semibold">Mining Interface</h3>
         </CardHeader>
@@ -176,7 +176,7 @@ export default function MiningInterface({
 
   return (
     <>
-      <Card className={`w-80 ${className}`}>
+      <Card className={`w-full max-w-xs sm:max-w-sm lg:max-w-md ${className}`}>
         <CardHeader className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Mining Interface</h3>
           <Chip color={canMine ? "success" : "danger"} size="sm" variant="flat">

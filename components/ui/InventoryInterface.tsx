@@ -157,7 +157,7 @@ export default function InventoryInterface({
 
   return (
     <>
-      <Card className={`w-96 h-[600px] ${className}`}>
+      <Card className={`w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl h-[70vh] max-h-[600px] ${className}`}>
         <CardHeader className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Inventory</h3>
           <div className="flex items-center gap-2">

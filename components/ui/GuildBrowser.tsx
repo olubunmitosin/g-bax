@@ -261,7 +261,7 @@ export default function GuildBrowser({
 
   if (isLoadingGuilds) {
     return (
-      <Card className={`w-96 ${className}`}>
+      <Card className={`w-full max-w-sm sm:max-w-md lg:max-w-lg ${className}`}>
         <CardBody className="flex items-center justify-center p-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
@@ -274,7 +274,7 @@ export default function GuildBrowser({
 
   return (
     <>
-      <Card className={`w-96 h-[600px] ${className}`}>
+      <Card className={`w-full max-w-sm sm:max-w-md lg:max-w-lg h-[70vh] max-h-[600px] ${className}`}>
         <CardHeader className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Guild Browser</h3>
           <div className="flex items-center gap-2">

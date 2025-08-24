@@ -1233,8 +1233,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
       {/* Inventory Interface */}
       {showInventory && (
-        <div className="absolute bottom-24 right-4 z-20 animate-in slide-in-from-right-4 duration-300">
-          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-white/10">
+        <div className="fixed inset-4 md:absolute md:bottom-24 md:right-4 md:inset-auto z-20 animate-in slide-in-from-right-4 duration-300 flex items-center justify-center md:block">
+          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-white/10 w-full max-w-sm md:w-auto">
             <InventoryInterface
               inventory={inventory}
               onClose={() => setShowInventory(false)}
@@ -1247,8 +1247,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
       {/* Crafting Interface */}
       {showCrafting && (
-        <div className="absolute bottom-24 right-[180px] z-20 animate-in slide-in-from-right-4 duration-300">
-          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-orange-400/20">
+        <div className="fixed inset-4 md:absolute md:bottom-24 md:right-4 lg:md:right-[180px] md:inset-auto z-20 animate-in slide-in-from-right-4 duration-300 flex items-center justify-center md:block">
+          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-orange-400/20 w-full max-w-md md:w-auto">
             <CraftingInterface
               activeCraftingOperations={activeCraftingOperations}
               availableRecipes={availableRecipes}
@@ -1263,8 +1263,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
       {/* Loyalty Dashboard */}
       {showLoyalty && (
-        <div className="absolute bottom-24 right-[360px] z-20 animate-in slide-in-from-right-4 duration-300">
-          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-purple-400/20">
+        <div className="fixed inset-4 md:absolute md:bottom-24 md:right-4 lg:md:right-[360px] md:inset-auto z-20 animate-in slide-in-from-right-4 duration-300 flex items-center justify-center md:block">
+          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-purple-400/20 w-full max-w-md md:w-auto">
             <LoyaltyDashboard onClose={() => setShowLoyalty(false)} />
           </div>
         </div>
@@ -1272,8 +1272,8 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
       {/* Guild Browser */}
       {showGuilds && (
-        <div className="absolute bottom-24 right-[540px] z-20 animate-in slide-in-from-right-4 duration-300">
-          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-blue-400/20">
+        <div className="fixed inset-4 md:absolute md:bottom-24 md:right-4 lg:md:right-[540px] md:inset-auto z-20 animate-in slide-in-from-right-4 duration-300 flex items-center justify-center md:block">
+          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-1 border border-blue-400/20 w-full max-w-md md:w-auto">
             <GuildBrowser onClose={() => setShowGuilds(false)} />
           </div>
         </div>
