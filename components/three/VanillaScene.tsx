@@ -79,7 +79,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
   const { player } = usePlayerSync();
 
   // Use new database-backed stats system
-  const { addExperience } = usePlayerStats();
+  const { addExperience, addReputation } = usePlayerStats();
 
   // Honeycomb system states
   const {
