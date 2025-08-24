@@ -46,8 +46,18 @@ exports.handler = async (event, context) => {
     // Initialize controller
     const controller = initController();
 
-    // Extract player from query parameters (from redirect)
-    const player = event.queryStringParameters?.player;
+    // Extract player from query parameters (from redirect) or path
+    let player = event.queryStringParameters?.player;
+
+    // Fallback: extract from path if query param doesn't work
+    if (!player && event.path) {
+      const pathParts = event.path.split('/');
+      // Path should be /api/profile/PLAYER_ADDRESS
+      if (pathParts.length >= 4 && pathParts[2] === 'profile') {
+        player = pathParts[3];
+        console.log('Extracted player from path:', player);
+      }
+    }
 
     if (!player) {
       console.log('No player parameter found');
@@ -59,6 +69,7 @@ exports.handler = async (event, context) => {
           message: 'Player address is required',
           debug: {
             path: event.path,
+            pathParts: event.path?.split('/'),
             queryParams: event.queryStringParameters,
           }
         }),

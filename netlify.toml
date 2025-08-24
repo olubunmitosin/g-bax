@@ -54,8 +54,8 @@ to = "/.netlify/functions/test"
 status = 200
 
 [[redirects]]
-from = "/api/profile/*"
-to = "/.netlify/functions/profile?player=:splat"
+from = "/api/profile/:player"
+to = "/.netlify/functions/profile?player=:player"
 status = 200
 
 [[redirects]]
