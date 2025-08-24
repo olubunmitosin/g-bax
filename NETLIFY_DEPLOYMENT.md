@@ -35,7 +35,11 @@ NEXT_PUBLIC_HONEYCOMB_ENVIRONMENT=honeynet
 
 ### Database Variables (Required for Production)
 ```
-DATABASE_URL=postgresql://username:password@hostname:port/database # Neon PostgreSQL connection string
+# For Netlify deployment (recommended - automatically configured)
+NETLIFY_DATABASE_URL=postgresql://username:password@hostname:port/database # Netlify Neon integration
+
+# For other production environments
+DATABASE_URL=postgresql://username:password@hostname:port/database # Standard PostgreSQL connection string
 # OR
 NEON_DATABASE_URL=postgresql://username:password@hostname:port/database # Alternative name for Neon
 ```

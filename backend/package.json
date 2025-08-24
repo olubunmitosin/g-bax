@@ -29,7 +29,8 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
     "sqlite3": "^5.1.6",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "@netlify/neon": "^0.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

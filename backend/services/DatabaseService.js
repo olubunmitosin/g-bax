@@ -2,11 +2,23 @@ const sqlite3 = require('sqlite3').verbose();
 const { Pool } = require('pg');
 const path = require('path');
 
+// Import Netlify Neon for production
+let neon;
+try {
+  const netlifyNeon = require('@netlify/neon');
+  neon = netlifyNeon.neon;
+} catch (error) {
+  // Fallback if @netlify/neon is not available
+  console.log('Netlify Neon package not available, using standard pg');
+}
+
 class DatabaseService {
   constructor() {
     this.isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true';
+    this.isNetlify = process.env.NETLIFY === 'true';
     this.db = null;
     this.pool = null;
+    this.sql = null; // Netlify Neon SQL function
     this.initialized = false;
   }
 
@@ -20,8 +32,13 @@ class DatabaseService {
 
     try {
       if (this.isProduction) {
-        // Use Neon PostgreSQL for production
-        await this.initializePostgreSQL();
+        if (this.isNetlify && neon) {
+          // Use Netlify Neon for Netlify deployment
+          await this.initializeNetlifyNeon();
+        } else {
+          // Use standard PostgreSQL for other production environments
+          await this.initializePostgreSQL();
+        }
       } else {
         // Use SQLite for local development
         await this.initializeSQLite();
@@ -30,7 +47,7 @@ class DatabaseService {
       // Run migrations
       await this.runMigrations();
       this.initialized = true;
-      console.log(`Database initialized successfully (${this.isProduction ? 'PostgreSQL' : 'SQLite'})`);
+      console.log(`Database initialized successfully (${this.isNetlify && neon ? 'Netlify Neon' : this.isProduction ? 'PostgreSQL' : 'SQLite'})`);
     } catch (error) {
       console.error('Failed to initialize database:', error);
       throw error;
@@ -38,13 +55,24 @@ class DatabaseService {
   }
 
   /**
+   * Initialize Netlify Neon connection
+   */
+  async initializeNetlifyNeon() {
+    // Netlify Neon automatically uses NETLIFY_DATABASE_URL environment variable
+    this.sql = neon();
+
+    // Test connection with a simple query
+    await this.sql`SELECT NOW()`;
+  }
+
+  /**
    * Initialize PostgreSQL connection for production
    */
   async initializePostgreSQL() {
-    const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
-    
+    const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+
     if (!connectionString) {
-      throw new Error('DATABASE_URL or NEON_DATABASE_URL environment variable is required for production');
+      throw new Error('DATABASE_URL, NEON_DATABASE_URL, or NETLIFY_DATABASE_URL environment variable is required for production');
     }
 
     this.pool = new Pool({
@@ -65,7 +93,7 @@ class DatabaseService {
    */
   async initializeSQLite() {
     const dbPath = path.join(__dirname, '../data/game.db');
-    
+
     // Ensure data directory exists
     const fs = require('fs');
     const dataDir = path.dirname(dbPath);
@@ -174,7 +202,7 @@ class DatabaseService {
    */
   runSQLiteQuery(query, params = []) {
     return new Promise((resolve, reject) => {
-      this.db.run(query, params, function(err) {
+      this.db.run(query, params, function (err) {
         if (err) {
           reject(err);
         } else {
@@ -215,16 +243,45 @@ class DatabaseService {
   }
 
   /**
-   * Execute PostgreSQL query
+   * Execute PostgreSQL query (supports both Netlify Neon and standard PostgreSQL)
    */
   async runPostgreSQLQuery(query, params = []) {
-    const client = await this.pool.connect();
-    try {
-      const result = await client.query(query, params);
-      return result;
-    } finally {
-      client.release();
+    if (this.sql) {
+      // Use Netlify Neon
+      if (params.length === 0) {
+        return await this.sql([query]);
+      } else {
+        // Convert parameterized query for Neon template literal format
+        return await this.executeNeonQuery(query, params);
+      }
+    } else {
+      // Use standard PostgreSQL
+      const client = await this.pool.connect();
+      try {
+        const result = await client.query(query, params);
+        return result;
+      } finally {
+        client.release();
+      }
     }
+  }
+
+  /**
+   * Execute Neon query with parameters
+   */
+  async executeNeonQuery(query, params) {
+    // Convert $1, $2, etc. to template literal format
+    let neonQuery = query;
+    const values = [];
+
+    for (let i = 0; i < params.length; i++) {
+      neonQuery = neonQuery.replace(`$${i + 1}`, `\${values[${i}]}`);
+      values.push(params[i]);
+    }
+
+    // Use Function constructor to create a template literal function
+    const queryFunction = new Function('sql', 'values', `return sql\`${neonQuery}\``);
+    return await queryFunction(this.sql, values);
   }
 
   /**
@@ -238,7 +295,9 @@ class DatabaseService {
 
     if (this.isProduction) {
       const result = await this.runPostgreSQLQuery(postgresQuery, [playerAddress]);
-      return result.rows[0] || null;
+      // Handle both Netlify Neon (array) and standard PostgreSQL (result.rows) responses
+      const rows = Array.isArray(result) ? result : result.rows;
+      return rows[0] || null;
     } else {
       return await this.getSQLiteQuery(query, [playerAddress]);
     }
@@ -251,7 +310,7 @@ class DatabaseService {
     await this.initialize();
 
     const { credits, level, experience, reputation } = stats;
-    
+
     if (this.isProduction) {
       const query = `
         INSERT INTO player_stats (player_address, credits, level, experience, reputation, updated_at)
@@ -266,7 +325,9 @@ class DatabaseService {
         RETURNING *
       `;
       const result = await this.runPostgreSQLQuery(query, [playerAddress, credits, level, experience, reputation]);
-      return result.rows[0];
+      // Handle both Netlify Neon (array) and standard PostgreSQL (result.rows) responses
+      const rows = Array.isArray(result) ? result : result.rows;
+      return rows[0];
     } else {
       // SQLite doesn't have UPSERT in older versions, so we'll use INSERT OR REPLACE
       const query = `
@@ -288,7 +349,8 @@ class DatabaseService {
 
     if (this.isProduction) {
       const result = await this.runPostgreSQLQuery(query);
-      return result.rows;
+      // Handle both Netlify Neon (array) and standard PostgreSQL (result.rows) responses
+      return Array.isArray(result) ? result : result.rows;
     } else {
       return await this.getAllSQLiteQuery(query);
     }
@@ -307,7 +369,9 @@ class DatabaseService {
         RETURNING *
       `;
       const result = await this.runPostgreSQLQuery(query, [playerAddress, activityType, amount, description]);
-      return result.rows[0];
+      // Handle both Netlify Neon (array) and standard PostgreSQL (result.rows) responses
+      const rows = Array.isArray(result) ? result : result.rows;
+      return rows[0];
     } else {
       const query = `
         INSERT INTO player_activities (player_address, activity_type, amount, description)
