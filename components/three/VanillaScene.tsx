@@ -360,9 +360,20 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
               basePoints,
             );
 
-            // Calculate final experience for display (multiplier is applied in onExperienceGained)
+            // Award experience through database system
             const multiplier = getCurrentMultiplier();
-            const finalExperience = Math.floor(result.experience * multiplier);
+            const itemMultipliers = getActiveMultipliers();
+            const totalMultiplier = multiplier * itemMultipliers.experienceBoost;
+            const finalExperience = Math.floor(enhancedExperience * totalMultiplier);
+
+            // Award experience to player
+            await addExperience(finalExperience, "Mining activity");
+
+            // Award reputation for mining (similar to Verxio integration logic)
+            const reputationGain = Math.floor(finalExperience / 10);
+            if (reputationGain > 0) {
+              await addReputation(reputationGain, "Mining activity");
+            }
 
             // Create a summary of extracted resources
             const resourceSummary = result.resources.reduce(
@@ -810,7 +821,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       : [];
 
   // Inventory action handlers
-  const handleUseItem = (itemId: string, quantity: number) => {
+  const handleUseItem = async (itemId: string, quantity: number) => {
     // Find the item in inventory
     const item = inventory.find((r) => r.id === itemId);
 

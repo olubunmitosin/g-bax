@@ -36,11 +36,15 @@ export function usePlayerStats() {
     }
 
     try {
+      console.log("Updating player stats:", { stats, description });
+
       // Update stats in database via backend API
       const updatedStats = await backendHoneycombService.updatePlayerStats(
         publicKey,
         stats
       );
+
+      console.log("Backend response:", updatedStats);
 
       if (updatedStats) {
         // Update game store

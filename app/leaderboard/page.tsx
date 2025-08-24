@@ -68,8 +68,8 @@ export default function LeaderboardPage() {
             value = user.credits || 0;
             break;
           case "reputation":
-            // For reputation, we'll use level as a proxy
-            value = (user.level || 1) * 100;
+            // Use actual reputation from database
+            value = user.reputation || 0;
             break;
           case "experience":
             value = user.experience || 0;

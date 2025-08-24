@@ -204,6 +204,8 @@ export class BackendHoneycombService {
     }
   ): Promise<any> {
     try {
+      console.log('Backend service updating stats:', { player: player.toString(), stats });
+
       const response = await this.makeRequest<any>('/api/player-stats', {
         method: 'PUT',
         body: JSON.stringify({
@@ -212,10 +214,12 @@ export class BackendHoneycombService {
         }),
       });
 
+      console.log('Backend service response:', response);
+
       if (response.success) {
         return (response as any).stats;
       } else {
-        console.log('Failed to update player stats via backend');
+        console.log('Failed to update player stats via backend:', response);
         return null;
       }
     } catch (error) {

@@ -23,6 +23,35 @@ class DatabaseService {
   }
 
   /**
+   * Check and fix database permissions
+   */
+  async checkDatabasePermissions() {
+    if (this.isProduction) return; // Only needed for SQLite
+
+    const dbPath = path.join(__dirname, '../data/game.db');
+    const fs = require('fs');
+
+    try {
+      if (fs.existsSync(dbPath)) {
+        const stats = fs.statSync(dbPath);
+        console.log(`Database file permissions: ${stats.mode.toString(8)}`);
+
+        // Check if file is writable
+        try {
+          fs.accessSync(dbPath, fs.constants.W_OK);
+          console.log('Database file is writable');
+        } catch (error) {
+          console.warn('Database file is not writable, attempting to fix...');
+          fs.chmodSync(dbPath, 0o644);
+          console.log('Database file permissions updated');
+        }
+      }
+    } catch (error) {
+      console.warn('Could not check database permissions:', error.message);
+    }
+  }
+
+  /**
    * Initialize the database connection
    */
   async initialize() {
@@ -31,6 +60,9 @@ class DatabaseService {
     }
 
     try {
+      // Check permissions first for SQLite
+      await this.checkDatabasePermissions();
+
       if (this.isProduction) {
         if (this.isNetlify && neon) {
           // Use Netlify Neon for Netlify deployment
@@ -94,35 +126,42 @@ class DatabaseService {
   async initializeSQLite() {
     const dbPath = path.join(__dirname, '../data/game.db');
 
-    // Ensure data directory exists
+    // Ensure data directory exists with proper permissions
     const fs = require('fs');
     const dataDir = path.dirname(dbPath);
     if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+      fs.mkdirSync(dataDir, { recursive: true, mode: 0o755 });
     }
 
-    this.db = new sqlite3.Database(dbPath, (err) => {
+    // Check if database file exists and set proper permissions
+    if (fs.existsSync(dbPath)) {
+      try {
+        // Set read/write permissions for the database file
+        fs.chmodSync(dbPath, 0o644);
+      } catch (error) {
+        console.warn('Could not set database file permissions:', error.message);
+      }
+    }
+
+    // Open database with read/write mode
+    this.db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
       if (err) {
         throw new Error(`Failed to open SQLite database: ${err.message}`);
       }
     });
 
-    // Enable foreign keys
+    // Enable foreign keys and WAL mode for better concurrency
     await this.runSQLiteQuery('PRAGMA foreign_keys = ON');
+    await this.runSQLiteQuery('PRAGMA journal_mode = WAL');
+    await this.runSQLiteQuery('PRAGMA synchronous = NORMAL');
   }
 
   /**
    * Run database migrations
    */
   async runMigrations() {
-    const migrations = [
-      this.createPlayerStatsTable(),
-      this.createPlayerActivitiesTable(),
-    ];
-
-    for (const migration of migrations) {
-      await migration;
-    }
+    await this.createPlayerStatsTable();
+    await this.createPlayerActivitiesTable();
   }
 
   /**
@@ -198,48 +237,108 @@ class DatabaseService {
   }
 
   /**
-   * Execute SQLite query
+   * Execute SQLite query with automatic retry on permission errors
    */
-  runSQLiteQuery(query, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.run(query, params, function (err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ lastID: this.lastID, changes: this.changes });
-        }
+  async runSQLiteQuery(query, params = []) {
+    try {
+      return await new Promise((resolve, reject) => {
+        this.db.run(query, params, function (err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ lastID: this.lastID, changes: this.changes });
+          }
+        });
       });
-    });
+    } catch (error) {
+      // Check if it's a readonly database error
+      if (error.message && error.message.includes('SQLITE_READONLY')) {
+        console.warn('SQLite readonly error detected, attempting to recreate database...');
+        await this.recreateSQLiteDatabase();
+
+        // Retry the query
+        return await new Promise((resolve, reject) => {
+          this.db.run(query, params, function (err) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve({ lastID: this.lastID, changes: this.changes });
+            }
+          });
+        });
+      }
+      throw error;
+    }
   }
 
   /**
    * Execute SQLite select query
    */
-  getSQLiteQuery(query, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(query, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
+  async getSQLiteQuery(query, params = []) {
+    try {
+      return await new Promise((resolve, reject) => {
+        this.db.get(query, params, (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row);
+          }
+        });
       });
-    });
+    } catch (error) {
+      // Check if it's a readonly database error
+      if (error.message && error.message.includes('SQLITE_READONLY')) {
+        console.warn('SQLite readonly error detected, attempting to recreate database...');
+        await this.recreateSQLiteDatabase();
+
+        // Retry the query
+        return await new Promise((resolve, reject) => {
+          this.db.get(query, params, (err, row) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(row);
+            }
+          });
+        });
+      }
+      throw error;
+    }
   }
 
   /**
    * Execute SQLite select all query
    */
-  getAllSQLiteQuery(query, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(query, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+  async getAllSQLiteQuery(query, params = []) {
+    try {
+      return await new Promise((resolve, reject) => {
+        this.db.all(query, params, (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        });
       });
-    });
+    } catch (error) {
+      // Check if it's a readonly database error
+      if (error.message && error.message.includes('SQLITE_READONLY')) {
+        console.warn('SQLite readonly error detected, attempting to recreate database...');
+        await this.recreateSQLiteDatabase();
+
+        // Retry the query
+        return await new Promise((resolve, reject) => {
+          this.db.all(query, params, (err, rows) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(rows);
+            }
+          });
+        });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -378,6 +477,49 @@ class DatabaseService {
         VALUES (?, ?, ?, ?)
       `;
       await this.runSQLiteQuery(query, [playerAddress, activityType, amount, description]);
+    }
+  }
+
+  /**
+   * Recreate SQLite database (for fixing permission issues)
+   */
+  async recreateSQLiteDatabase() {
+    if (this.isProduction) return;
+
+    const dbPath = path.join(__dirname, '../data/game.db');
+    const fs = require('fs');
+
+    try {
+      console.log('Recreating SQLite database...');
+
+      // Close existing connection
+      if (this.db) {
+        this.db.close();
+        this.db = null;
+      }
+
+      // Remove existing database file
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+        console.log('Removed existing database file');
+      }
+
+      // Remove WAL and SHM files if they exist
+      const walPath = dbPath + '-wal';
+      const shmPath = dbPath + '-shm';
+      if (fs.existsSync(walPath)) fs.unlinkSync(walPath);
+      if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath);
+
+      // Reinitialize
+      this.initialized = false;
+      await this.initializeSQLite();
+      await this.runMigrations();
+      this.initialized = true;
+
+      console.log('SQLite database recreated successfully');
+    } catch (error) {
+      console.error('Failed to recreate SQLite database:', error);
+      throw error;
     }
   }
 
