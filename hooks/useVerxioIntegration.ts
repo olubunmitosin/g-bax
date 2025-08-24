@@ -53,9 +53,9 @@ export function useVerxioIntegration() {
       playerLoyalty.points > 0
     ) {
       // If player has loyalty points but no game experience, sync them
-      updatePlayerExperience(playerLoyalty.points);
+      addExperience(playerLoyalty.points, "Verxio loyalty points sync");
     }
-  }, [playerLoyalty, player, updatePlayerExperience]);
+  }, [playerLoyalty, player, addExperience]);
 
   // Award points for game activities
   const awardPointsForActivity = async (

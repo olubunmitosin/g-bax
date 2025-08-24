@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader } from '@heroui/card';
 import { Chip } from '@heroui/chip';
 import { useGameStore } from '@/stores/gameStore';
 import { usePlayerSync } from '@/hooks/usePlayerSync';
+import { usePlayerStats } from '@/hooks/usePlayerStats';
 import { useItemEffectsStore } from '@/stores/itemEffectsStore';
 import { getRarityColor, getResourceTypeColor, formatNumber } from '@/utils/gameHelpers';
 import InventoryInterface from '@/components/ui/InventoryInterface';
@@ -13,8 +14,9 @@ import NotificationSystem, { useNotifications } from '@/components/ui/Notificati
 export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
-  const { inventory, removeResource, updatePlayerExperience } = useGameStore();
+  const { inventory, removeResource } = useGameStore();
   const { player } = usePlayerSync();
+  const { addExperience } = usePlayerStats();
   const { addEffect } = useItemEffectsStore();
   const { notifications, removeNotification, showSuccess, showInfo, showWarning } = useNotifications();
 
@@ -87,7 +89,7 @@ export default function InventoryPage() {
     return total + (item.quantity * rarityMultiplier);
   }, 0);
 
-  const handleUseItem = (itemId: string, quantity: number) => {
+  const handleUseItem = async (itemId: string, quantity: number) => {
     const item = inventory.find(r => r.id === itemId);
     if (!item) return;
 
@@ -130,7 +132,7 @@ export default function InventoryPage() {
         const experienceGained = quantity * 50 * rarityMultiplier; // 50-150 XP per crystal based on rarity
         const expDuration = 600000 * quantity; // 10 minutes per crystal
 
-        updatePlayerExperience(Math.floor(experienceGained));
+        await addExperience(Math.floor(experienceGained), `Used ${item.name} crystal`);
         useItemEffectsStore.getState().useItems('experience_boost', quantity, expDuration, `${item.name} Experience Boost`);
 
         showSuccess(

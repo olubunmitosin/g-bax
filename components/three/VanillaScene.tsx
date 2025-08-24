@@ -866,7 +866,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
         const experienceGained = quantity * 50 * rarityMultiplier; // 50-150 XP per crystal based on rarity
         const expDuration = 600000 * quantity; // 10 minutes per crystal
 
-        updatePlayerExperience(Math.floor(experienceGained));
+        await addExperience(Math.floor(experienceGained), `Used ${item.name} crystal`);
         useItemEffectsStore
           .getState()
           .useItems(
