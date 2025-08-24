@@ -23,9 +23,30 @@ module.exports = (honeycombController) => {
   });
 
   /**
+   * PUT /api/update-profile
+   * Updates a player profile using Honeycomb Protocol
+   *
+   * Body:
+   * {
+   *   player: string (PublicKey),
+   *   accessToken: string,
+   *   profileData: {
+   *     name?: string,
+   *     bio?: string,
+   *     avatar?: string,
+   *     pfp?: string,
+   *     metadata?: object
+   *   }
+   * }
+   */
+  router.put('/update-profile', async (req, res) => {
+    await honeycombController.updateProfile(req, res);
+  });
+
+  /**
    * GET /api/profile/:player
    * Gets player profile information
-   * 
+   *
    * Params:
    * - player: string (PublicKey)
    */

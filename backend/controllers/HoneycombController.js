@@ -251,6 +251,96 @@ class HoneycombController {
   }
 
   /**
+   * Updates a player profile using Honeycomb Protocol
+   */
+  async updateProfile(req, res) {
+    try {
+      const { player, profileData, accessToken } = req.body;
+
+      // Validate inputs
+      const validatedPlayer = this.validatePlayer(player);
+
+      if (!accessToken) {
+        return res.status(400).json({
+          success: false,
+          message: 'Access token is required for profile updates'
+        });
+      }
+
+      // Validate profile data (optional fields for updates)
+      if (profileData.name && (typeof profileData.name !== 'string' || profileData.name.length > 50)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Profile name must be a string with max 50 characters'
+        });
+      }
+
+      // Create update user transaction
+      const txResponse = await this.edgeClient.createUpdateUserTransaction(
+        {
+          payer: validatedPlayer.toString(),
+          populateCivic: true,
+          info: {
+            name: profileData.name,
+            bio: profileData.metadata?.bio || profileData.bio,
+            pfp: profileData.avatar || profileData.pfp,
+          }
+        },
+        {
+          fetchOptions: {
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+            },
+          },
+        }
+      );
+
+      console.log('Update transaction created successfully');
+
+      // Sign and send the transaction
+      const transactionResult = await this.signAndSendTransaction(txResponse.createUpdateUserTransaction);
+
+      if (transactionResult?.signature) {
+        // Fetch the updated user profile
+        const { user, profile } = await this.fetchUserProfile(validatedPlayer);
+        const updatedProfile = this.formatProfileResponse(
+          user,
+          profile,
+          validatedPlayer.toString(),
+          profileData,
+          transactionResult.signature
+        );
+
+        if (updatedProfile) {
+          res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            profile: updatedProfile
+          });
+        } else {
+          res.status(500).json({
+            success: false,
+            message: 'Profile updated but could not retrieve updated data'
+          });
+        }
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Update transaction failed'
+        });
+      }
+
+    } catch (error) {
+      console.error('Profile update failed:', error);
+
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to update profile',
+      });
+    }
+  }
+
+  /**
    * Gets player profile information
    */
   async getProfile(req, res) {

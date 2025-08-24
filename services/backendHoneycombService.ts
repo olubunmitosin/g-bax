@@ -128,6 +128,46 @@ export class BackendHoneycombService {
   }
 
   /**
+   * Updates a player profile via backend API
+   * @param player - Player's public key
+   * @param accessToken - Authentication token for the update
+   * @param profileData - Profile information to update
+   * @returns Promise<BackendProfile | null>
+   */
+  async updatePlayerProfile(
+    player: PublicKey,
+    accessToken: string,
+    profileData: {
+      name?: string;
+      bio?: string;
+      avatar?: string;
+      pfp?: string;
+      metadata?: Record<string, any>;
+    }
+  ): Promise<BackendProfile | null> {
+    try {
+      const response = await this.makeRequest<BackendProfile>('/api/update-profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          player: player.toString(),
+          accessToken,
+          profileData,
+        }),
+      });
+
+      if (response.success && response.profile) {
+        return response.profile;
+      } else {
+        console.log('Profile update failed via backend');
+        return null;
+      }
+    } catch (error) {
+      console.error('Failed to update player profile:', error);
+      return null;
+    }
+  }
+
+  /**
    * Checks if the backend service is healthy
    */
   async isBackendHealthy(): Promise<boolean> {

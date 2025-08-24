@@ -419,6 +419,61 @@ export const useHoneycombStore = create<HoneycombState>()(
         }
 
         try {
+          // Get access token for authentication
+          const accessToken = await get().getUserAuthToken(
+            playerPublicKey,
+            contextWallet,
+          );
+
+          if (!accessToken) {
+            throw new Error("Failed to get authentication token");
+          }
+
+          // Try to update via backend service first
+          try {
+            const updatedProfile = await backendHoneycombService.updatePlayerProfile(
+              playerPublicKey,
+              accessToken,
+              {
+                name: profileInfo.name,
+                bio: profileInfo.bio,
+                pfp: profileInfo.pfp,
+              }
+            );
+
+            if (updatedProfile) {
+              // Update the store with the updated profile data
+              set({
+                playerProfile: {
+                  id: updatedProfile.id,
+                  address: updatedProfile.address,
+                  profileAddress: updatedProfile.profileAddress,
+                  projectAddress: updatedProfile.projectAddress,
+                  profileTreeAddress: updatedProfile.profileTreeAddress,
+                  name: updatedProfile.name,
+                  bio: updatedProfile.bio,
+                  pfp: updatedProfile.pfp,
+                  experience: updatedProfile.experience,
+                  level: updatedProfile.level,
+                  credits: updatedProfile.credits,
+                  source: updatedProfile.source,
+                  createdAt: updatedProfile.createdAt,
+                  lastUpdated: updatedProfile.lastUpdated,
+                  transactionSignature: updatedProfile.transactionSignature,
+                  metadata: updatedProfile.metadata,
+                }
+              });
+              return;
+            }
+          } catch (backendError) {
+            console.warn('Backend profile update failed, falling back to direct service');
+          }
+
+          // Fallback to original implementation if backend fails
+          if (!honeycombService) {
+            throw new Error("Honeycomb service not available");
+          }
+
           // First, find the user and their profile
           const user = await honeycombService.findUser(playerPublicKey);
 
@@ -441,16 +496,7 @@ export const useHoneycombStore = create<HoneycombState>()(
             );
           }
 
-          const accessToken = await get().getUserAuthToken(
-            playerPublicKey,
-            contextWallet,
-          );
-
-          if (!accessToken) {
-            return;
-          }
-
-          // Create profile update transaction
+          // Create profile update transaction using direct service
           const profileParams = {
             project: projectAddress,
             payer: playerPublicKey.toString(),
@@ -477,60 +523,14 @@ export const useHoneycombStore = create<HoneycombState>()(
             contextWallet,
           );
 
-          console.log("📋 Transaction result:", signResult);
+          console.log("Transaction result:", signResult);
 
           if (!signResult.success) {
             throw new Error(`Transaction failed: ${signResult.error}`);
           }
 
-
-          let retries = 0;
-          const maxRetries = 3;
-          let profileLoaded = false;
-
-          while (retries < maxRetries && !profileLoaded) {
-            try {
-              // Clear cache again before each retry
-              // honeycombService.clearProfileCache(playerPublicKey);
-
-              // Wait longer on each retry
-              if (retries > 0) {
-                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
-              }
-
-              // Reload the player profile to reflect changes
-              await get().loadPlayerProfile(playerPublicKey);
-
-              // Check if the profile was updated with the new name
-              const currentProfile = get().playerProfile;
-              if (currentProfile && currentProfile.name === profileInfo.name) {
-                profileLoaded = true;
-              } else {
-                retries++;
-              }
-            } catch (error) {
-              retries++;
-              if (retries >= maxRetries) {
-                throw error;
-              }
-            }
-          }
-
-          // If retries failed, update the profile locally as a fallback
-          if (!profileLoaded) {
-            const currentProfile = get().playerProfile;
-            if (currentProfile) {
-              set({
-                playerProfile: {
-                  ...currentProfile,
-                  name: profileInfo.name,
-                  bio: profileInfo.bio,
-                  pfp: profileInfo.pfp,
-                  lastUpdated: new Date().toISOString(),
-                }
-              });
-            }
-          }
+          // Reload the player profile to reflect changes
+          await get().loadPlayerProfile(playerPublicKey);
         } catch (error: any) {
           throw error;
         }
