@@ -60,8 +60,13 @@ class HoneycombController {
         throw new Error('Transaction response is required');
       }
 
-      // Prepare signers array
-      const signers = [this.signer, ...additionalSigners];
+      let signers = [];
+
+      if (additionalSigners.length) {
+        signers = additionalSigners;
+      } else {
+        signers = [this.signer];
+      }
 
       const response = await sendTransactionForTests(
         this.edgeClient,
@@ -104,9 +109,9 @@ class HoneycombController {
         profileAddress: profile.address,
         projectAddress: profile.project,
         profileTreeAddress: profile.tree_id,
-        name: profile.info.name || profileData?.name || `Explorer ${playerKey.slice(0, 8)}`,
-        bio: profile.info.bio || profileData?.metadata?.bio || "Space explorer in the G-Bax universe",
-        pfp: profile.info.pfp || profileData?.avatar || defaultPfp,
+        name: user.info.name || profileData?.name || `Explorer ${playerKey.slice(0, 8)}`,
+        bio: user.info.bio || profileData?.metadata?.bio || "Space explorer in the G-Bax universe",
+        pfp: user.info.pfp || profileData?.avatar || defaultPfp,
         experience: parseInt(profile.platformData?.xp) || 0,
         level: 1,
         credits: profile.credits || 1000,
@@ -278,7 +283,7 @@ class HoneycombController {
       // Create update user transaction
       const txResponse = await this.edgeClient.createUpdateUserTransaction(
         {
-          payer: this.signer.publicKey.toString(), // Use admin signer as payer
+          payer: this.adminPublicKey.toString(),
           info: {
             name: profileData.name,
             bio: profileData.metadata?.bio || profileData.bio,
