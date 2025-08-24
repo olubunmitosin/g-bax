@@ -259,6 +259,12 @@ export interface HoneycombState {
 
   // Utility actions
   checkConnection: () => Promise<void>;
+  updatePlayerProfileStats: (stats: {
+    credits?: number;
+    level?: number;
+    experience?: number;
+    reputation?: number;
+  }) => void;
   reset: () => void;
 }
 
@@ -1299,6 +1305,27 @@ export const useHoneycombStore = create<HoneycombState>()(
             leadershipBonus: 0,
             experienceBonus: 0,
           };
+        }
+      },
+
+      updatePlayerProfileStats: (stats: {
+        credits?: number;
+        level?: number;
+        experience?: number;
+        reputation?: number;
+      }) => {
+        const currentProfile = get().playerProfile;
+        if (currentProfile) {
+          set({
+            playerProfile: {
+              ...currentProfile,
+              credits: stats.credits !== undefined ? stats.credits : currentProfile.credits,
+              level: stats.level !== undefined ? stats.level : currentProfile.level,
+              experience: stats.experience !== undefined ? stats.experience : currentProfile.experience,
+              reputation: stats.reputation !== undefined ? stats.reputation : (currentProfile.reputation || 0),
+              lastUpdated: new Date().toISOString(),
+            }
+          });
         }
       },
 
