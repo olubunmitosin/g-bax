@@ -8,6 +8,8 @@ import base58 from "bs58";
 import * as web3 from "@solana/web3.js";
 
 import { HoneycombService } from "@/services/honeycombService";
+import { backendHoneycombService } from "@/services/backendHoneycombService";
+import ProfileMigrationManager from "@/utils/profileMigration";
 import { getLevelFromExperience } from "@/utils/gameHelpers";
 import {
   MissionProgress,
@@ -359,53 +361,49 @@ export const useHoneycombStore = create<HoneycombState>()(
         playerPublicKey: PublicKey,
         contextWallet: any,
       ) => {
-        const { honeycombService } = get();
-
-        if (!honeycombService) {
-          return;
-        }
-
-        // First check if user exists
-        let user = await honeycombService.findUser(playerPublicKey);
-
         try {
-          if (!user) {
-            // User doesn't exist, create user with profile
-            const defaultUserInfo = {
+          // Use the new backend service with migration support
+          const migrationResult = await ProfileMigrationManager.getOrCreateProfile(
+            playerPublicKey,
+            {
               name: `Explorer ${playerPublicKey.toString().slice(0, 8)}`,
-              bio: "Space explorer in the G-Bax universe",
-              pfp: "https://lh3.googleusercontent.com/-Jsm7S8BHy4nOzrw2f5AryUgp9Fym2buUOkkxgNplGCddTkiKBXPLRytTMXBXwGcHuRr06EvJStmkHj-9JeTfmHsnT0prHg5Mhg",
-            };
+              metadata: {
+                bio: "Space explorer in the G-Bax universe",
+              },
+            }
+          );
 
-            // Add a profile tree if available
-            const profilesTreeAddress =
-              process.env.NEXT_PUBLIC_PROFILE_TREE_ADDRESS;
+          if (migrationResult.success && migrationResult.profile) {
+            // Update the store with the profile data
+            set({
+              playerProfile: {
+                id: migrationResult.profile.id,
+                address: migrationResult.profile.address,
+                profileAddress: migrationResult.profile.profileAddress,
+                projectAddress: migrationResult.profile.projectAddress,
+                profileTreeAddress: migrationResult.profile.profileTreeAddress,
+                name: migrationResult.profile.name,
+                bio: migrationResult.profile.bio,
+                pfp: migrationResult.profile.pfp,
+                experience: migrationResult.profile.experience,
+                level: migrationResult.profile.level,
+                credits: migrationResult.profile.credits,
+                source: migrationResult.profile.source,
+                createdAt: migrationResult.profile.createdAt,
+                lastUpdated: migrationResult.profile.lastUpdated,
+                transactionSignature: migrationResult.profile.transactionSignature,
+                metadata: migrationResult.profile.metadata,
+              }
+            });
 
-            const createUserParams: any = {
-              project: honeycombService.getProjectAddress(),
-              wallet: playerPublicKey.toString(),
-              payer: playerPublicKey.toString(),
-              userInfo: defaultUserInfo,
-              profilesTreeAddress: profilesTreeAddress,
-            };
-
-            const txBundle = await honeycombService
-              .getEdgeClient()
-              .createNewUserWithProfileTransaction(createUserParams);
-
-            // Sign and send this transaction via service helper (handles normalization/retries)
-            await honeycombService.signAndSendTransaction(
-              txBundle.createNewUserWithProfileTransaction,
-              contextWallet,
-            );
-
-            await honeycombService.findUser(playerPublicKey);
+            // Also load the profile using the existing method for compatibility
+            await get().loadPlayerProfile(playerPublicKey);
+          } else {
+            console.warn('Failed to setup user account via backend');
           }
-
-          // Load player profile
-          await get().loadPlayerProfile(playerPublicKey);
         } catch (error: any) {
-          // Silent error handling
+          console.error('User account setup failed:', error);
+          // Silent error handling for now
         }
       },
 
@@ -419,7 +417,6 @@ export const useHoneycombStore = create<HoneycombState>()(
         if (!honeycombService) {
           return;
         }
-
 
         try {
           // First, find the user and their profile
@@ -486,7 +483,7 @@ export const useHoneycombStore = create<HoneycombState>()(
             throw new Error(`Transaction failed: ${signResult.error}`);
           }
 
-        
+
           let retries = 0;
           const maxRetries = 3;
           let profileLoaded = false;
@@ -600,7 +597,7 @@ export const useHoneycombStore = create<HoneycombState>()(
           try {
             // Find user's profile
             const profile = await honeycombService.getPlayerProfile(player);
-            if(!profile) {
+            if (!profile) {
               return;
             }
             const currentXp = profile?.experience || 0;

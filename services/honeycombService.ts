@@ -1,8 +1,9 @@
 import createEdgeClient from "@honeycomb-protocol/edge-client";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { sendTransactionForTests as sendTransactionT } from "@honeycomb-protocol/edge-client/client/helpers.js";
-import {WalletContextState} from "@solana/wallet-adapter-react/src/useWallet";
-import {sendClientTransactions} from "@honeycomb-protocol/edge-client/client/walletHelpers";
+import { WalletContextState } from "@solana/wallet-adapter-react/src/useWallet";
+import { sendClientTransactions } from "@honeycomb-protocol/edge-client/client/walletHelpers";
+import backendHoneycombService from "./backendHoneycombService";
 
 export interface HoneycombConfig {
   rpcUrl: string;
@@ -48,6 +49,7 @@ export interface PlayerTrait {
 export class HoneycombService {
   private readonly edgeClient: any;
   private connection: Connection;
+  private hiveControl: any;
   private config: HoneycombConfig;
   private xpSyncQueue: Map<string, { pendingXP: number; lastUpdate: number }> =
     new Map();
@@ -116,47 +118,6 @@ export class HoneycombService {
     }
   }
 
-  // Player Profile Management
-  async createPlayerProfile(
-    player: PublicKey,
-    profileData: {
-      name: string;
-      avatar?: string;
-      metadata?: Record<string, any>;
-    },
-    playerKeypair?: Keypair,
-  ): Promise<any> {
-    try {
-      // Fallback: Create profile locally
-      const localProfile = {
-        id: player.toString(),
-        address: player.toString(),
-        name: profileData.name,
-        avatar: profileData.avatar,
-        bio:
-          profileData.metadata?.bio || "Space explorer in the G-Bax universe",
-        pfp:
-          profileData.avatar ||
-          "https://lh3.googleusercontent.com/-Jsm7S8BHy4nOzrw2f5AryUgp9Fym2buUOkkxgNplGCddTkiKBXPLRytTMXBXwGcHuRr06EvJStmkHj-9JeTfmHsnT0prHg5Mhg",
-        experience: 0,
-        level: 1,
-        credits: 100,
-        source: "localStorage",
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString(),
-        metadata: profileData.metadata,
-      };
-
-      const blockchainKey = `honeycomb-profile-${player.toString()}`;
-
-      localStorage.setItem(blockchainKey, JSON.stringify(localProfile));
-
-      return localProfile;
-    } catch (error) {
-      throw new Error("Failed to create player profile");
-    }
-  }
-
   async getPlayerProfile(player: PublicKey): Promise<any> {
     try {
       const playerKey = player.toString();
@@ -168,59 +129,21 @@ export class HoneycombService {
         return cached.profile;
       }
 
-      // Try to fetch from Honeycomb API first
-      if (this.edgeClient && this.config.projectAddress) {
-        try {
-          // Use the EdgeClient API to find users
-          const honeycombResponse = await this.edgeClient.findUsers({
-            wallets: [player],
-            includeProjectProfiles: [this.config.projectAddress],
+      // Try to fetch from backend API first
+      try {
+        const profile = await backendHoneycombService.getPlayerProfile(player);
+
+        if (profile) {
+          // Cache the profile
+          this.profileCache.set(playerKey, {
+            profile: profile,
+            timestamp: Date.now(),
           });
 
-          // Check if user exists and has a profile
-          const user =
-            honeycombResponse.user && honeycombResponse.user.length > 0
-              ? honeycombResponse.user[0]
-              : null;
-          const profile: any = user?.profiles?.[0] || null;
-
-          const levelRaw =
-            profile.platformData?.custom?.add[0]?.split(",") || 1;
-          const level = levelRaw[1];
-
-          if (user && profile) {
-            // Transform Honeycomb profile to our format
-            const honeycombProfile = {
-              id: user.id,
-              address: user?.address || playerKey,
-              profileAddress: profile.address,
-              projectAddress: profile.project,
-              profileTreeAddress: profile.tree_id,
-              name: profile.info.name || `Explorer ${playerKey.slice(0, 8)}`,
-              bio: profile.info.bio || "Space explorer in the G-Bax universe",
-              pfp:
-                profile.info.pfp ||
-                "https://lh3.googleusercontent.com/-Jsm7S8BHy4nOzrw2f5AryUgp9Fym2buUOkkxgNplGCddTkiKBXPLRytTMXBXwGcHuRr06EvJStmkHj-9JeTfmHsnT0prHg5Mhg",
-              experience: parseInt(profile.platformData?.xp) || 0,
-              level: parseInt(level) || 1,
-              credits: profile.credits || 1000,
-              source: "honeycomb",
-              createdAt: profile.createdAt || new Date().toISOString(),
-              lastUpdated: new Date().toISOString(),
-              rawHoneycombData: honeycombResponse,
-            };
-
-            // Cache the profile
-            this.profileCache.set(playerKey, {
-              profile: honeycombProfile,
-              timestamp: Date.now(),
-            });
-
-            return honeycombProfile;
-          }
-        } catch (honeycombError) {
-          // silence
+          return profile;
         }
+      } catch (backendError) {
+        console.warn('Backend profile fetch failed, falling back to localStorage:', backendError);
       }
 
       const blockchainKey = `honeycomb-profile-${playerKey}`;
@@ -563,7 +486,7 @@ export class HoneycombService {
   }
 
   /**
-   * Finds a user by their public key (alias for getPlayerProfile)
+   * Finds a user by their public key (uses backend API)
    * @param player - Player's public key
    * @returns Promise<any> - Player profile data
    */
@@ -587,9 +510,9 @@ export class HoneycombService {
       }
 
       await sendClientTransactions(
-          this.edgeClient,
-          contextWallet,
-          transactionData
+        this.edgeClient,
+        contextWallet,
+        transactionData
       );
 
       return {

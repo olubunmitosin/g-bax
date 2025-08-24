@@ -976,7 +976,7 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
               </div>
               <div>
                 <span className="text-white">Credits:</span>{" "}
-                {player.credits.toLocaleString()}
+                {(player.credits || 0).toLocaleString()}
               </div>
               {playerLoyalty && (
                 <>
@@ -1147,11 +1147,10 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
       <div className="absolute bottom-12 right-4 z-10 flex flex-col gap-3">
         {/* Inventory Button */}
         <button
-          className={`group relative bg-gradient-to-r ${
-            showInventory
+          className={`group relative bg-gradient-to-r ${showInventory
               ? "from-gray-700/90 to-gray-600/90 border-gray-400/40"
               : "from-gray-800/70 to-gray-700/70 border-gray-500/30"
-          } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-gray-600/90 hover:to-gray-500/90 hover:border-gray-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
+            } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-gray-600/90 hover:to-gray-500/90 hover:border-gray-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowInventory(!showInventory)}
         >
           <div className="flex items-center justify-center gap-2">
@@ -1165,11 +1164,10 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
         {/* Crafting Button */}
         <button
-          className={`group relative bg-gradient-to-r ${
-            showCrafting
+          className={`group relative bg-gradient-to-r ${showCrafting
               ? "from-orange-700/90 to-orange-600/90 border-orange-400/40"
               : "from-orange-800/70 to-orange-700/70 border-orange-500/30"
-          } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-orange-600/90 hover:to-orange-500/90 hover:border-orange-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
+            } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-orange-600/90 hover:to-orange-500/90 hover:border-orange-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowCrafting(!showCrafting)}
         >
           <div className="flex items-center justify-center gap-2">
@@ -1183,11 +1181,10 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
         {/* Loyalty Button */}
         <button
-          className={`group relative bg-gradient-to-r ${
-            showLoyalty
+          className={`group relative bg-gradient-to-r ${showLoyalty
               ? "from-purple-700/90 to-purple-600/90 border-purple-400/40"
               : "from-purple-800/70 to-purple-700/70 border-purple-500/30"
-          } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-purple-600/90 hover:to-purple-500/90 hover:border-purple-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
+            } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-purple-600/90 hover:to-purple-500/90 hover:border-purple-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowLoyalty(!showLoyalty)}
         >
           <div className="flex items-center justify-center gap-2">
@@ -1201,11 +1198,10 @@ export default function VanillaScene({ className = "" }: VanillaSceneProps) {
 
         {/* Guilds Button */}
         <button
-          className={`group relative bg-gradient-to-r ${
-            showGuilds
+          className={`group relative bg-gradient-to-r ${showGuilds
               ? "from-blue-700/90 to-blue-600/90 border-blue-400/40"
               : "from-blue-800/70 to-blue-700/70 border-blue-500/30"
-          } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-blue-600/90 hover:to-blue-500/90 hover:border-blue-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
+            } backdrop-blur-md border rounded-xl px-5 py-3 text-white hover:from-blue-600/90 hover:to-blue-500/90 hover:border-blue-400/50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[140px]`}
           onClick={() => setShowGuilds(!showGuilds)}
         >
           <div className="flex items-center justify-center gap-2">
