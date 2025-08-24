@@ -71,7 +71,6 @@ export class BackendHoneycombService {
 
       return data;
     } catch (error) {
-      console.error('Backend API request failed:', error);
       throw error;
     }
   }
@@ -84,8 +83,6 @@ export class BackendHoneycombService {
     profileData: BackendProfileData
   ): Promise<BackendProfile> {
     try {
-      console.log('Creating profile via backend for player:', player.toString());
-
       const response = await this.makeRequest<BackendProfile>('/api/create-profile', {
         method: 'POST',
         body: JSON.stringify({
@@ -95,13 +92,11 @@ export class BackendHoneycombService {
       });
 
       if (response.success && response.profile) {
-        console.log('Profile created successfully via backend');
         return response.profile;
       } else {
         throw new Error(response.message || 'Failed to create profile');
       }
     } catch (error) {
-      console.error('Backend profile creation failed:', error);
       throw new Error(`Failed to create player profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -111,19 +106,14 @@ export class BackendHoneycombService {
    */
   async getPlayerProfile(player: PublicKey): Promise<BackendProfile | null> {
     try {
-      console.log('Fetching profile via backend for player:', player.toString());
-
       const response = await this.makeRequest<BackendProfile>(`/api/profile/${player.toString()}`);
 
       if (response.success && response.profile) {
-        console.log('Profile found via backend');
         return response.profile;
       } else {
-        console.log('Profile not found via backend');
         return null;
       }
     } catch (error) {
-      console.error('Backend profile fetch failed:', error);
       return null;
     }
   }
@@ -159,11 +149,9 @@ export class BackendHoneycombService {
       if (response.success && response.profile) {
         return response.profile;
       } else {
-        console.log('Profile update failed via backend');
         return null;
       }
     } catch (error) {
-      console.error('Failed to update player profile:', error);
       return null;
     }
   }
@@ -179,11 +167,9 @@ export class BackendHoneycombService {
       if (response.success && (response as any).users) {
         return (response as any).users;
       } else {
-        console.log('No users found via backend');
         return [];
       }
     } catch (error) {
-      console.error('Backend users fetch failed:', error);
       return [];
     }
   }
@@ -204,8 +190,6 @@ export class BackendHoneycombService {
     }
   ): Promise<any> {
     try {
-      console.log('Backend service updating stats:', { player: player.toString(), stats });
-
       const response = await this.makeRequest<any>('/api/player-stats', {
         method: 'PUT',
         body: JSON.stringify({
@@ -214,16 +198,12 @@ export class BackendHoneycombService {
         }),
       });
 
-      console.log('Backend service response:', response);
-
       if (response.success) {
         return (response as any).stats;
       } else {
-        console.log('Failed to update player stats via backend:', response);
         return null;
       }
     } catch (error) {
-      console.error('Backend stats update failed:', error);
       return null;
     }
   }
@@ -240,11 +220,9 @@ export class BackendHoneycombService {
       if (response.success && (response as any).stats) {
         return (response as any).stats;
       } else {
-        console.log('Player stats not found via backend');
         return null;
       }
     } catch (error) {
-      console.error('Backend stats fetch failed:', error);
       return null;
     }
   }
@@ -257,7 +235,6 @@ export class BackendHoneycombService {
       const response = await this.makeRequest('/health');
       return response.success || false;
     } catch (error) {
-      console.error('Backend health check failed:', error);
       return false;
     }
   }
@@ -270,7 +247,6 @@ export class BackendHoneycombService {
       const response = await this.makeRequest('/api/honeycomb/health');
       return response.success || false;
     } catch (error) {
-      console.error('Backend Honeycomb health check failed:', error);
       return false;
     }
   }
@@ -295,7 +271,6 @@ export class BackendHoneycombService {
         // networkInfo: honeycombResponse.data?.networkInfo,
       };
     } catch (error) {
-      console.error('Service status check failed:', error);
       return {
         backendHealthy: false,
         honeycombHealthy: false,
@@ -311,12 +286,9 @@ export class BackendHoneycombService {
     localProfile: any
   ): Promise<BackendProfile | null> {
     try {
-      console.log('Migrating local profile to backend for player:', player.toString());
-
       // Check if profile already exists on backend
       const existingProfile = await this.getPlayerProfile(player);
       if (existingProfile) {
-        console.log('Profile already exists on backend, skipping migration');
         return existingProfile;
       }
 
@@ -336,11 +308,9 @@ export class BackendHoneycombService {
       };
 
       const newProfile = await this.createPlayerProfile(player, profileData);
-      console.log('Local profile migrated to backend successfully');
 
       return newProfile;
     } catch (error) {
-      console.error('Local profile migration failed:', error);
       return null;
     }
   }

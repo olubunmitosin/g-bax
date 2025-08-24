@@ -31,20 +31,15 @@ export function usePlayerStats() {
     description?: string
   ) => {
     if (!publicKey || !player) {
-      console.warn("Cannot update stats: player or wallet not available");
       return false;
     }
 
     try {
-      console.log("Updating player stats:", { stats, description });
-
       // Update stats in database via backend API
       const updatedStats = await backendHoneycombService.updatePlayerStats(
         publicKey,
         stats
       );
-
-      console.log("Backend response:", updatedStats);
 
       if (updatedStats) {
         // Update game store
@@ -67,19 +62,11 @@ export function usePlayerStats() {
           });
         }
 
-        console.log(`Player stats updated successfully:`, {
-          stats,
-          description,
-          updatedStats
-        });
-
         return true;
       } else {
-        console.error("Failed to update player stats via backend");
         return false;
       }
     } catch (error) {
-      console.error("Error updating player stats:", error);
       return false;
     }
   }, [publicKey, player, honeycombStore, setPlayer]);

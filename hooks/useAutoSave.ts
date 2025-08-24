@@ -14,7 +14,7 @@ export function useAutoSave() {
   const { publicKey, connected } = useWallet();
   const { player } = useGameStore();
   const { updatePlayerStats, getCurrentStats } = usePlayerStats();
-  
+
   const lastSaveRef = useRef<number>(0);
   const saveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSaveRef = useRef<boolean>(false);
@@ -29,7 +29,7 @@ export function useAutoSave() {
 
     try {
       pendingSaveRef.current = true;
-      
+
       const currentStats = getCurrentStats();
       if (!currentStats) {
         return false;
@@ -48,14 +48,11 @@ export function useAutoSave() {
 
       if (success) {
         lastSaveRef.current = Date.now();
-        console.log("Auto-save completed successfully");
         return true;
       } else {
-        console.warn("Auto-save failed");
         return false;
       }
     } catch (error) {
-      console.error("Auto-save error:", error);
       return false;
     } finally {
       pendingSaveRef.current = false;
@@ -68,7 +65,7 @@ export function useAutoSave() {
   const debouncedSave = useCallback(() => {
     const now = Date.now();
     const timeSinceLastSave = now - lastSaveRef.current;
-    
+
     // Debounce to prevent too frequent saves (minimum 10 seconds between saves)
     if (timeSinceLastSave < 10000) {
       return;
@@ -145,7 +142,7 @@ export function useAutoSave() {
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
