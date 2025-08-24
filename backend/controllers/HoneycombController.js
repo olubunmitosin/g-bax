@@ -343,6 +343,76 @@ class HoneycombController {
   }
 
   /**
+   * Gets all users in the project for leaderboard
+   */
+  async getAllUsers(_req, res) {
+    try {
+      console.log('Fetching all users for project:', this.config.projectAddress);
+
+      if (!this.edgeClient || !this.config.projectAddress) {
+        return res.status(500).json({
+          success: false,
+          message: 'Honeycomb service not properly configured'
+        });
+      }
+
+      // Fetch all users for the project
+      const honeycombResponse = await this.edgeClient.findUsers({
+        includeProjectProfiles: [this.config.projectAddress],
+      });
+
+      console.log('Raw users response:', honeycombResponse);
+
+      const users = honeycombResponse.user || [];
+      const formattedUsers = [];
+
+      for (const user of users) {
+        const profile = user.profiles?.[0];
+        if (profile) {
+          const formattedUser = this.formatProfileResponse(
+            user,
+            profile,
+            user.address || user.id,
+            null,
+            null
+          );
+
+          if (formattedUser) {
+            formattedUsers.push(formattedUser);
+          }
+        }
+      }
+
+      // Sort by experience (descending) for leaderboard ranking
+      formattedUsers.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+
+      // Add rank to each user
+      formattedUsers.forEach((user, index) => {
+        user.rank = index + 1;
+      });
+
+      console.log(`Found ${formattedUsers.length} users for leaderboard`);
+
+      res.status(200).json({
+        success: true,
+        message: `Found ${formattedUsers.length} users`,
+        users: formattedUsers,
+        totalCount: formattedUsers.length
+      });
+
+    } catch (error) {
+      console.error('Failed to fetch all users:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to fetch users',
+        users: [],
+        totalCount: 0
+      });
+    }
+  }
+
+  /**
    * Gets player profile information
    */
   async getProfile(req, res) {

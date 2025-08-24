@@ -168,6 +168,26 @@ export class BackendHoneycombService {
   }
 
   /**
+   * Gets all users in the project for leaderboard
+   * @returns Promise<BackendProfile[]>
+   */
+  async getAllUsers(): Promise<BackendProfile[]> {
+    try {
+      const response = await this.makeRequest<any>('/api/users/all');
+
+      if (response.success && (response as any).users) {
+        return (response as any).users;
+      } else {
+        console.log('No users found via backend');
+        return [];
+      }
+    } catch (error) {
+      console.error('Backend users fetch failed:', error);
+      return [];
+    }
+  }
+
+  /**
    * Checks if the backend service is healthy
    */
   async isBackendHealthy(): Promise<boolean> {

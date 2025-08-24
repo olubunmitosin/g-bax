@@ -9,6 +9,7 @@ import { usePlayerSync } from "@/hooks/usePlayerSync";
 import { useVerxioStore } from "@/stores/verxioStore";
 import { useHoneycombStore } from "@/stores/honeycombStore";
 import { formatNumber } from "@/utils/gameHelpers";
+import backendHoneycombService from "@/services/backendHoneycombService";
 
 interface LeaderboardEntry {
   rank: number;
@@ -24,61 +25,124 @@ export default function LeaderboardPage() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>(
     [],
   );
+  const [loading, setLoading] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const { player } = usePlayerSync();
   const { playerLoyalty, availableGuilds, playerGuild } = useVerxioStore();
   const { playerExperience } = useHoneycombStore();
+
+  // Fetch all users from backend
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      setLoading(true);
+      try {
+        console.log('Fetching all users for leaderboard...');
+        const users = await backendHoneycombService.getAllUsers();
+        console.log('Fetched users:', users);
+        setAllUsers(users);
+      } catch (error) {
+        console.error('Failed to fetch users for leaderboard:', error);
+        setAllUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllUsers();
+  }, []);
 
   // Generate leaderboard data
   useEffect(() => {
     const entries: LeaderboardEntry[] = [];
 
-    // Add current player if they have real data
+    // Process all users from backend
+    if (allUsers.length > 0) {
+      allUsers.forEach((user) => {
+        let value = 0;
+        let tier = "Explorer";
+        let guildName = "";
+
+        switch (selectedCategory) {
+          case "loyalty":
+            // For loyalty, we'll use credits as a proxy since we don't have loyalty points from blockchain
+            value = user.credits || 0;
+            break;
+          case "reputation":
+            // For reputation, we'll use level as a proxy
+            value = (user.level || 1) * 100;
+            break;
+          case "experience":
+            value = user.experience || 0;
+            break;
+        }
+
+        // Only add users with meaningful values
+        if (value > 0) {
+          entries.push({
+            rank: 0, // Will be set after sorting
+            playerId: user.address || user.id,
+            playerName: user.name || `Explorer ${(user.address || user.id).slice(0, 8)}`,
+            value,
+            tier,
+            guildName,
+          });
+        }
+      });
+    }
+
+    // Add current player if they have data and aren't already in the list
     if (player && playerLoyalty) {
-      let value = 0;
-      let tier = playerLoyalty.currentTier?.name || "Novice Explorer";
-      let guildName = playerGuild?.name || "";
+      const existingEntry = entries.find(entry =>
+        entry.playerId === player.address || entry.playerId === player.id
+      );
 
-      switch (selectedCategory) {
-        case "loyalty":
-          value = playerLoyalty.points || 0;
-          break;
-        case "reputation":
-          value = playerLoyalty.reputation || 0;
-          break;
-        case "experience":
-          // Use unified experience calculation
-          if (playerExperience > 0) {
-            value = playerExperience;
-          } else if (player.experience > 0) {
-            value = player.experience;
-          } else if (playerLoyalty && playerLoyalty.points > 0) {
-            value = playerLoyalty.points; // Convert loyalty points to experience
-          } else {
-            value = 0;
-          }
-          break;
-      }
+      if (!existingEntry) {
+        let value = 0;
+        let tier = playerLoyalty.currentTier?.name || "Novice Explorer";
+        let guildName = playerGuild?.name || "";
 
-      if (value > 0) {
-        entries.push({
-          rank: 1,
-          playerId: player.address,
-          playerName: player.name || `Explorer ${player.id.slice(0, 8)}`,
-          value,
-          tier,
-          guildName,
-        });
+        switch (selectedCategory) {
+          case "loyalty":
+            value = playerLoyalty.points || 0;
+            break;
+          case "reputation":
+            value = playerLoyalty.reputation || 0;
+            break;
+          case "experience":
+            // Use unified experience calculation
+            if (playerExperience > 0) {
+              value = playerExperience;
+            } else if (player.experience > 0) {
+              value = player.experience;
+            } else if (playerLoyalty && playerLoyalty.points > 0) {
+              value = playerLoyalty.points; // Convert loyalty points to experience
+            } else {
+              value = 0;
+            }
+            break;
+        }
+
+        if (value > 0) {
+          entries.push({
+            rank: 0, // Will be set after sorting
+            playerId: player.address || player.id,
+            playerName: player.name || `Explorer ${(player.id || player.address).slice(0, 8)}`,
+            value,
+            tier,
+            guildName,
+          });
+        }
       }
     }
 
-    // Sort and set data
+    // Sort and set ranks
     entries.sort((a, b) => b.value - a.value);
     entries.forEach((entry, index) => {
       entry.rank = index + 1;
     });
 
     setLeaderboardData(entries);
-  }, [selectedCategory, player, playerLoyalty, playerGuild]);
+  }, [selectedCategory, player, playerLoyalty, playerGuild, allUsers]);
 
   const getPlayerRank = () => {
     if (!player) return null;
@@ -193,7 +257,15 @@ export default function LeaderboardPage() {
             </div>
           </CardHeader>
           <CardBody>
-            {leaderboardData.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">⏳</div>
+                <h3 className="text-lg font-bold mb-2">Loading Leaderboard</h3>
+                <p className="text-default-600">
+                  Fetching player data from the blockchain...
+                </p>
+              </div>
+            ) : leaderboardData.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-4">🏆</div>
                 <h3 className="text-lg font-bold mb-2">No Rankings Yet</h3>
@@ -208,8 +280,8 @@ export default function LeaderboardPage() {
                   <div
                     key={entry.playerId}
                     className={`flex items-center justify-between p-3 rounded-lg transition-colors ${entry.playerId === player?.id
-                        ? "bg-primary-50 border border-primary-200"
-                        : "bg-default-50 hover:bg-default-100"
+                      ? "bg-primary-50 border border-primary-200"
+                      : "bg-default-50 hover:bg-default-100"
                       }`}
                   >
                     <div className="flex items-center gap-4">

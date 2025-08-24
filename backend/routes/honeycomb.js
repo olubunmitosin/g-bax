@@ -44,6 +44,14 @@ module.exports = (honeycombController) => {
   });
 
   /**
+   * GET /api/users/all
+   * Gets all users in the project for leaderboard
+   */
+  router.get('/users/all', async (req, res) => {
+    await honeycombController.getAllUsers(req, res);
+  });
+
+  /**
    * GET /api/profile/:player
    * Gets player profile information
    *
