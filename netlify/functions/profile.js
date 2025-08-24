@@ -1,5 +1,5 @@
 // Import the HoneycombController
-const HoneycombController = require('../../../backend/controllers/HoneycombController.js');
+const HoneycombController = require('../../backend/controllers/HoneycombController.js');
 
 // Initialize the controller
 let honeycombController;
@@ -38,23 +38,34 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // Debug logging
+    console.log('Profile function called');
+    console.log('Event path:', event.path);
+    console.log('Query parameters:', event.queryStringParameters);
+
     // Initialize controller
     const controller = initController();
 
-    // Extract player from path
-    const pathSegments = event.path.split('/');
-    const player = pathSegments[pathSegments.length - 1];
+    // Extract player from query parameters (from redirect)
+    const player = event.queryStringParameters?.player;
 
     if (!player) {
+      console.log('No player parameter found');
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
           success: false,
           message: 'Player address is required',
+          debug: {
+            path: event.path,
+            queryParams: event.queryStringParameters,
+          }
         }),
       };
     }
+
+    console.log('Processing profile request for player:', player);
 
     // Create mock request/response objects
     const req = {

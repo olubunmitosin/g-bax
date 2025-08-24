@@ -17,6 +17,7 @@ external_node_modules = [
     "@honeycomb-protocol/edge-client",
     "@solana/web3.js",
 ]
+included_files = ["backend/**/*"]
 
 # Headers for security and performance
 [[headers]]
@@ -46,10 +47,25 @@ to = "/index.html"
 status = 200
 conditions = { Role = ["admin"] }
 
-# Handle Next.js routing
+# API redirects to Netlify Functions
 [[redirects]]
-from = "/api/*"
-to = "/.netlify/functions/:splat"
+from = "/api/test"
+to = "/.netlify/functions/test"
+status = 200
+
+[[redirects]]
+from = "/api/profile/*"
+to = "/.netlify/functions/profile?player=:splat"
+status = 200
+
+[[redirects]]
+from = "/api/create-profile"
+to = "/.netlify/functions/create-profile"
+status = 200
+
+[[redirects]]
+from = "/api/health"
+to = "/.netlify/functions/health"
 status = 200
 
 # Fallback for client-side routing
