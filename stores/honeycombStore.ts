@@ -428,6 +428,7 @@ export const useHoneycombStore = create<HoneycombState>()(
           if (!accessToken) {
             throw new Error("Failed to get authentication token");
           }
+          console.log("Auth Token: ", accessToken);
 
           // Try to update via backend service first
           try {
@@ -469,68 +470,8 @@ export const useHoneycombStore = create<HoneycombState>()(
             console.warn('Backend profile update failed, falling back to direct service');
           }
 
-          // Fallback to original implementation if backend fails
-          if (!honeycombService) {
-            throw new Error("Honeycomb service not available");
-          }
-
-          // First, find the user and their profile
-          const user = await honeycombService.findUser(playerPublicKey);
-
-          if (!user) {
-            throw new Error(
-              "User not found. Please connect your wallet first.",
-            );
-          }
-
-          const edgeClient = honeycombService.getEdgeClient();
-          const projectAddress = honeycombService.getProjectAddress();
-
-          if (!edgeClient || !projectAddress) {
-            throw new Error("Honeycomb service not properly initialized");
-          }
-
-          if (!contextWallet) {
-            throw new Error(
-              "Wallet not connected. Please connect your wallet first.",
-            );
-          }
-
-          // Create profile update transaction using direct service
-          const profileParams = {
-            project: projectAddress,
-            payer: playerPublicKey.toString(),
-            info: {
-              name: profileInfo.name,
-              bio: profileInfo.bio,
-              pfp: profileInfo.pfp,
-            },
-          };
-
-          const { createUpdateUserTransaction: txResponse } =
-            await honeycombService
-              .getEdgeClient()
-              .createUpdateUserTransaction(profileParams, {
-                fetchOptions: {
-                  headers: {
-                    authorization: `Bearer ${accessToken}`,
-                  },
-                },
-              });
-
-          const signResult = await honeycombService.signAndSendTransaction(
-            txResponse,
-            contextWallet,
-          );
-
-          console.log("Transaction result:", signResult);
-
-          if (!signResult.success) {
-            throw new Error(`Transaction failed: ${signResult.error}`);
-          }
-
           // Reload the player profile to reflect changes
-          await get().loadPlayerProfile(playerPublicKey);
+          // await get().loadPlayerProfile(playerPublicKey);
         } catch (error: any) {
           throw error;
         }

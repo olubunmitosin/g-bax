@@ -278,8 +278,7 @@ class HoneycombController {
       // Create update user transaction
       const txResponse = await this.edgeClient.createUpdateUserTransaction(
         {
-          payer: validatedPlayer.toString(),
-          populateCivic: true,
+          payer: this.signer.publicKey.toString(), // Use admin signer as payer
           info: {
             name: profileData.name,
             bio: profileData.metadata?.bio || profileData.bio,
@@ -295,9 +294,7 @@ class HoneycombController {
         }
       );
 
-      console.log('Update transaction created successfully');
-
-      // Sign and send the transaction
+      // Sign and send the transaction (only admin signer needed)
       const transactionResult = await this.signAndSendTransaction(txResponse.createUpdateUserTransaction);
 
       if (transactionResult?.signature) {
