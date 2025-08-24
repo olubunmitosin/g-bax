@@ -22,6 +22,7 @@ export interface BackendProfile {
   experience: number;
   level: number;
   credits: number;
+  reputation: number;
   source: string;
   createdAt: string;
   lastUpdated: string;
@@ -184,6 +185,63 @@ export class BackendHoneycombService {
     } catch (error) {
       console.error('Backend users fetch failed:', error);
       return [];
+    }
+  }
+
+  /**
+   * Updates player game stats (credits, level, experience, reputation)
+   * @param player - Player's public key
+   * @param stats - Stats to update
+   * @returns Promise<any>
+   */
+  async updatePlayerStats(
+    player: PublicKey,
+    stats: {
+      credits?: number;
+      level?: number;
+      experience?: number;
+      reputation?: number;
+    }
+  ): Promise<any> {
+    try {
+      const response = await this.makeRequest<any>('/api/player-stats', {
+        method: 'PUT',
+        body: JSON.stringify({
+          player: player.toString(),
+          stats,
+        }),
+      });
+
+      if (response.success) {
+        return (response as any).stats;
+      } else {
+        console.log('Failed to update player stats via backend');
+        return null;
+      }
+    } catch (error) {
+      console.error('Backend stats update failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Gets player game stats only (without blockchain profile data)
+   * @param player - Player's public key
+   * @returns Promise<any>
+   */
+  async getPlayerStats(player: PublicKey): Promise<any> {
+    try {
+      const response = await this.makeRequest<any>(`/api/player-stats/${player.toString()}`);
+
+      if (response.success && (response as any).stats) {
+        return (response as any).stats;
+      } else {
+        console.log('Player stats not found via backend');
+        return null;
+      }
+    } catch (error) {
+      console.error('Backend stats fetch failed:', error);
+      return null;
     }
   }
 

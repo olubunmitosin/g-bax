@@ -33,6 +33,13 @@ NEXT_PUBLIC_HONEYCOMB_RPC_URL=https://rpc.test.honeycombprotocol.com
 NEXT_PUBLIC_HONEYCOMB_ENVIRONMENT=honeynet
 ```
 
+### Database Variables (Required for Production)
+```
+DATABASE_URL=postgresql://username:password@hostname:port/database # Neon PostgreSQL connection string
+# OR
+NEON_DATABASE_URL=postgresql://username:password@hostname:port/database # Alternative name for Neon
+```
+
 ## Deployment Steps
 
 ### 1. Configure Netlify Site

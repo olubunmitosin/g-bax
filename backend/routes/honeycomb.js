@@ -52,6 +52,36 @@ module.exports = (honeycombController) => {
   });
 
   /**
+   * PUT /api/player-stats
+   * Updates player game stats (credits, level, experience, reputation)
+   *
+   * Body:
+   * {
+   *   player: string (PublicKey),
+   *   stats: {
+   *     credits?: number,
+   *     level?: number,
+   *     experience?: number,
+   *     reputation?: number
+   *   }
+   * }
+   */
+  router.put('/player-stats', async (req, res) => {
+    await honeycombController.updatePlayerStats(req, res);
+  });
+
+  /**
+   * GET /api/player-stats/:player
+   * Gets player game stats only
+   *
+   * Params:
+   * - player: string (PublicKey)
+   */
+  router.get('/player-stats/:player', async (req, res) => {
+    await honeycombController.getPlayerStats(req, res);
+  });
+
+  /**
    * GET /api/profile/:player
    * Gets player profile information
    *
@@ -70,27 +100,7 @@ module.exports = (honeycombController) => {
     await honeycombController.healthCheck(req, res);
   });
 
-  /**
-   * POST /api/update-experience
-   * Updates player experience (placeholder for future implementation)
-   */
-  router.post('/update-experience', async (req, res) => {
-    res.status(501).json({
-      success: false,
-      message: 'Experience update endpoint not yet implemented'
-    });
-  });
 
-  /**
-   * GET /api/player-stats/:player
-   * Gets comprehensive player statistics (placeholder for future implementation)
-   */
-  router.get('/player-stats/:player', async (req, res) => {
-    res.status(501).json({
-      success: false,
-      message: 'Player stats endpoint not yet implemented'
-    });
-  });
 
   return router;
 };

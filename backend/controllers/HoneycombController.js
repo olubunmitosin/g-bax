@@ -3,6 +3,7 @@ const createEdgeClient = require('@honeycomb-protocol/edge-client').default;
 const { sendTransactionForTests } = require('@honeycomb-protocol/edge-client/client/helpers');
 const { Connection, PublicKey, Keypair, Transaction } = require('@solana/web3.js');
 const web3 = require('@solana/web3.js');
+const DatabaseService = require('../services/DatabaseService');
 
 class HoneycombController {
   constructor() {
@@ -98,11 +99,36 @@ class HoneycombController {
   /**
    * Formats a profile response from Honeycomb data or creates a fallback
    */
-  formatProfileResponse(user, profile, playerKey, profileData, transactionSignature = null) {
+  async formatProfileResponse(user, profile, playerKey, profileData, transactionSignature = null) {
     const defaultPfp = "https://lh3.googleusercontent.com/-Jsm7S8BHy4nOzrw2f5AryUgp9Fym2buUOkkxgNplGCddTkiKBXPLRytTMXBXwGcHuRr06EvJStmkHj-9JeTfmHsnT0prHg5Mhg";
 
+    // Get game stats from database
+    let gameStats = null;
+    try {
+      gameStats = await DatabaseService.getPlayerStats(playerKey);
+
+      // If no stats exist, create default stats
+      if (!gameStats) {
+        gameStats = await DatabaseService.upsertPlayerStats(playerKey, {
+          credits: 1000,
+          level: 1,
+          experience: 0,
+          reputation: 0
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to fetch game stats for player:', playerKey, error);
+      // Use default values if database fails
+      gameStats = {
+        credits: 1000,
+        level: 1,
+        experience: 0,
+        reputation: 0
+      };
+    }
+
     if (user && profile) {
-      // Format from Honeycomb data
+      // Format from Honeycomb data combined with database stats
       return {
         id: user.id,
         address: user?.address || playerKey,
@@ -112,9 +138,10 @@ class HoneycombController {
         name: user.info.name || profileData?.name || `Explorer ${playerKey.slice(0, 8)}`,
         bio: user.info.bio || profileData?.metadata?.bio || "Space explorer in the G-Bax universe",
         pfp: user.info.pfp || profileData?.avatar || defaultPfp,
-        experience: parseInt(profile.platformData?.xp) || 0,
-        level: 1,
-        credits: profile.credits || 1000,
+        experience: gameStats.experience || 0,
+        level: gameStats.level || 1,
+        credits: gameStats.credits || 1000,
+        reputation: gameStats.reputation || 0,
         source: transactionSignature ? "honeycomb-backend" : "honeycomb",
         createdAt: profile.createdAt || new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
@@ -224,7 +251,7 @@ class HoneycombController {
       if (transactionResult?.signature) {
         // Fetch the newly created user
         const { user, profile } = await this.fetchUserProfile(validatedPlayer);
-        honeycombProfile = this.formatProfileResponse(
+        honeycombProfile = await this.formatProfileResponse(
           user,
           profile,
           validatedPlayer.toString(),
@@ -305,7 +332,7 @@ class HoneycombController {
       if (transactionResult?.signature) {
         // Fetch the updated user profile
         const { user, profile } = await this.fetchUserProfile(validatedPlayer);
-        const updatedProfile = this.formatProfileResponse(
+        const updatedProfile = await this.formatProfileResponse(
           user,
           profile,
           validatedPlayer.toString(),
@@ -369,7 +396,7 @@ class HoneycombController {
       for (const user of users) {
         const profile = user.profiles?.[0];
         if (profile) {
-          const formattedUser = this.formatProfileResponse(
+          const formattedUser = await this.formatProfileResponse(
             user,
             profile,
             user.address || user.id,
@@ -424,7 +451,7 @@ class HoneycombController {
       const { user, profile } = await this.fetchUserProfile(validatedPlayer);
 
       if (user && profile) {
-        const formattedProfile = this.formatProfileResponse(
+        const formattedProfile = await this.formatProfileResponse(
           user,
           profile,
           validatedPlayer.toString()
@@ -450,6 +477,127 @@ class HoneycombController {
         success: false,
         message: error.message || 'Failed to fetch profile',
         error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  }
+
+  /**
+   * Updates player game stats (credits, level, experience, reputation)
+   */
+  async updatePlayerStats(req, res) {
+    try {
+      const { player, stats } = req.body;
+
+      // Validate inputs
+      const validatedPlayer = this.validatePlayer(player);
+
+      if (!stats || typeof stats !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: 'Stats object is required'
+        });
+      }
+
+      // Validate stats values
+      const validStats = {};
+      if (stats.credits !== undefined) {
+        validStats.credits = Math.max(0, parseInt(stats.credits) || 0);
+      }
+      if (stats.level !== undefined) {
+        validStats.level = Math.max(1, parseInt(stats.level) || 1);
+      }
+      if (stats.experience !== undefined) {
+        validStats.experience = Math.max(0, parseInt(stats.experience) || 0);
+      }
+      if (stats.reputation !== undefined) {
+        validStats.reputation = Math.max(0, parseInt(stats.reputation) || 0);
+      }
+
+      if (Object.keys(validStats).length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'At least one valid stat (credits, level, experience, reputation) is required'
+        });
+      }
+
+      // Get current stats
+      const currentStats = await DatabaseService.getPlayerStats(validatedPlayer.toString()) || {
+        credits: 1000,
+        level: 1,
+        experience: 0,
+        reputation: 0
+      };
+
+      // Merge with new stats
+      const updatedStats = {
+        credits: validStats.credits !== undefined ? validStats.credits : currentStats.credits,
+        level: validStats.level !== undefined ? validStats.level : currentStats.level,
+        experience: validStats.experience !== undefined ? validStats.experience : currentStats.experience,
+        reputation: validStats.reputation !== undefined ? validStats.reputation : currentStats.reputation,
+      };
+
+      // Update in database
+      const result = await DatabaseService.upsertPlayerStats(validatedPlayer.toString(), updatedStats);
+
+      // Log activity for each changed stat
+      for (const [statType, newValue] of Object.entries(validStats)) {
+        const oldValue = currentStats[statType] || 0;
+        const change = newValue - oldValue;
+        if (change !== 0) {
+          await DatabaseService.logPlayerActivity(
+            validatedPlayer.toString(),
+            `${statType}_${change > 0 ? 'gained' : 'lost'}`,
+            Math.abs(change),
+            `${statType} ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)}`
+          );
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Player stats updated successfully',
+        stats: result
+      });
+
+    } catch (error) {
+      console.error('Failed to update player stats:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to update player stats'
+      });
+    }
+  }
+
+  /**
+   * Gets player game stats only (without blockchain profile data)
+   */
+  async getPlayerStats(req, res) {
+    try {
+      const { player } = req.params;
+      const validatedPlayer = this.validatePlayer(player);
+
+      const stats = await DatabaseService.getPlayerStats(validatedPlayer.toString());
+
+      if (stats) {
+        res.status(200).json({
+          success: true,
+          message: 'Player stats found',
+          stats
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: 'Player stats not found'
+        });
+      }
+
+    } catch (error) {
+      console.error('Failed to get player stats:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get player stats'
       });
     }
   }
