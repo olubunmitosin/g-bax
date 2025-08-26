@@ -12,13 +12,13 @@ try {
   // sqlite3 not available, will use PostgreSQL/Neon instead
 }
 
-// Try to import Netlify Neon first (for Netlify environment)
+// Try to import Neon serverless driver first (for Netlify environment)
 try {
-  const netlifyNeon = require('@netlify/neon');
-  neon = netlifyNeon.neon;
-  console.log('Netlify Neon imported successfully');
+  const { neon: neonDriver } = require('@neondatabase/serverless');
+  neon = neonDriver;
+  console.log('Neon serverless driver imported successfully:', typeof neon);
 } catch (error) {
-  console.log('Netlify Neon not available:', error.message);
+  console.log('Neon serverless driver not available:', error.message);
 
   // Fallback to standard pg for other environments
   try {
@@ -26,7 +26,7 @@ try {
     Pool = pg.Pool;
     console.log('Standard pg imported successfully');
   } catch (pgError) {
-    console.log('Neither Netlify Neon nor pg package available');
+    console.log('pg package not available:', pgError.message);
   }
 }
 
@@ -45,8 +45,13 @@ class DatabaseService {
       isProduction: this.isProduction,
       NODE_ENV: process.env.NODE_ENV,
       NETLIFY: process.env.NETLIFY,
+      NETLIFY_DEV: process.env.NETLIFY_DEV,
+      CONTEXT: process.env.CONTEXT,
       hasNeon: !!neon,
-      hasPool: !!Pool
+      neonType: typeof neon,
+      hasPool: !!Pool,
+
+      hasDatabaseUrl: !!process.env.DATABASE_URL
     });
   }
 
@@ -93,8 +98,8 @@ class DatabaseService {
 
       if (this.isProduction) {
         if (neon) {
-          // Use Netlify Neon when available (preferred for Netlify)
-          console.log('Using Netlify Neon for database connection');
+          // Use Neon serverless when available (preferred for Netlify)
+          console.log('Using Neon serverless driver for database connection');
           await this.initializeNetlifyNeon();
         } else if (Pool) {
           // Use standard PostgreSQL for other production environments
@@ -120,31 +125,32 @@ class DatabaseService {
   }
 
   /**
-   * Initialize Netlify Neon connection
+   * Initialize Neon serverless connection
    */
   async initializeNetlifyNeon() {
     if (!neon) {
-      throw new Error('Netlify Neon is not available. Check @netlify/neon package installation.');
+      throw new Error('Neon serverless driver is not available. Check @neondatabase/serverless package installation.');
     }
 
     // Get database URL from environment variables
-    const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL || process.env.NEON_DATABASE_URL;
+    const databaseUrl = process.env.DATABASE_URL;
 
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL environment variable is required for Netlify Neon connection');
+      throw new Error('DATABASE_URL environment variable is required for Neon connection');
     }
 
-    console.log('Initializing Netlify Neon with URL:', databaseUrl.replace(/:[^:@]*@/, ':***@'));
+    console.log('Initializing Neon serverless connection with DATABASE_URL');
 
-    // Initialize Neon with the database URL
+    // According to Neon docs, pass DATABASE_URL to neon()
     this.sql = neon(databaseUrl);
 
     // Test connection with a simple query
     try {
       const result = await this.sql`SELECT NOW() as current_time`;
-      console.log('Netlify Neon connection successful:', result[0]);
+      console.log('Neon serverless connection successful:', result[0]);
     } catch (error) {
-      console.error('Netlify Neon connection test failed:', error);
+      console.error('Neon serverless connection test failed:', error);
+      console.error('Make sure DATABASE_URL is set correctly in your Netlify environment variables');
       throw error;
     }
   }
