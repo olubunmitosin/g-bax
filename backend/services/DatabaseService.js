@@ -427,33 +427,44 @@ class DatabaseService {
    * Execute Neon query with parameters using template literals
    */
   async executeNeonQuery(query, params) {
-    // For Neon, we need to use template literals properly
-    // Let's use a simpler approach that works with Neon's expectations
+    console.log('Executing Neon query:', { query, params });
 
     // Convert PostgreSQL parameterized query to direct value substitution
-    // This is safe for our use case since we control the input
     let processedQuery = query;
 
     for (let i = 0; i < params.length; i++) {
       const placeholder = `$${i + 1}`;
       const value = params[i];
 
+      console.log(`Replacing ${placeholder} with:`, value, typeof value);
+
       // Handle different data types appropriately for SQL
       if (typeof value === 'string') {
         // Escape single quotes and wrap in quotes
-        processedQuery = processedQuery.replace(placeholder, `'${value.replace(/'/g, "''")}'`);
+        const escapedValue = `'${value.replace(/'/g, "''")}'`;
+        processedQuery = processedQuery.replace(new RegExp(`\\$${i + 1}`, 'g'), escapedValue);
       } else if (value === null || value === undefined) {
-        processedQuery = processedQuery.replace(placeholder, 'NULL');
+        processedQuery = processedQuery.replace(new RegExp(`\\$${i + 1}`, 'g'), 'NULL');
       } else if (typeof value === 'boolean') {
-        processedQuery = processedQuery.replace(placeholder, value ? 'TRUE' : 'FALSE');
+        processedQuery = processedQuery.replace(new RegExp(`\\$${i + 1}`, 'g'), value ? 'TRUE' : 'FALSE');
       } else {
         // Numbers and other types
-        processedQuery = processedQuery.replace(placeholder, value.toString());
+        processedQuery = processedQuery.replace(new RegExp(`\\$${i + 1}`, 'g'), value.toString());
       }
     }
 
+    console.log('Processed query:', processedQuery);
+
     // Execute with Neon template literal
-    return await this.sql`${processedQuery}`;
+    try {
+      const result = await this.sql`${processedQuery}`;
+      console.log('Neon query result:', result);
+      return result;
+    } catch (error) {
+      console.error('Neon query failed:', error);
+      console.error('Failed query:', processedQuery);
+      throw error;
+    }
   }
 
   /**
