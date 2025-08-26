@@ -1,9 +1,10 @@
-const { Pool } = require('pg');
 const path = require('path');
 
-// Conditionally import sqlite3 only when needed (local development)
-let sqlite3;
+// Conditionally import database modules based on environment
+let sqlite3, Pool, neon;
+
 try {
+  // Import sqlite3 only for local development
   if (process.env.NODE_ENV !== 'production' && !process.env.NETLIFY) {
     sqlite3 = require('sqlite3').verbose();
   }
@@ -11,14 +12,24 @@ try {
   // sqlite3 not available, will use PostgreSQL/Neon instead
 }
 
-// Import Netlify Neon for production
-let neon;
 try {
-  const netlifyNeon = require('@netlify/neon');
-  neon = netlifyNeon.neon;
+  // Import Netlify Neon for production
+  if (process.env.NETLIFY === 'true') {
+    const netlifyNeon = require('@netlify/neon');
+    neon = netlifyNeon.neon;
+  } else {
+    // Import standard pg for non-Netlify production environments
+    const pg = require('pg');
+    Pool = pg.Pool;
+  }
 } catch (error) {
-  // Fallback if @netlify/neon is not available
-  console.log('Netlify Neon package not available, using standard pg');
+  // Fallback - try to import pg if Neon is not available
+  try {
+    const pg = require('pg');
+    Pool = pg.Pool;
+  } catch (pgError) {
+    console.log('Neither Netlify Neon nor pg package available');
+  }
 }
 
 class DatabaseService {
@@ -110,6 +121,10 @@ class DatabaseService {
    * Initialize PostgreSQL connection for production
    */
   async initializePostgreSQL() {
+    if (!Pool) {
+      throw new Error('PostgreSQL Pool is not available. Check pg package installation.');
+    }
+
     const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
 
     if (!connectionString) {

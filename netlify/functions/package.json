@@ -8,8 +8,6 @@
     "@honeycomb-protocol/edge-client": "^0.3.0",
     "@solana/web3.js": "^1.95.4",
     "cors": "^2.8.5",
-    "sqlite3": "^5.1.6",
-    "pg": "^8.11.3",
     "@netlify/neon": "^0.1.0"
   },
   "engines": {

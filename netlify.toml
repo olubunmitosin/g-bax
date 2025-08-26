@@ -16,8 +16,6 @@ external_node_modules = [
     "@honeycomb-protocol/hive-control",
     "@honeycomb-protocol/edge-client",
     "@solana/web3.js",
-    "@netlify/neon",
-    "pg",
 ]
 included_files = ["backend/**/*"]
 
