@@ -105,10 +105,26 @@ class HoneycombController {
     // Get game stats from database
     let gameStats = null;
     try {
-      gameStats = await DatabaseService.getPlayerStats(playerKey);
+      // Try multiple address formats to find existing stats
+      const possibleAddresses = [
+        playerKey,
+        user?.address,
+        user?.id,
+        profile?.address
+      ].filter(Boolean);
 
-      // If no stats exist, create default stats
+      // Try to find existing stats with any of the possible addresses
+      for (const address of possibleAddresses) {
+        gameStats = await DatabaseService.getPlayerStats(address);
+        if (gameStats) {
+          console.log(`Found game stats for ${playerKey} using address: ${address}`);
+          break;
+        }
+      }
+
+      // If no stats exist, create default stats using the primary playerKey
       if (!gameStats) {
+        console.log(`No existing stats found for ${playerKey}, creating default stats`);
         gameStats = await DatabaseService.upsertPlayerStats(playerKey, {
           credits: 1000,
           level: 1,
@@ -383,30 +399,82 @@ class HoneycombController {
         });
       }
 
-      // Fetch all users for the project
+      // Get all player stats from database first (this has the real game data)
+      const allPlayerStats = await DatabaseService.getAllPlayerStats();
+      console.log(`Found ${allPlayerStats.length} players with game stats in database`);
+
+      // Fetch all users from Honeycomb for profile data
       const honeycombResponse = await this.edgeClient.findUsers({
         includeProjectProfiles: [this.config.projectAddress],
       });
 
-      console.log('Raw users response:', honeycombResponse);
+      const honeycombUsers = honeycombResponse.user || [];
+      console.log(`Found ${honeycombUsers.length} users in Honeycomb`);
 
-      const users = honeycombResponse.user || [];
-      const formattedUsers = [];
-
-      for (const user of users) {
+      // Create a map of Honeycomb users by address for quick lookup
+      const honeycombUserMap = new Map();
+      honeycombUsers.forEach(user => {
         const profile = user.profiles?.[0];
         if (profile) {
+          // Store by multiple possible address formats
+          honeycombUserMap.set(user.address, { user, profile });
+          honeycombUserMap.set(user.id, { user, profile });
+          if (profile.address) {
+            honeycombUserMap.set(profile.address, { user, profile });
+          }
+        }
+      });
+
+      const formattedUsers = [];
+
+      // Process players with game stats first (priority to actual players)
+      for (const playerStats of allPlayerStats) {
+        const playerAddress = playerStats.player_address;
+
+        // Try to find matching Honeycomb profile
+        let honeycombData = honeycombUserMap.get(playerAddress);
+
+        if (honeycombData) {
+          // Merge Honeycomb profile with database stats
           const formattedUser = await this.formatProfileResponse(
-            user,
-            profile,
-            user.address || user.id,
+            honeycombData.user,
+            honeycombData.profile,
+            playerAddress,
             null,
             null
           );
-
+          // Override with actual database stats
+          if (formattedUser) {
+            formattedUser.experience = playerStats.experience || 0;
+            formattedUser.level = playerStats.level || 1;
+            formattedUser.credits = playerStats.credits || 1000;
+            formattedUser.reputation = playerStats.reputation || 0;
+            formattedUser.source = "database";
+          }
           if (formattedUser) {
             formattedUsers.push(formattedUser);
           }
+        } else {
+          // Player has game stats but no Honeycomb profile - create basic profile
+          const basicUser = {
+            id: `db_${playerStats.id}`,
+            address: playerAddress,
+            profileAddress: null,
+            projectAddress: this.config.projectAddress,
+            profileTreeAddress: this.config.profileTreeAddress,
+            name: `Player ${playerAddress.slice(0, 8)}`,
+            bio: "G-Bax player",
+            pfp: "https://lh3.googleusercontent.com/-Jsm7S8BHy4nOzrw2f5AryUgp9Fym2buUOkkxgNplGCddTkiKBXPLRytTMXBXwGcHuRr06EvJStmkHj-9JeTfmHsnT0prHg5Mhg",
+            experience: playerStats.experience || 0,
+            level: playerStats.level || 1,
+            credits: playerStats.credits || 1000,
+            reputation: playerStats.reputation || 0,
+            source: "database",
+            createdAt: playerStats.created_at || new Date().toISOString(),
+            lastUpdated: playerStats.updated_at || new Date().toISOString(),
+            transactionSignature: null
+          };
+          formattedUsers.push(basicUser);
         }
       }
 
