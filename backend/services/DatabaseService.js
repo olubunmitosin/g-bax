@@ -12,21 +12,19 @@ try {
   // sqlite3 not available, will use PostgreSQL/Neon instead
 }
 
+// Try to import Netlify Neon first (for Netlify environment)
 try {
-  // Import Netlify Neon for production
-  if (process.env.NETLIFY === 'true') {
-    const netlifyNeon = require('@netlify/neon');
-    neon = netlifyNeon.neon;
-  } else {
-    // Import standard pg for non-Netlify production environments
-    const pg = require('pg');
-    Pool = pg.Pool;
-  }
+  const netlifyNeon = require('@netlify/neon');
+  neon = netlifyNeon.neon;
+  console.log('Netlify Neon imported successfully');
 } catch (error) {
-  // Fallback - try to import pg if Neon is not available
+  console.log('Netlify Neon not available:', error.message);
+
+  // Fallback to standard pg for other environments
   try {
     const pg = require('pg');
     Pool = pg.Pool;
+    console.log('Standard pg imported successfully');
   } catch (pgError) {
     console.log('Neither Netlify Neon nor pg package available');
   }
@@ -34,12 +32,22 @@ try {
 
 class DatabaseService {
   constructor() {
-    this.isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true';
-    this.isNetlify = process.env.NETLIFY === 'true';
+    // Improved environment detection
+    this.isNetlify = !!(process.env.NETLIFY || process.env.NETLIFY_DEV || process.env.CONTEXT);
+    this.isProduction = process.env.NODE_ENV === 'production' || this.isNetlify;
     this.db = null;
     this.pool = null;
     this.sql = null; // Netlify Neon SQL function
     this.initialized = false;
+
+    console.log('Environment detection:', {
+      isNetlify: this.isNetlify,
+      isProduction: this.isProduction,
+      NODE_ENV: process.env.NODE_ENV,
+      NETLIFY: process.env.NETLIFY,
+      hasNeon: !!neon,
+      hasPool: !!Pool
+    });
   }
 
   /**
@@ -84,15 +92,20 @@ class DatabaseService {
       await this.checkDatabasePermissions();
 
       if (this.isProduction) {
-        if (this.isNetlify && neon) {
-          // Use Netlify Neon for Netlify deployment
+        if (neon) {
+          // Use Netlify Neon when available (preferred for Netlify)
+          console.log('Using Netlify Neon for database connection');
           await this.initializeNetlifyNeon();
-        } else {
+        } else if (Pool) {
           // Use standard PostgreSQL for other production environments
+          console.log('Using standard PostgreSQL for database connection');
           await this.initializePostgreSQL();
+        } else {
+          throw new Error('No database connection method available. Neither Neon nor PostgreSQL found.');
         }
       } else {
         // Use SQLite for local development
+        console.log('Using SQLite for local development');
         await this.initializeSQLite();
       }
 
@@ -110,11 +123,30 @@ class DatabaseService {
    * Initialize Netlify Neon connection
    */
   async initializeNetlifyNeon() {
-    // Netlify Neon automatically uses NETLIFY_DATABASE_URL environment variable
-    this.sql = neon();
+    if (!neon) {
+      throw new Error('Netlify Neon is not available. Check @netlify/neon package installation.');
+    }
+
+    // Get database URL from environment variables
+    const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL || process.env.NEON_DATABASE_URL;
+
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL environment variable is required for Netlify Neon connection');
+    }
+
+    console.log('Initializing Netlify Neon with URL:', databaseUrl.replace(/:[^:@]*@/, ':***@'));
+
+    // Initialize Neon with the database URL
+    this.sql = neon(databaseUrl);
 
     // Test connection with a simple query
-    await this.sql`SELECT NOW()`;
+    try {
+      const result = await this.sql`SELECT NOW() as current_time`;
+      console.log('Netlify Neon connection successful:', result[0]);
+    } catch (error) {
+      console.error('Netlify Neon connection test failed:', error);
+      throw error;
+    }
   }
 
   /**
