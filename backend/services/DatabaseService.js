@@ -427,21 +427,46 @@ class DatabaseService {
    * Execute Neon query with parameters using template literals
    */
   async executeNeonQuery(query, params) {
-    // For Neon, we need to use template literals with parameter interpolation
-    // Use Function constructor to safely create template literal queries
+    // For Neon, we need to substitute parameters directly into the query string
+    // This is the most reliable approach for Neon's template literal requirements
 
     try {
-      // Replace PostgreSQL placeholders with template literal placeholders
-      let templateQuery = query;
+      console.log('executeNeonQuery - Original query:', query);
+      console.log('executeNeonQuery - Parameters:', params);
+
+      // Replace PostgreSQL placeholders with actual values
+      let processedQuery = query;
+
       for (let i = 0; i < params.length; i++) {
-        templateQuery = templateQuery.replace(`$${i + 1}`, `\${params[${i}]}`);
+        const value = params[i];
+
+        // Handle different data types for SQL
+        let sqlValue;
+        if (value === null || value === undefined) {
+          sqlValue = 'NULL';
+        } else if (typeof value === 'string') {
+          // Escape single quotes and wrap in quotes
+          sqlValue = `'${value.replace(/'/g, "''")}'`;
+        } else if (typeof value === 'boolean') {
+          sqlValue = value ? 'TRUE' : 'FALSE';
+        } else if (typeof value === 'number') {
+          sqlValue = value.toString();
+        } else {
+          // For other types, convert to string and quote
+          sqlValue = `'${String(value).replace(/'/g, "''")}'`;
+        }
+
+        // Replace all occurrences of this placeholder
+        processedQuery = processedQuery.replace(new RegExp(`\\$${i + 1}`, 'g'), sqlValue);
       }
 
-      // Create a function that returns the template literal query
-      const queryFunction = new Function('sql', 'params', `return sql\`${templateQuery}\``);
+      console.log('executeNeonQuery - Processed query:', processedQuery);
 
-      // Execute the query
-      return await queryFunction(this.sql, params);
+      // Execute with Neon template literal (no parameters needed now)
+      const result = await this.sql`${processedQuery}`;
+      console.log('executeNeonQuery - Result:', result);
+
+      return result;
     } catch (error) {
       console.error('Neon query execution failed:', error);
       console.error('Original query:', query);
