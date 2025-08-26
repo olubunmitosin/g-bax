@@ -43,9 +43,6 @@ class DatabaseService {
     console.log('Environment detection:', {
       isProduction: this.isProduction,
       NODE_ENV: process.env.NODE_ENV,
-      NETLIFY: process.env.NETLIFY,
-      NETLIFY_DEV: process.env.NETLIFY_DEV,
-      CONTEXT: process.env.CONTEXT,
       hasNeon: !!neon,
       neonType: typeof neon,
       hasPool: !!Pool,

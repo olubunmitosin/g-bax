@@ -61,6 +61,7 @@
     "@heroui/theme": "2.4.17",
     "@honeycomb-protocol/edge-client": "^0.0.7-beta.15",
     "@honeycomb-protocol/hive-control": "^0.2.19-beta.34",
+    "@neondatabase/serverless": "^1.0.1",
     "@netlify/functions": "^4.1.11",
     "@react-aria/ssr": "3.9.9",
     "@react-aria/visually-hidden": "3.8.24",
