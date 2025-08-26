@@ -1,6 +1,15 @@
-const sqlite3 = require('sqlite3').verbose();
 const { Pool } = require('pg');
 const path = require('path');
+
+// Conditionally import sqlite3 only when needed (local development)
+let sqlite3;
+try {
+  if (process.env.NODE_ENV !== 'production' && !process.env.NETLIFY) {
+    sqlite3 = require('sqlite3').verbose();
+  }
+} catch (error) {
+  // sqlite3 not available, will use PostgreSQL/Neon instead
+}
 
 // Import Netlify Neon for production
 let neon;
@@ -124,6 +133,10 @@ class DatabaseService {
    * Initialize SQLite connection for development
    */
   async initializeSQLite() {
+    if (!sqlite3) {
+      throw new Error('SQLite3 is not available. Use PostgreSQL/Neon for production.');
+    }
+
     const dbPath = path.join(__dirname, '../data/game.db');
 
     // Ensure data directory exists with proper permissions

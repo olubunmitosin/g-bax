@@ -18,7 +18,6 @@ external_node_modules = [
     "@solana/web3.js",
     "@netlify/neon",
     "pg",
-    "sqlite3",
 ]
 included_files = ["backend/**/*"]
 
