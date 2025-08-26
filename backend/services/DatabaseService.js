@@ -406,7 +406,10 @@ class DatabaseService {
     if (this.sql) {
       // Use Netlify Neon
       if (params.length === 0) {
-        return await this.sql`${query}`;
+        // For queries without parameters, we need to use Function constructor
+        // because Neon template literals can't interpolate the entire query as a variable
+        const queryFunction = new Function('sql', `return sql\`${query}\``);
+        return await queryFunction(this.sql);
       } else {
         // Convert parameterized query for Neon template literal format
         return await this.executeNeonQuery(query, params);
