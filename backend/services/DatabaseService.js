@@ -4,7 +4,6 @@ const path = require('path');
 let sqlite3, Pool, neon;
 
 try {
-  console.log("DB URL: ", process.env.NETLIFY_DATABASE_URL);
   // Import sqlite3 only for local development
   if (process.env.NODE_ENV !== 'production' && !process.env.NETLIFY) {
     sqlite3 = require('sqlite3').verbose();
@@ -129,13 +128,11 @@ class DatabaseService {
     }
 
     // Get database URL from environment variables
-    const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+    const databaseUrl = process.env.NETLIFY_DATABASE_URL;
 
     if (!databaseUrl) {
       throw new Error('DATABASE_URL environment variable is required for Neon connection');
     }
-
-    console.log('Initializing Neon serverless connection with DATABASE_URL');
 
     // According to Neon docs, pass DATABASE_URL to neon()
     this.sql = neon(databaseUrl);
@@ -146,7 +143,6 @@ class DatabaseService {
       console.log('Neon serverless connection successful:', result[0]);
     } catch (error) {
       console.error('Neon serverless connection test failed:', error);
-      console.error('Make sure DATABASE_URL is set correctly in your Netlify environment variables');
       throw error;
     }
   }
