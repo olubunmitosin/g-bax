@@ -4,6 +4,7 @@ const path = require('path');
 let sqlite3, Pool, neon;
 
 try {
+  console.log("DB URL: ", process.env.NETLIFY_DATABASE_URL);
   // Import sqlite3 only for local development
   if (process.env.NODE_ENV !== 'production' && !process.env.NETLIFY) {
     sqlite3 = require('sqlite3').verbose();
@@ -33,7 +34,6 @@ try {
 class DatabaseService {
   constructor() {
     // Improved environment detection
-    this.isNetlify = !!(process.env.NETLIFY || process.env.NETLIFY_DEV || process.env.CONTEXT);
     this.isProduction = process.env.NODE_ENV === 'production' || this.isNetlify;
     this.db = null;
     this.pool = null;
@@ -41,7 +41,6 @@ class DatabaseService {
     this.initialized = false;
 
     console.log('Environment detection:', {
-      isNetlify: this.isNetlify,
       isProduction: this.isProduction,
       NODE_ENV: process.env.NODE_ENV,
       NETLIFY: process.env.NETLIFY,
