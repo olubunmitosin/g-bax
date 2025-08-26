@@ -441,7 +441,10 @@ class DatabaseService {
       let processedQuery = query;
 
       for (let i = 0; i < params.length; i++) {
+        const placeholder = `$${i + 1}`;
         const value = params[i];
+
+        console.log(`Replacing placeholder: ${placeholder} with value:`, value, typeof value);
 
         // Handle different data types for SQL
         let sqlValue;
@@ -459,8 +462,14 @@ class DatabaseService {
           sqlValue = `'${String(value).replace(/'/g, "''")}'`;
         }
 
-        // Replace all occurrences of this placeholder
-        processedQuery = processedQuery.replace(new RegExp(`\\$${i + 1}`, 'g'), sqlValue);
+        console.log(`SQL value for ${placeholder}:`, sqlValue);
+
+        // Use simple string replacement - more reliable than regex
+        while (processedQuery.includes(placeholder)) {
+          processedQuery = processedQuery.replace(placeholder, sqlValue);
+        }
+
+        console.log(`Query after replacing ${placeholder}:`, processedQuery);
       }
 
       console.log('executeNeonQuery - Processed query:', processedQuery);
