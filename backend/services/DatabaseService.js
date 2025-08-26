@@ -16,17 +16,13 @@ try {
 try {
   const { neon: neonDriver } = require('@neondatabase/serverless');
   neon = neonDriver;
-  console.log('Neon serverless driver imported successfully:', typeof neon);
 } catch (error) {
-  console.log('Neon serverless driver not available:', error.message);
-
   // Fallback to standard pg for other environments
   try {
     const pg = require('pg');
     Pool = pg.Pool;
-    console.log('Standard pg imported successfully');
   } catch (pgError) {
-    console.log('pg package not available:', pgError.message);
+    console.error('No database driver available:', pgError.message);
   }
 }
 
@@ -39,15 +35,7 @@ class DatabaseService {
     this.sql = null; // Netlify Neon SQL function
     this.initialized = false;
 
-    console.log('Environment detection:', {
-      isProduction: this.isProduction,
-      NODE_ENV: process.env.NODE_ENV,
-      hasNeon: !!neon,
-      neonType: typeof neon,
-      hasPool: !!Pool,
 
-      hasDatabaseUrl: !!process.env.DATABASE_URL
-    });
   }
 
   /**
@@ -94,18 +82,15 @@ class DatabaseService {
       if (this.isProduction) {
         if (neon) {
           // Use Neon serverless when available (preferred for Netlify)
-          console.log('Using Neon serverless driver for database connection');
           await this.initializeNetlifyNeon();
         } else if (Pool) {
           // Use standard PostgreSQL for other production environments
-          console.log('Using standard PostgreSQL for database connection');
           await this.initializePostgreSQL();
         } else {
           throw new Error('No database connection method available. Neither Neon nor PostgreSQL found.');
         }
       } else {
         // Use SQLite for local development
-        console.log('Using SQLite for local development');
         await this.initializeSQLite();
       }
 
@@ -139,8 +124,8 @@ class DatabaseService {
 
     // Test connection with a simple query
     try {
-      const result = await this.sql`SELECT NOW() as current_time`;
-      console.log('Neon serverless connection successful:', result[0]);
+      await this.sql`SELECT NOW() as current_time`;
+
     } catch (error) {
       console.error('Neon serverless connection test failed:', error);
       throw error;
@@ -434,8 +419,7 @@ class DatabaseService {
     // This is the most reliable approach for Neon's template literal requirements
 
     try {
-      console.log('executeNeonQuery - Original query:', query);
-      console.log('executeNeonQuery - Parameters:', params);
+
 
       // Replace PostgreSQL placeholders with actual values
       let processedQuery = query;
@@ -444,7 +428,7 @@ class DatabaseService {
         const placeholder = `$${i + 1}`;
         const value = params[i];
 
-        console.log(`Replacing placeholder: ${placeholder} with value:`, value, typeof value);
+
 
         // Handle different data types for SQL
         let sqlValue;
@@ -462,23 +446,23 @@ class DatabaseService {
           sqlValue = `'${String(value).replace(/'/g, "''")}'`;
         }
 
-        console.log(`SQL value for ${placeholder}:`, sqlValue);
+
 
         // Use simple string replacement - more reliable than regex
         while (processedQuery.includes(placeholder)) {
           processedQuery = processedQuery.replace(placeholder, sqlValue);
         }
 
-        console.log(`Query after replacing ${placeholder}:`, processedQuery);
+
       }
 
-      console.log('executeNeonQuery - Processed query:', processedQuery);
+
 
       // Execute with Neon template literal using Function constructor
       // This is the same approach we use for queries without parameters
       const queryFunction = new Function('sql', `return sql\`${processedQuery}\``);
       const result = await queryFunction(this.sql);
-      console.log('executeNeonQuery - Result:', result);
+
 
       return result;
     } catch (error) {
