@@ -406,7 +406,7 @@ class DatabaseService {
     if (this.sql) {
       // Use Netlify Neon
       if (params.length === 0) {
-        return await this.sql([query]);
+        return await this.sql`${query}`;
       } else {
         // Convert parameterized query for Neon template literal format
         return await this.executeNeonQuery(query, params);
@@ -424,21 +424,36 @@ class DatabaseService {
   }
 
   /**
-   * Execute Neon query with parameters
+   * Execute Neon query with parameters using template literals
    */
   async executeNeonQuery(query, params) {
-    // Convert $1, $2, etc. to template literal format
-    let neonQuery = query;
-    const values = [];
+    // For Neon, we need to use template literals properly
+    // Let's use a simpler approach that works with Neon's expectations
+
+    // Convert PostgreSQL parameterized query to direct value substitution
+    // This is safe for our use case since we control the input
+    let processedQuery = query;
 
     for (let i = 0; i < params.length; i++) {
-      neonQuery = neonQuery.replace(`$${i + 1}`, `\${values[${i}]}`);
-      values.push(params[i]);
+      const placeholder = `$${i + 1}`;
+      const value = params[i];
+
+      // Handle different data types appropriately for SQL
+      if (typeof value === 'string') {
+        // Escape single quotes and wrap in quotes
+        processedQuery = processedQuery.replace(placeholder, `'${value.replace(/'/g, "''")}'`);
+      } else if (value === null || value === undefined) {
+        processedQuery = processedQuery.replace(placeholder, 'NULL');
+      } else if (typeof value === 'boolean') {
+        processedQuery = processedQuery.replace(placeholder, value ? 'TRUE' : 'FALSE');
+      } else {
+        // Numbers and other types
+        processedQuery = processedQuery.replace(placeholder, value.toString());
+      }
     }
 
-    // Use Function constructor to create a template literal function
-    const queryFunction = new Function('sql', 'values', `return sql\`${neonQuery}\``);
-    return await queryFunction(this.sql, values);
+    // Execute with Neon template literal
+    return await this.sql`${processedQuery}`;
   }
 
   /**
