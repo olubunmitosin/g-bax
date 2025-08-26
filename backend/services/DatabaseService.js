@@ -474,8 +474,10 @@ class DatabaseService {
 
       console.log('executeNeonQuery - Processed query:', processedQuery);
 
-      // Execute with Neon template literal (no parameters needed now)
-      const result = await this.sql`${processedQuery}`;
+      // Execute with Neon template literal using Function constructor
+      // This is the same approach we use for queries without parameters
+      const queryFunction = new Function('sql', `return sql\`${processedQuery}\``);
+      const result = await queryFunction(this.sql);
       console.log('executeNeonQuery - Result:', result);
 
       return result;
